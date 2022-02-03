@@ -40,6 +40,6 @@ func init_database(db_name string) {
 	AddStudentSQL = prepare("insert into student (name) values (?)")
 	AddTeacherSQL = prepare("insert into teacher (name) values (?)")
 	AddSubmissionSQL = prepare("insert into submission (question_id, message, code, student_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)")
-	AddScoreSQL = prepare("insert into score (teacher_id, student_id, points, created_at, updated_at) values (?, ?, ?, ?, ?)")
+	AddScoreSQL = prepare("insert into score (teacher_id, student_id, submission_id, points, created_at, updated_at) values (?, ?, ?, ?, ?, ?)")
 
 }

@@ -15,7 +15,11 @@ func main() {
 	http.HandleFunc("/students/submissions", studentSubmissionHandler())
 	http.HandleFunc("/teachers/submissions", teacherSubmissionHandler())
 
+	http.HandleFunc("/submissions/grade", submissionGradeHandler())
+
 	init_database("my_test_db")
+
+	fmt.Println("serving at port: 8081")
 
 	err := http.ListenAndServe(":8081", nil)
 	if err != nil {
