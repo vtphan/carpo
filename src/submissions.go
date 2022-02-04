@@ -54,7 +54,8 @@ func studentSubmissionHandler() http.HandlerFunc {
 				return
 			}
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, string("Submission saved successfully."))
+			resp := []byte(`{"msg": "Submission saved successfully."}`)
+			fmt.Fprint(w, string(resp))
 
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -106,15 +107,14 @@ func submissionGradeHandler() http.HandlerFunc {
 			return
 		}
 
-		// handle panic
-		teacherID := int(body["teacher_id"].(float64))
-		studentID := int(body["student_id"].(float64))
-		score := int(body["score"].(float64))
-		submissionID := int(body["submission_id"].(float64))
+		jsonString, _ := json.Marshal(body)
+
+		s := Score{}
+		json.Unmarshal(jsonString, &s)
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddScoreSQL.Exec(teacherID, studentID, submissionID, score, time.Now(), time.Now())
+			_, err = AddScoreSQL.Exec(s.TeacherID, s.StudnetID, s.SubmissionID, s.Score, time.Now(), time.Now())
 			if err != nil {
 
 				fmt.Printf("Failed to Save Score. Err. %v\n", err)
@@ -124,7 +124,8 @@ func submissionGradeHandler() http.HandlerFunc {
 			}
 
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, string("Submission graded successfully."))
+			resp := []byte(`{"msg": "Submission graded successfully."}`)
+			fmt.Fprint(w, string(resp))
 
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

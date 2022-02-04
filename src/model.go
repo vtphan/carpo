@@ -12,6 +12,14 @@ type Submission struct {
 	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
 }
 
+type Score struct {
+	ID           int `json:"id"`
+	TeacherID    int `json:"teacher_id"`
+	StudnetID    int `json:"student_id"`
+	Score        int `json:"score"`
+	SubmissionID int `json:"submission_id"`
+}
+
 type Response struct {
 	Data []map[string]interface{} `json:"data"`
 }
