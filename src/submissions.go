@@ -2,9 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func studentSubmissionHandler() http.HandlerFunc {
@@ -47,11 +51,20 @@ func studentSubmissionHandler() http.HandlerFunc {
 			// TODO: Do we allow duplicate submissions from same student ?
 			_, err := studnet.SaveSubmission(sub)
 			if err != nil {
-				fmt.Printf("Failed to Save Submission. Err. %v\n", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to save submission.",
-					http.StatusInternalServerError)
-				return
+				var sqliteErr sqlite3.Error
+				if errors.As(err, &sqliteErr) {
+					log.Printf("Submission already found. Updating...")
+					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
+						studnet.UpdateSubmission(sub)
+					}
+				} else {
+
+					fmt.Printf("Failed to Save Submission. Err. %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, "Failed to save submission.",
+						http.StatusInternalServerError)
+					return
+				}
 			}
 			w.WriteHeader(http.StatusCreated)
 			resp := []byte(`{"msg": "Submission saved successfully."}`)
@@ -115,12 +128,26 @@ func submissionGradeHandler() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			_, err = AddScoreSQL.Exec(s.TeacherID, s.StudnetID, s.SubmissionID, s.Score, time.Now(), time.Now())
-			if err != nil {
 
-				fmt.Printf("Failed to Save Score. Err. %v\n", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to save Score.",
-					http.StatusInternalServerError)
+			if err != nil {
+				var sqliteErr sqlite3.Error
+				if errors.As(err, &sqliteErr) {
+					log.Printf("Submission already graded. Updating...")
+					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
+						_, err := UpdateScoreSQL.Exec(s.Score, time.Now(), s.TeacherID, s.SubmissionID)
+						if err != nil {
+							log.Printf("Failed to update row %+v. Err: %v", s, err)
+						}
+						log.Printf("Score successfully updated.")
+					}
+				} else {
+					fmt.Printf("Failed to Save Score. Err. %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, "Failed to save Score.",
+						http.StatusInternalServerError)
+
+				}
+
 			}
 
 			w.WriteHeader(http.StatusCreated)

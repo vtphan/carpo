@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 )
 
 type Studnet struct {
@@ -41,6 +42,15 @@ func (st *Studnet) SaveSubmission(s Submission) (id int, err error) {
 	sid, _ := result.LastInsertId()
 	return int(sid), nil
 
+}
+
+func (st *Studnet) UpdateSubmission(s Submission) {
+
+	_, err := UpdateSubmissionSQL.Exec(s.Message, s.Code, s.UpdatedAt, s.QuestionID, s.StudentID)
+	if err != nil {
+		log.Printf("Failed to update row %+v. Err: %v", s, err)
+	}
+	log.Printf("Submission successfully updated.")
 }
 
 func (st *Studnet) GetIDFromName() (id int, err error) {

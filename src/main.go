@@ -17,7 +17,7 @@ func main() {
 
 	http.HandleFunc("/submissions/grade", submissionGradeHandler())
 
-	init_database("my_test_db")
+	init_database("my_test_db.sqlite3")
 
 	fmt.Println("serving at port: 8081")
 
