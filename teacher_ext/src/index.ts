@@ -60,11 +60,16 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
+      var cellContents : string[]=[];
+
       notebookPanel.context.ready.then(async () => {
+       
+        notebook.widgets.map(c => 
+          cellContents.push(c.model.value.text)
+        );
 
         let currentCell: Cell = null;
         let currentCellCheckButton: CellCheckButton = null;
-        // let currentCellCancelButton: CellCancelButton = null;
 
         nbTrack.activeCellChanged.connect(() => {
 
@@ -93,11 +98,15 @@ const plugin: JupyterFrontEndPlugin<void> = {
             question_id: Number(heading[1]),
             student_id: Number(heading[0].replace("#","")),
             code: cell.model.value.text.split("\n")[1],
-            message: "",
-            time: "10 AM",
-            name: "Test Student"
-
           };
+
+
+          const activeIndex = notebook.activeCellIndex
+
+          if (activeIndex !== 0) {
+            info.message = cellContents[activeIndex-1]
+            info.feedback = cellContents[activeIndex+1]
+          }
 
           const newCheckButton: CellCheckButton = new CellCheckButton(
             cell,info);
@@ -110,8 +119,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
           currentCellCheckButton = newCheckButton;
 
         });
-        });
+
       });
+    });
 
     //  tell the document registry about your widget extension:
     app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
@@ -139,10 +149,7 @@ export class ButtonExtension
 
       const notebook = panel.content;
 
-
       var item: CellInfo
-
-      // notebook.activeCellIndex = 0;
 
       requestAPI<any>('code',{
         method: 'GET'
@@ -155,7 +162,6 @@ export class ButtonExtension
             return
           }
 
-          // debugger;
           // Change Cell Type
           NotebookActions.changeCellType(notebook,'code')
 
@@ -164,7 +170,7 @@ export class ButtonExtension
 
             // Insert message
             NotebookActions.insertBelow(notebook);
-            notebook.activeCell.model.value.text = item.student_id + " @ " + item.time + " wrote: \n" + item.message;
+            notebook.activeCell.model.value.text = item.student_name + " @ " + item.time + " wrote: \n" + item.message;
 
             
             NotebookActions.changeCellType(notebook,'markdown')
@@ -178,36 +184,15 @@ export class ButtonExtension
             // Insert placeholder for Instructor feedback
             NotebookActions.insertBelow(notebook);
             notebook.activeCell.model.value.text = item.message;
-            notebook.activeCell.model.value.text = "Instructor Feedback for " + item.student_id + ": \n" ;
+            notebook.activeCell.model.value.text = "Instructor Feedback for " + item.student_name + ": \n" ;
             
             NotebookActions.changeCellType(notebook,'markdown')
-
-
-          
-
-            // NotebookActions.insertAbove(notebook);
-            // const activeCell2 = notebook.activeCell;
-            // activeCell2.model.value.text = "#" + item.student_id + " " + item.question_id + " " + item.id + "\n" +  item.code;
-
-            // NotebookActions.changeCellType(notebook,'code')
-            // NotebookActions.insertAbove(notebook);
-            // const activeCell1 = notebook.activeCell;
-            // activeCell1.model.value.text = item.message;
-
-            // NotebookActions.insertBelow(notebook);
-            // const activeCell3 = notebook.activeCell;
-            // activeCell3.model.value.text = "Instructor Feedback for " + item.student_id + "\n" ;
-
-            // debugger;
-
-            // NotebookActions.changeCellType(notebook,'markdown')          
-            
-
-            
+                  
           }
 
         })
         .catch(reason => {
+          window.alert("Failed to get recent submissions from server.\nPlease check your connection.")
           console.error(
             `Failed to get code from the server.\n${reason}`
           );

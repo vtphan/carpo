@@ -85,11 +85,14 @@ func teacherSubmissionHandler() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			s := Submission{}
-			rows, _ := Database.Query("select id, message, code, student_id, question_id, created_at,updated_at from submission order by updated_at desc")
+			rows, err := Database.Query("select submission.id, message, code, student_id, name, question_id, created_at, updated_at from submission inner join student on submission.student_id = student.id order by updated_at desc")
 			defer rows.Close()
+			if err != nil {
+				fmt.Printf("Error quering db. Err: %v", err)
+			}
 
 			for rows.Next() {
-				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.QuestionID, &s.CreatedAt, &s.UpdatedAt)
+				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.QuestionID, &s.CreatedAt, &s.UpdatedAt)
 				submissions = append(submissions, s)
 			}
 

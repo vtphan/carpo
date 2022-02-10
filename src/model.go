@@ -8,6 +8,8 @@ type Submission struct {
 	Message    string    `json:"message" db:"message"`
 	Code       string    `json:"code" db:"code"`
 	StudentID  int       `json:"student_id" db:"student_id"`
+	Name       string    `json:"student_name" db:"name"`
+	Time       string    `json:"time"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
 }
