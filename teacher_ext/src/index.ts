@@ -60,13 +60,12 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
-      var cellContents : string[]=[];
+      if (!nbTrack.currentWidget.context.path.includes("all_submissions.ipynb")) {
+        return
+      }
+
 
       notebookPanel.context.ready.then(async () => {
-       
-        notebook.widgets.map(c => 
-          cellContents.push(c.model.value.text)
-        );
 
         let currentCell: Cell = null;
         let currentCellCheckButton: CellCheckButton = null;
@@ -83,15 +82,20 @@ const plugin: JupyterFrontEndPlugin<void> = {
                     currentLayout.removeWidget(w)
                   }
                 })
-
               }
               
             });
           }
 
           const cell: Cell = notebook.activeCell;
+          const activeIndex = notebook.activeCellIndex
 
           const heading = cell.model.value.text.split("\n")[0].split(" ")
+
+          // if (heading.length !== 3){
+          //   window.alert("Invalid Action for this cell. \n Please go to valid cell actions.")
+          //   return
+          // }
 
           var info : CellInfo = {
             id:  Number(heading[2]),
@@ -100,13 +104,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
             code: cell.model.value.text.split("\n")[1],
           };
 
+          // Here loop over the notebook widgets and contents before and after the active cell ?
+          notebook.widgets.map((c,index) =>{
+              if(index == activeIndex-1) {
+                info.code =  c.model.value.text
+              }
+          })
 
-          const activeIndex = notebook.activeCellIndex
-
-          if (activeIndex !== 0) {
-            info.message = cellContents[activeIndex-1]
-            info.feedback = cellContents[activeIndex+1]
-          }
 
           const newCheckButton: CellCheckButton = new CellCheckButton(
             cell,info);
@@ -156,11 +160,17 @@ export class ButtonExtension
       })
         .then(data => {
 
-
-          if (panel.context.path !== "Submissions/all_submissions.ipynb") {
-            window.alert("Submissions Notebook not opened. \nGo to all_submissions.ipynb Notebook inside Submissions directory.")
+          if (data.data.length != 0) {
+            var msg = "You have got " + data.data.length + " submissions.\n Go to all_submissions.ipynb Notebook inside Submissions directory."
+            window.alert(msg)
+          } else {
             return
           }
+
+          // if (panel.context.path !== "Submissions/all_submissions.ipynb") {
+          //   window.alert("Submissions Notebook not opened. \nGo to all_submissions.ipynb Notebook inside Submissions directory.")
+          //   return
+          // }
 
           // Change Cell Type
           NotebookActions.changeCellType(notebook,'code')
@@ -202,12 +212,12 @@ export class ButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'Get Submissions',
+      label: 'Students’ Code',
       onClick: getSubmissions,
-      tooltip: 'Get available submissions from students.',
+      tooltip: 'Get available codes from students.',
     });
 
-    panel.toolbar.insertItem(10, 'getSubmissions', button);
+    panel.toolbar.insertItem(10, 'getStudentsCode', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

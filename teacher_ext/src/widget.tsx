@@ -4,7 +4,7 @@ import { Cell, CodeCell } from '@jupyterlab/cells';
 
 import { CellInfo } from './model'
 
-import { checkIcon, closeIcon,LabIcon } from '@jupyterlab/ui-components';
+import { checkIcon, closeIcon,LabIcon,saveIcon } from '@jupyterlab/ui-components';
 
 import React from 'react';
 import { requestAPI } from './handler';
@@ -40,6 +40,28 @@ const GradeButton = ({
     </button>
   );
 
+const SendButton = ({
+    icon,
+    onClick
+}: IButtonComponent) => (
+    <button
+        type="button"
+        onClick={() => onClick()}
+        className="cellButton">
+
+        <LabIcon.resolveReact
+          icon={icon}
+          className="cellButton-icon"
+          tag="span"
+          width="15px"
+          height="15px"
+        />
+
+
+
+    </button>
+);
+
 
 interface ICodeCellButtonComponent {
     cell: CodeCell;
@@ -60,6 +82,9 @@ const CodeCellButtonComponent = ({
             "score": val ? 1 : 0
         }
         var status : string = val ? "Correct.": "Incorrect." 
+
+        console.log("Grade: ", postBody)
+        return
      
         requestAPI<any>('submissions/grade',{
             method: 'POST',
@@ -97,6 +122,46 @@ const CodeCellButtonComponent = ({
     );
   };
 
+const MarkdownCellButtonComponent = ({
+    cell,
+    info,
+}: ICodeCellButtonComponent): JSX.Element => {
+
+    const sendFeedback =async () => {
+        let postBody = {
+            "student_id": info.student_id,
+            "submission_id": info.id,
+            "code": info.code,
+            "message": info.message,
+            "comment": cell.model.value.text
+        }
+
+        console.log("Feedback: ", postBody)
+    
+        requestAPI<any>('submissions/feedbacks',{
+            method: 'POST',
+            body: JSON.stringify(postBody)
+        }).then(data => {
+           
+            window.alert(
+                "Feedback is now provided."
+              );
+            })
+            .catch(reason => {
+            console.error(
+                `Failed to save feedback. \n${reason}`
+            );
+        });
+        
+    }
+
+    return (
+        <SendButton 
+            icon={saveIcon}
+            onClick={() => (sendFeedback)()}
+        />
+    )
+};
   
 
 export class CellCheckButton extends ReactWidget {
@@ -116,6 +181,12 @@ export class CellCheckButton extends ReactWidget {
                     cell={this.cell as CodeCell}
                     info = {this.info as CellInfo}
                 />
+            
+            case 'markdown':
+            return <MarkdownCellButtonComponent
+                cell={this.cell as CodeCell}
+                info = {this.info as CellInfo}
+            />
 
             default:
                 break;
