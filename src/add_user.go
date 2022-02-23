@@ -67,7 +67,13 @@ func addUserHandler(role string) http.HandlerFunc {
 			w.WriteHeader(http.StatusCreated)
 		}
 
-		fmt.Fprint(w, string(msg))
+		// fmt.Fprint(w, string(msg))
+
+		d := map[string]string{
+			"resp": msg,
+		}
+		data, _ := json.Marshal(d)
+		fmt.Fprint(w, string(data))
 
 	}
 }

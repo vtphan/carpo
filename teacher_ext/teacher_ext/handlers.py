@@ -9,6 +9,26 @@ import os
 from pathlib import Path
 import uuid
 
+
+class RegistrationHandler(APIHandler):
+    @tornado.web.authenticated
+    def get(self):
+
+        f=open(os.getcwd()+'/teacher_config.json')
+        config_data = json.load(f)
+        
+        url = config_data['server'] + "/add_teacher"
+
+        body = {}
+        body['name'] = config_data['name']
+
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        response = requests.post(url, data=json.dumps(body),headers=headers)
+
+        data = {
+            "go-server": response.json()
+        }
+        self.finish(json.dumps(data))
 class RouteHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
     # patch, put, delete, options) to ensure only authorized user can request the
@@ -22,13 +42,13 @@ class RouteHandler(APIHandler):
         self.finish(response.json())
     
     def submission_file(self):
-        path = 'Submissions'
+        path = 'FeedbackData'
         file = 'all_submissions.ipynb'
-        isExist = os.path.exists(os.path.join(path, file))
 
-        if not isExist:
+        if not os.path.exists(path):
             os.makedirs(path)
-            
+
+        if not os.path.exists(os.path.join(path, file)):
             print("Creating File in path {}/{}".format(path,file))
             submission_file = os.path.join(path, file)
         
@@ -73,7 +93,7 @@ class GradeHandler(APIHandler):
         input_data = self.get_json_body()
 
         # Read Json file and add infos.
-        f=open(os.getcwd()+'/config.json')
+        f=open(os.getcwd()+'/teacher_config.json')
         config_data = json.load(f)
 
         input_data['teacher_id'] = 1
@@ -94,25 +114,36 @@ class FeedbackHandler(APIHandler):
         input_data = self.get_json_body()
 
         # Read Json file and add infos.
-        f=open(os.getcwd()+'/config.json')
+        f=open(os.getcwd()+'/teacher_config.json')
         config_data = json.load(f)
         input_data['teacher_id'] = 1
         url = config_data['server'] + "/teachers/feedbacks" #TODO create this endpoint
 
         print("Input Data: ", input_data)
-        self.feedback_file(input_data['code'], input_data['comment'])
-
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         response = requests.post(url, data=json.dumps(input_data),headers=headers)
 
         data = {
             "go-server": response.json()
         }
+
+        self.feedback_file()
+
         self.finish(json.dumps(data))
     
-    def feedback_file(self, code, feedback):
-        path = 'Submissions'
-        file = 'test_feedback.ipynb' # TODO Replace the file name with unique studnet name.
+    def feedback_file(self):
+        path = 'FeedbackData'
+        # Get student name from id and use the name in the filename.
+        question_id = 100
+        url = "http://localhost:8081/students/get_submission_feedbacks?question_id="+str(question_id)
+        response = requests.get(url)
+        resp = response.json()
+
+        if len(resp['data']) == 0:
+            return
+            
+        studnet_name = resp['data'][0]['name']    
+        file = 'feedback_'+ studnet_name + '.ipynb'
         submission_file = os.path.join(path, file)
         sub_file_exist = os.path.exists(os.path.join(path, file))
 
@@ -150,26 +181,24 @@ class FeedbackHandler(APIHandler):
             with open(submission_file, "w") as outfile:
                 outfile.write(json_object)
             outfile.close()
+
         # Read the same file and append the new blocks:
-
-
         with open(submission_file, "r") as file:
             data = json.loads(file.read())
-            print("Reading the feeback file: ")
-            print(data)
 
-            data["cells"].append({
-                    "cell_type": "markdown",
-                    "id": str(uuid.uuid4()),
-                    "metadata": {},
-                    "source": [ x+"\n" for x in feedback.split("\n") ]
-                    })
-            data["cells"].append({
-                    "cell_type": "code",
-                    "id": str(uuid.uuid4()),
-                    "metadata": {},
-                    "source": [ x+"\n" for x in code.split("\n") ]
-                    })
+            for feedback in resp['data']:
+                data["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": [ x+"\n" for x in feedback['comment'].split("\n") ]
+                        })
+                data["cells"].append({
+                        "cell_type": "code",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": [ x+"\n" for x in feedback['code_feedback'].split("\n") ]
+                        })
 
         with open(submission_file, "w") as file:
                 json.dump(data, file)
@@ -188,4 +217,10 @@ def setup_handlers(web_app):
 
     route_pattern_grade =  url_path_join(web_app.settings['base_url'], "teacher-ext", "submissions/feedbacks")
     web_app.add_handlers(host_pattern, [(route_pattern_grade, FeedbackHandler)])
+
+
+    route_pattern_grade =  url_path_join(web_app.settings['base_url'], "teacher-ext", "register")
+    web_app.add_handlers(host_pattern, [(route_pattern_grade, RegistrationHandler)])
+
+
 

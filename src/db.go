@@ -17,9 +17,10 @@ func create_tables() {
 	}
 	execSQL("create table if not exists student (id integer primary key, name text unique)")
 	execSQL("create table if not exists teacher (id integer primary key, name text unique)")
-	execSQL("create table if not exists submission (id integer primary key, question_id integer, message text, code blob, student_id integer, created_at timestamp, updated_at timestamp, UNIQUE (question_id, student_id))")
-	execSQL("create table if not exists score (id integer primary key, teacher_id integer, student_id integer, submission_id integer, points integer, created_at timestamp, updated_at timestamp, UNIQUE (teacher_id, submission_id))")
-
+	execSQL("create table if not exists problem (id integer primary key, teacher_id integer, question text unique, created_at timestamp, updated_at timestamp)")
+	execSQL("create table if not exists submission (id integer primary key, problem_id integer, message text, code blob, student_id integer, status integer, created_at timestamp, updated_at timestamp, UNIQUE (problem_id, student_id))")
+	execSQL("create table if not exists grade (id integer primary key, teacher_id integer, student_id integer, submission_id integer, score integer, code_feedback blob, comment text, created_at timestamp, updated_at timestamp, UNIQUE (teacher_id, submission_id))")
+	execSQL("create table if not exists student_problem_status (id integer primary key, student_id integer, problem_id integer, tutor_status integer, problem_status, created_at timestamp, updated_at timestamp)")
 }
 
 func init_database(db_name string) {
@@ -39,8 +40,14 @@ func init_database(db_name string) {
 	create_tables()
 	AddStudentSQL = prepare("insert into student (name) values (?)")
 	AddTeacherSQL = prepare("insert into teacher (name) values (?)")
-	AddSubmissionSQL = prepare("insert into submission (question_id, message, code, student_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)")
-	UpdateSubmissionSQL = prepare("update submission set message=?, code=?, updated_at=? where question_id=? and student_id=?")
-	AddScoreSQL = prepare("insert into score (teacher_id, student_id, submission_id, points, created_at, updated_at) values (?, ?, ?, ?, ?, ?)")
-	UpdateScoreSQL = prepare("update score set points=?, updated_at=? where teacher_id=? and submission_id=?")
+	AddSubmissionSQL = prepare("insert into submission (problem_id, message, code, student_id, status, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)")
+	UpdateSubmissionSQL = prepare("update submission set message=?, code=?, status=?, updated_at=? where problem_id=? and student_id=?")
+	AddScoreSQL = prepare("insert into grade (teacher_id, submission_id, score, created_at, updated_at) values (?, ?, ?, ?, ?)")
+	UpdateScoreSQL = prepare("update grade set score=?, updated_at=? where teacher_id=? and submission_id=?")
+	UpdateFeedbackSQL = prepare("update grade set code_feedback=?, comment=?,updated_at=? where teacher_id=? and submission_id=?")
+	UpdateSubmissionFeedbackGivenSQL = prepare("update submission set status=? where id=?")
+
+	// AddStudentProblemStatus = prepare("insert into student_problem_status (student_id, problem_id,problem_status,created_at, updated_at) values (?, ?, ?, ?, ?)")
+	// UpdateSubmissionStatusSQL=
+	// UpdateStudentProblemStatus = prepare("update student_problem_status set problem_status=?, updated_at=? where student_id=? and problem_id=?")
 }

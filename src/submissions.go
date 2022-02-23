@@ -37,18 +37,18 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 		sub := Submission{
 			// TODO: question id should be in request body.
-			QuestionID: 100,
-			Message:    fmt.Sprintf("%v", body["message"]),
+			ProblemID: 100,
+			Message:   fmt.Sprintf("%v", body["message"]),
 			// Message:    body["message"].(string),
 			Code:      fmt.Sprintf("%v", body["code"]),
 			StudentID: studnet.ID,
+			Status:    NewSub,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
 
 		switch r.Method {
 		case http.MethodPost:
-			// TODO: Do we allow duplicate submissions from same student ?
 			_, err := studnet.SaveSubmission(sub)
 			if err != nil {
 				var sqliteErr sqlite3.Error
@@ -59,7 +59,7 @@ func studentSubmissionHandler() http.HandlerFunc {
 					}
 				} else {
 
-					fmt.Printf("Failed to Save Submission. Err. %v\n", err)
+					fmt.Printf("Failed to Save Submission. %v Err. %v\n", sub, err)
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to save submission.",
 						http.StatusInternalServerError)
@@ -85,14 +85,14 @@ func teacherSubmissionHandler() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			s := Submission{}
-			rows, err := Database.Query("select submission.id, message, code, student_id, name, question_id, created_at, updated_at from submission inner join student on submission.student_id = student.id order by updated_at desc")
+			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.feedback_given in (0,1) order by updated_at desc limit 3")
 			defer rows.Close()
 			if err != nil {
 				fmt.Printf("Error quering db. Err: %v", err)
 			}
 
 			for rows.Next() {
-				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.QuestionID, &s.CreatedAt, &s.UpdatedAt)
+				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.CreatedAt, &s.UpdatedAt)
 				submissions = append(submissions, s)
 			}
 
@@ -125,12 +125,12 @@ func submissionGradeHandler() http.HandlerFunc {
 
 		jsonString, _ := json.Marshal(body)
 
-		s := Score{}
+		s := Grade{}
 		json.Unmarshal(jsonString, &s)
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddScoreSQL.Exec(s.TeacherID, s.StudnetID, s.SubmissionID, s.Score, time.Now(), time.Now())
+			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.Score, time.Now(), time.Now())
 
 			if err != nil {
 				var sqliteErr sqlite3.Error
@@ -144,13 +144,18 @@ func submissionGradeHandler() http.HandlerFunc {
 						log.Printf("Score successfully updated.")
 					}
 				} else {
-					fmt.Printf("Failed to Save Score. Err. %v\n", err)
+					fmt.Printf("Failed to Save Score %+v. Err. %v\n", s, err)
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to save Score.",
 						http.StatusInternalServerError)
 
 				}
 
+			}
+
+			_, err = UpdateSubmissionFeedbackGivenSQL.Exec(2, s.SubmissionID)
+			if err != nil {
+				log.Printf("Failed to update Submission after grading submission. %v Err: %v\n", s, err)
 			}
 
 			w.WriteHeader(http.StatusCreated)

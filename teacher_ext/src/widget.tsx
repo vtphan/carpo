@@ -75,16 +75,16 @@ const CodeCellButtonComponent = ({
   
     const submitGrade = async (val: Boolean) => {
 
+        console.log("From widget: ", info)
         let postBody = {
-            "student_id": info.student_id,
+            // "student_id": info.student_id,
             "submission_id": info.id,
-            "question_id": info.question_id,
+            // "question_id": info.question_id,
             "score": val ? 1 : 0
         }
         var status : string = val ? "Correct.": "Incorrect." 
 
         console.log("Grade: ", postBody)
-        return
      
         requestAPI<any>('submissions/grade',{
             method: 'POST',

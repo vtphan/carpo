@@ -33,7 +33,7 @@ func (st *Studnet) Add() (msg string, alreadyExists bool, err error) {
 
 func (st *Studnet) SaveSubmission(s Submission) (id int, err error) {
 	var result sql.Result
-	result, err = AddSubmissionSQL.Exec(s.QuestionID, s.Message, s.Code, st.ID, s.CreatedAt, s.UpdatedAt)
+	result, err = AddSubmissionSQL.Exec(s.ProblemID, s.Message, s.Code, st.ID, s.Status, s.CreatedAt, s.UpdatedAt)
 	if err != nil {
 
 		return 0, err
@@ -46,7 +46,7 @@ func (st *Studnet) SaveSubmission(s Submission) (id int, err error) {
 
 func (st *Studnet) UpdateSubmission(s Submission) {
 
-	_, err := UpdateSubmissionSQL.Exec(s.Message, s.Code, s.UpdatedAt, s.QuestionID, s.StudentID)
+	_, err := UpdateSubmissionSQL.Exec(s.Message, s.Code, s.Status, s.UpdatedAt, s.ProblemID, s.StudentID)
 	if err != nil {
 		log.Printf("Failed to update row %+v. Err: %v", s, err)
 	}

@@ -17,6 +17,10 @@ func main() {
 
 	http.HandleFunc("/submissions/grade", submissionGradeHandler())
 
+	http.HandleFunc("/teachers/feedbacks", teacherFeedbackHandler())
+
+	http.HandleFunc("/students/get_submission_feedbacks", getSubmissionFeedbacks())
+
 	init_database("my_test_db.sqlite3")
 
 	fmt.Println("serving at port: 8081")

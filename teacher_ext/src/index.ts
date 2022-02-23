@@ -47,7 +47,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
   autoStart: true,
   requires: [INotebookTracker],
   optional: [IFileBrowserFactory],
-  activate: (
+  activate: async (
       app: JupyterFrontEnd,
       nbTrack: INotebookTracker,
       browserFactory: IFileBrowserFactory | null,
@@ -55,11 +55,29 @@ const plugin: JupyterFrontEndPlugin<void> = {
       ) => {
     console.log('JupyterLab extension teacher-ext is activated!');
 
+    // Register user on extension startup. This is dependent on the <user>-config.json file.
+    var IsRegistered : Boolean = false
+
+    await requestAPI<any>('register',{
+      method: 'GET'
+    })
+      .then(data => {
+        console.log(data);
+        IsRegistered = true;
+
+      })
+      .catch(e => {
+        console.log("Failed to register the user.", {e})
+        window.alert("Couldn't register User as Instructor.\n")
+        return 
+      });
+
     nbTrack.currentChanged.connect(() => {
 
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
+      // If current Notebook is not all_submissions.ipynb, disable all functionality.
       if (!nbTrack.currentWidget.context.path.includes("all_submissions.ipynb")) {
         return
       }
@@ -74,8 +92,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
           if (currentCell) {
             notebook.widgets.map((c: Cell) => {
-              if (c.model.type == 'code') {
-
+              if (c.model.type == 'code' || c.model.type == 'markdown') {
                 const currentLayout = c.layout as PanelLayout;
                 currentLayout.widgets.map(w => {
                   if (w === currentCellCheckButton) {
@@ -83,34 +100,39 @@ const plugin: JupyterFrontEndPlugin<void> = {
                   }
                 })
               }
-              
             });
           }
 
           const cell: Cell = notebook.activeCell;
           const activeIndex = notebook.activeCellIndex
 
-          const heading = cell.model.value.text.split("\n")[0].split(" ")
+          // const heading = cell.model.value.text.split("\n")[0].split(" ")
+          const submission_id = function(text: string) {
+            return Number(text.split("\n")[0].split(" ")[2])
+          }
 
-          // if (heading.length !== 3){
-          //   window.alert("Invalid Action for this cell. \n Please go to valid cell actions.")
-          //   return
-          // }
+          const student_id = function(text: string) {
+            return Number((text.split("\n")[0].split(" ")[0]).replace("#", ""))
+          }
 
           var info : CellInfo = {
-            id:  Number(heading[2]),
-            question_id: Number(heading[1]),
-            student_id: Number(heading[0].replace("#","")),
+            id:  submission_id(cell.model.value.text),
+            question_id: 101,
+            student_id: student_id(cell.model.value.text),
             code: cell.model.value.text.split("\n")[1],
           };
 
-          // Here loop over the notebook widgets and contents before and after the active cell ?
-          notebook.widgets.map((c,index) =>{
+          // For feedback case: cell is markdown so loop over the notebook widgets to get code cell before the active cell index
+          if (cell.model.type == 'markdown' ){
+            notebook.widgets.map((c,index) =>{
               if(index == activeIndex-1) {
-                info.code =  c.model.value.text
+                const code = c.model.value.text
+                info.code = code  
+                info.id = submission_id(code)
+                info.student_id = student_id(code)
               }
-          })
-
+            })
+          }
 
           const newCheckButton: CellCheckButton = new CellCheckButton(
             cell,info);
@@ -126,10 +148,12 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
       });
     });
-
+    
     //  tell the document registry about your widget extension:
-    app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
-  
+    if (IsRegistered)
+    {
+      app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
+    }
   }
 };
 
@@ -154,17 +178,16 @@ export class ButtonExtension
       const notebook = panel.content;
 
       var item: CellInfo
-
       requestAPI<any>('code',{
         method: 'GET'
       })
         .then(data => {
-
-          if (data.data.length != 0) {
-            var msg = "You have got " + data.data.length + " submissions.\n Go to all_submissions.ipynb Notebook inside Submissions directory."
+          if (data.data.length != 0 ) {
+            var msg = "You have got " + data.data.length + " submissions.\n Go to all_submissions.ipynb Notebook inside FeedbackData directory."
             window.alert(msg)
-          } else {
-            return
+            if (panel.context.path !== "FeedbackData/all_submissions.ipynb"){
+              return
+            }
           }
 
           // if (panel.context.path !== "Submissions/all_submissions.ipynb") {
