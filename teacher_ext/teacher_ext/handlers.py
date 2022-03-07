@@ -86,6 +86,28 @@ class RouteHandler(APIHandler):
                 outfile.write(json_object)
             outfile.close()
 
+class ProblemHandler(APIHandler):
+
+    @tornado.web.authenticated
+    def post(self):
+        input_data = self.get_json_body()
+
+        # Read Json file and add infos.
+        f=open(os.getcwd()+'/teacher_config.json')
+        config_data = json.load(f)
+        input_data['teacher_id'] = config_data['id']
+        url = config_data['server'] + "/problem"
+
+        print("Input Data: ", input_data)
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        response = requests.post(url, data=json.dumps(input_data),headers=headers)
+
+        data = {
+            "go-server": response.json()
+        }
+
+        self.finish(json.dumps(data))
+    
 class GradeHandler(APIHandler):
 
     @tornado.web.authenticated
@@ -185,7 +207,8 @@ class FeedbackHandler(APIHandler):
         # Read the same file and append the new blocks:
         with open(submission_file, "r") as file:
             data = json.loads(file.read())
-
+            data['cells'] = []
+            
             for feedback in resp['data']:
                 data["cells"].append({
                         "cell_type": "markdown",
@@ -197,7 +220,8 @@ class FeedbackHandler(APIHandler):
                         "cell_type": "code",
                         "id": str(uuid.uuid4()),
                         "metadata": {},
-                        "source": [ x+"\n" for x in feedback['code_feedback'].split("\n") ]
+                        "source": [ x+"\n" for x in feedback['code_feedback'].split("\n") ],
+                        "outputs": []
                         })
 
         with open(submission_file, "w") as file:
@@ -211,6 +235,9 @@ def setup_handlers(web_app):
     route_pattern_code = url_path_join(base_url, "teacher-ext", "code")
     handlers = [(route_pattern_code, RouteHandler)]
     web_app.add_handlers(host_pattern, handlers)
+
+    route_pattern_problem =  url_path_join(web_app.settings['base_url'], "teacher-ext", "problem")
+    web_app.add_handlers(host_pattern, [(route_pattern_problem, ProblemHandler)])
 
     route_pattern_grade =  url_path_join(web_app.settings['base_url'], "teacher-ext", "submissions/grade")
     web_app.add_handlers(host_pattern, [(route_pattern_grade, GradeHandler)])

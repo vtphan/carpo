@@ -34,8 +34,9 @@ import {
 // import { Cell } from '@jupyterlab/cells';
 
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
-import { ToolbarButton } from '@jupyterlab/apputils';
+import { ToolbarButton, Dialog, showDialog } from '@jupyterlab/apputils';
 
+// , InputDialog
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 
@@ -117,7 +118,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
           var info : CellInfo = {
             id:  submission_id(cell.model.value.text),
-            question_id: 101,
+            problem_id: 101,
             student_id: student_id(cell.model.value.text),
             code: cell.model.value.text.split("\n")[1],
           };
@@ -153,6 +154,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     if (IsRegistered)
     {
       app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
+      app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     }
   }
 };
@@ -175,6 +177,12 @@ export class ButtonExtension
     const getSubmissions = () => {
       NotebookActions.clearAllOutputs(panel.content);
 
+      // InputDialog.getText({ title: 'Provide a text' }).then(value => {
+      //   console.log('text ' + value.value);
+      // });
+      // return
+
+
       const notebook = panel.content;
 
       var item: CellInfo
@@ -190,6 +198,8 @@ export class ButtonExtension
             }
           }
 
+          console.log(data)
+
           // if (panel.context.path !== "Submissions/all_submissions.ipynb") {
           //   window.alert("Submissions Notebook not opened. \nGo to all_submissions.ipynb Notebook inside Submissions directory.")
           //   return
@@ -201,6 +211,10 @@ export class ButtonExtension
           notebook.activeCellIndex = 0;
           for ( item of data.data) {
 
+            // Insert info block
+            NotebookActions.insertBelow(notebook);
+            notebook.activeCell.model.value.text = item.info;
+
             // Insert message
             NotebookActions.insertBelow(notebook);
             notebook.activeCell.model.value.text = item.student_name + " @ " + item.time + " wrote: \n" + item.message;
@@ -210,7 +224,7 @@ export class ButtonExtension
 
             // Insert Code blocks:
             NotebookActions.insertBelow(notebook);
-            notebook.activeCell.model.value.text = "#" + item.student_id + " " + item.question_id + " " + item.id + "\n" +  item.code;
+            notebook.activeCell.model.value.text = "#" + item.student_id + " " + item.problem_id + " " + item.id + "\n" +  item.code;
            
             NotebookActions.changeCellType(notebook,'code')
 
@@ -246,5 +260,76 @@ export class ButtonExtension
     });
   }
 }
+
+export class PublishProblemButtonExtension
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const publishProblem = () => {
+      NotebookActions.clearAllOutputs(panel.content);
+
+      const notebook = panel.content;
+      const activeIndex = notebook.activeCellIndex
+      var problem:string
+
+      notebook.widgets.map((c:Cell,index:number) => {
+        if (index === activeIndex ) {
+          problem = c.model.value.text
+        }
+      });
+
+      let postBody = {
+        "question": problem
+      }
+
+      requestAPI<any>('problem',{
+        method: 'POST',
+        body: JSON.stringify(postBody)
+
+      })
+        .then(data => {
+
+          console.log(data)
+
+          showDialog({
+          title:'New Questions Published',
+          body: 'A new problem has been published for all students.',
+          buttons: [Dialog.okButton({ label: 'Ok' })]
+        });
+
+        })
+        .catch(reason => {
+          window.alert("Failed to publish new problem..\nPlease check your connection.")
+          console.error(
+            `Failed to publish question to the server.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'publish-problem-button',
+      label: 'Publish Problem',
+      onClick: publishProblem,
+      tooltip: 'Publish New Problem.',
+    });
+
+    panel.toolbar.insertItem(11, 'publishNewProblem', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
+
 
 export default plugin;
