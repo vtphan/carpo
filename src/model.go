@@ -5,6 +5,7 @@ import "time"
 type Submission struct {
 	ID        int       `json:"id" db:"id"`
 	ProblemID int       `json:"problem_id" db:"problem_id"`
+	Info      string    `json:"info"`
 	Message   string    `json:"message" db:"message"`
 	Code      string    `json:"code" db:"code"`
 	StudentID int       `json:"student_id" db:"student_id"`
