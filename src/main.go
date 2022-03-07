@@ -12,6 +12,8 @@ func main() {
 	http.HandleFunc("/add_teacher", addUserHandler("teacher"))
 	http.HandleFunc("/add_student", addUserHandler("studnet"))
 
+	http.HandleFunc("/problem", problemHandler())
+
 	http.HandleFunc("/students/submissions", studentSubmissionHandler())
 	http.HandleFunc("/teachers/submissions", teacherSubmissionHandler())
 

@@ -25,3 +25,4 @@ var AddStudentProblemStatus *sql.Stmt
 var UpdateStudentProblemStatus *sql.Stmt
 var GetStudentFeedback *sql.Stmt
 var UpdateSubmissionStatusSQL *sql.Stmt
+var AddProblemSQL *sql.Stmt

@@ -2,14 +2,22 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 )
 
 func readRequestBody(r *http.Request) (req map[string]interface{}, err error) {
 
-	err = json.NewDecoder(r.Body).Decode(&req)
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(body) > 0 {
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return
 }

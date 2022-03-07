@@ -46,7 +46,7 @@ func init_database(db_name string) {
 	UpdateScoreSQL = prepare("update grade set score=?, updated_at=? where teacher_id=? and submission_id=?")
 	UpdateFeedbackSQL = prepare("update grade set code_feedback=?, comment=?,updated_at=? where teacher_id=? and submission_id=?")
 	UpdateSubmissionFeedbackGivenSQL = prepare("update submission set status=? where id=?")
-
+	AddProblemSQL = prepare("insert into problem (teacher_id, question, created_at, updated_at) values ( ?, ?, ?, ?)")
 	// AddStudentProblemStatus = prepare("insert into student_problem_status (student_id, problem_id,problem_status,created_at, updated_at) values (?, ?, ?, ?, ?)")
 	// UpdateSubmissionStatusSQL=
 	// UpdateStudentProblemStatus = prepare("update student_problem_status set problem_status=?, updated_at=? where student_id=? and problem_id=?")
