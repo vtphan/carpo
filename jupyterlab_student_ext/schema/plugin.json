@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "jupyterlab-student-ext",
+  "description": "jupyterlab-student-ext settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
