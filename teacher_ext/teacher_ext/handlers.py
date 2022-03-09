@@ -139,7 +139,7 @@ class FeedbackHandler(APIHandler):
         f=open(os.getcwd()+'/teacher_config.json')
         config_data = json.load(f)
         input_data['teacher_id'] = 1
-        url = config_data['server'] + "/teachers/feedbacks" #TODO create this endpoint
+        url = config_data['server'] + "/teachers/feedbacks" 
 
         print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -149,15 +149,13 @@ class FeedbackHandler(APIHandler):
             "go-server": response.json()
         }
 
-        self.feedback_file()
+        self.feedback_file(input_data["student_id"])
 
         self.finish(json.dumps(data))
     
-    def feedback_file(self):
+    def feedback_file(self,student_id):
         path = 'FeedbackData'
-        # Get student name from id and use the name in the filename.
-        question_id = 100
-        url = "http://localhost:8081/students/get_submission_feedbacks?question_id="+str(question_id)
+        url = "http://localhost:8081/students/get_submission_feedbacks?student_id="+str(student_id)
         response = requests.get(url)
         resp = response.json()
 
@@ -169,63 +167,54 @@ class FeedbackHandler(APIHandler):
         submission_file = os.path.join(path, file)
         sub_file_exist = os.path.exists(os.path.join(path, file))
 
-        if not sub_file_exist:
-            content = {
-                        "cells": [],
-                        "metadata": {
-                            "kernelspec": {
-                                "display_name": "Python 3 (ipykernel)",
-                                "language": "python",
-                                "name": "python3"
-                                },
-                            "language_info": {
-                            "codemirror_mode": {
-                                "name": "ipython",
-                                "version": 3
-                                },
-                            "file_extension": ".py",
-                            "mimetype": "text/x-python",
-                            "name": "python",
-                            "nbconvert_exporter": "python",
-                            "pygments_lexer": "ipython3",
-                            "version": "3.8.10"
-                            }
-                        },
-                        "nbformat": 4,
-                        "nbformat_minor": 5
-                    }
+        if sub_file_exist:
+            os.remove(submission_file)
+
+        content = {
+                    "cells": [],
+                    "metadata": {
+                        "kernelspec": {
+                            "display_name": "Python 3 (ipykernel)",
+                            "language": "python",
+                            "name": "python3"
+                            },
+                        "language_info": {
+                        "codemirror_mode": {
+                            "name": "ipython",
+                            "version": 3
+                            },
+                        "file_extension": ".py",
+                        "mimetype": "text/x-python",
+                        "name": "python",
+                        "nbconvert_exporter": "python",
+                        "pygments_lexer": "ipython3",
+                        "version": "3.8.10"
+                        }
+                    },
+                    "nbformat": 4,
+                    "nbformat_minor": 5
+                }
         
+        for feedback in resp['data']:
+            content["cells"].append({
+                    "cell_type": "markdown",
+                    "id": str(uuid.uuid4()),
+                    "metadata": {},
+                    "source": [ x+"\n" for x in feedback['comment'].split("\n") ]
+                    })
+            content["cells"].append({
+                    "cell_type": "code",
+                    "id": str(uuid.uuid4()),
+                    "metadata": {},
+                    "source": [ x+"\n" for x in feedback['code_feedback'].split("\n") ],
+                    "outputs": []
+                    })
 
-            # Serializing json 
-            json_object = json.dumps(content, indent = 4)
-            
-            # Writing to sample.json
-            with open(submission_file, "w") as outfile:
-                outfile.write(json_object)
-            outfile.close()
-
-        # Read the same file and append the new blocks:
-        with open(submission_file, "r") as file:
-            data = json.loads(file.read())
-            data['cells'] = []
-            
-            for feedback in resp['data']:
-                data["cells"].append({
-                        "cell_type": "markdown",
-                        "id": str(uuid.uuid4()),
-                        "metadata": {},
-                        "source": [ x+"\n" for x in feedback['comment'].split("\n") ]
-                        })
-                data["cells"].append({
-                        "cell_type": "code",
-                        "id": str(uuid.uuid4()),
-                        "metadata": {},
-                        "source": [ x+"\n" for x in feedback['code_feedback'].split("\n") ],
-                        "outputs": []
-                        })
+         # Serializing json 
+        json_object = json.dumps(content, indent = 4)
 
         with open(submission_file, "w") as file:
-                json.dump(data, file)
+                file.write(json_object)
     
 
 def setup_handlers(web_app):

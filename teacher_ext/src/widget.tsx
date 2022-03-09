@@ -77,9 +77,9 @@ const CodeCellButtonComponent = ({
 
         console.log("From widget: ", info)
         let postBody = {
-            // "student_id": info.student_id,
+            "student_id": info.student_id,
             "submission_id": info.id,
-            // "question_id": info.question_id,
+            "problem_id": info.problem_id,
             "score": val ? 1 : 0
         }
         var status : string = val ? "Correct.": "Incorrect." 
@@ -131,6 +131,7 @@ const MarkdownCellButtonComponent = ({
         let postBody = {
             "student_id": info.student_id,
             "submission_id": info.id,
+            "problem_id": info.problem_id,
             "code": info.code,
             "message": info.message,
             "comment": cell.model.value.text

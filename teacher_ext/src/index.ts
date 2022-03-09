@@ -112,13 +112,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
             return Number(text.split("\n")[0].split(" ")[2])
           }
 
+          const problem_id = function(text: string) {
+            return Number(text.split("\n")[0].split(" ")[1])
+          }
+
           const student_id = function(text: string) {
             return Number((text.split("\n")[0].split(" ")[0]).replace("#", ""))
           }
 
           var info : CellInfo = {
             id:  submission_id(cell.model.value.text),
-            problem_id: 101,
+            problem_id: problem_id(cell.model.value.text),
             student_id: student_id(cell.model.value.text),
             code: cell.model.value.text.split("\n")[1],
           };
@@ -131,6 +135,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
                 info.code = code  
                 info.id = submission_id(code)
                 info.student_id = student_id(code)
+                info.problem_id = problem_id(code)
               }
             })
           }

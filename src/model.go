@@ -20,6 +20,8 @@ type Grade struct {
 	ID           int    `json:"id"`
 	TeacherID    int    `json:"teacher_id"`
 	SubmissionID int    `json:"submission_id"`
+	StudnetID    int    `json:"student_id"`
+	ProblemID    int    `json:"problem_id"`
 	Score        int    `json:"score"`
 	Code         string `json:"code"`
 	Comment      string `json:"comment"`

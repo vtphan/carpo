@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
@@ -35,11 +36,11 @@ func studentSubmissionHandler() http.HandlerFunc {
 			return
 		}
 
+		pid, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
+
 		sub := Submission{
-			// TODO: question id should be in request body.
-			ProblemID: 100,
+			ProblemID: pid,
 			Message:   fmt.Sprintf("%v", body["message"]),
-			// Message:    body["message"].(string),
 			Code:      fmt.Sprintf("%v", body["code"]),
 			StudentID: studnet.ID,
 			Status:    NewSub,
@@ -66,6 +67,15 @@ func studentSubmissionHandler() http.HandlerFunc {
 					return
 				}
 			}
+			_, err = AddStudentProblemStatusSQL.Exec(studnet.ID, pid, 1, time.Now(), time.Now())
+			if err != nil {
+				fmt.Printf("Failed to update student problem status (1) to DB. Err. %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to update student problem status (1) to DB.",
+					http.StatusInternalServerError)
+				return
+			}
+
 			w.WriteHeader(http.StatusCreated)
 			resp := []byte(`{"msg": "Submission saved successfully."}`)
 			fmt.Fprint(w, string(resp))
@@ -142,14 +152,14 @@ func submissionGradeHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.Score, time.Now(), time.Now())
+			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, time.Now(), time.Now())
 
 			if err != nil {
 				var sqliteErr sqlite3.Error
 				if errors.As(err, &sqliteErr) {
-					log.Printf("Submission already graded. Updating...")
+					log.Printf("Submission already graded for %v. Updating...\n", s.SubmissionID)
 					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-						_, err := UpdateScoreSQL.Exec(s.Score, time.Now(), s.TeacherID, s.SubmissionID)
+						_, err := UpdateScoreSQL.Exec(s.Score, time.Now(), s.SubmissionID)
 						if err != nil {
 							log.Printf("Failed to update row %+v. Err: %v", s, err)
 						}
@@ -168,6 +178,14 @@ func submissionGradeHandler() http.HandlerFunc {
 			_, err = UpdateSubmissionFeedbackGivenSQL.Exec(2, s.SubmissionID)
 			if err != nil {
 				log.Printf("Failed to update Submission after grading submission. %v Err: %v\n", s, err)
+			}
+			_, err = AddStudentProblemStatusSQL.Exec(s.StudnetID, s.ProblemID, 2, time.Now(), time.Now())
+			if err != nil {
+				fmt.Printf("Failed to update student problem status (2) to DB. Err. %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to update student problem status (2) to DB.",
+					http.StatusInternalServerError)
+				return
 			}
 
 			w.WriteHeader(http.StatusCreated)

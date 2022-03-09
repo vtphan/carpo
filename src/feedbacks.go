@@ -54,19 +54,19 @@ func teacherFeedbackHandler() http.HandlerFunc {
 func getSubmissionFeedbacks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		question_id, ok := r.URL.Query()["question_id"]
-		if !ok || len(question_id[0]) < 1 {
-			log.Println("Url Param 'question_id' is missing")
+		student_id, ok := r.URL.Query()["student_id"]
+		if !ok || len(student_id[0]) < 1 {
+			log.Println("Url Param 'student_id' is missing")
 			return
 		}
-		fmt.Printf("%v", question_id)
 
 		feedbacks := make([]Feedback, 0)
 
 		switch r.Method {
 		case http.MethodGet:
 			f := Feedback{}
-			rows, err := Database.Query("select student.name, submission.message, code_feedback, comment, grade.updated_at  from grade INNER JOIN submission on grade.submission_id = submission.id INNER JOIN student on submission.student_id = student.id where submission.problem_id = ?", question_id[0])
+			rows, err := Database.Query("select student.name, student.id, code_feedback, comment, grade.updated_at from grade INNER JOIN student on grade.student_id = student.id where student.id = ? order by created_at desc", student_id[0])
+			// where submission.problem_id = ?", student_id[0]
 			defer rows.Close()
 			if err != nil {
 				fmt.Printf("Error quering db. Err: %v", err)
