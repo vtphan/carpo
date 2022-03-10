@@ -34,7 +34,7 @@ import {
 // import { Cell } from '@jupyterlab/cells';
 
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
-import { ToolbarButton, Dialog, showDialog } from '@jupyterlab/apputils';
+import { ToolbarButton, Dialog, showDialog,showErrorMessage } from '@jupyterlab/apputils';
 
 // , InputDialog
 import { DocumentRegistry } from '@jupyterlab/docregistry';
@@ -68,8 +68,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
       })
       .catch(e => {
-        console.log("Failed to register the user.", {e})
-        window.alert("Couldn't register User as Instructor.\n")
+        showErrorMessage('Register User Error', e);
+        console.log("Couldn't register User as Instructor.\n")
         return 
       });
 
@@ -197,19 +197,19 @@ export class ButtonExtension
         .then(data => {
           if (data.data.length != 0 ) {
             var msg = "You have got " + data.data.length + " submissions.\n Go to all_submissions.ipynb Notebook inside FeedbackData directory."
-            window.alert(msg)
+          
+            showDialog({
+              title:'Submission Status',
+              body: msg,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+
             if (panel.context.path !== "FeedbackData/all_submissions.ipynb"){
               return
             }
           }
 
           console.log(data)
-
-          // if (panel.context.path !== "Submissions/all_submissions.ipynb") {
-          //   window.alert("Submissions Notebook not opened. \nGo to all_submissions.ipynb Notebook inside Submissions directory.")
-          //   return
-          // }
-
           // Change Cell Type
           NotebookActions.changeCellType(notebook,'code')
 
@@ -244,9 +244,9 @@ export class ButtonExtension
 
         })
         .catch(reason => {
-          window.alert("Failed to get recent submissions from server.\nPlease check your connection.")
+          showErrorMessage('Get recent submissions Error', reason);
           console.error(
-            `Failed to get code from the server.\n${reason}`
+            `Failed to get code from the server. Please check your connection.\n${reason}`
           );
         });
 
@@ -314,7 +314,7 @@ export class PublishProblemButtonExtension
 
         })
         .catch(reason => {
-          window.alert("Failed to publish new problem..\nPlease check your connection.")
+          showErrorMessage('Publish Question Error', reason);
           console.error(
             `Failed to publish question to the server.\n${reason}`
           );

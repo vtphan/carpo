@@ -8,6 +8,7 @@ import { checkIcon, closeIcon,LabIcon,saveIcon } from '@jupyterlab/ui-components
 
 import React from 'react';
 import { requestAPI } from './handler';
+import { Dialog, showDialog, showErrorMessage } from '@jupyterlab/apputils';
 
 /**
  * 
@@ -91,11 +92,14 @@ const CodeCellButtonComponent = ({
             body: JSON.stringify(postBody)
         }).then(data => {
             var msg = "This submission is now graded as " + status
-            window.alert(
-                msg
-              );
+            showDialog({
+                title:'Grading Status',
+                body: msg,
+                buttons: [Dialog.okButton({ label: 'Ok' })]
+              });
             })
             .catch(reason => {
+            showErrorMessage('Submission Grade Error', reason);
             console.error(
                 `Failed to grade the submission. \n${reason}`
             );
@@ -143,12 +147,16 @@ const MarkdownCellButtonComponent = ({
             method: 'POST',
             body: JSON.stringify(postBody)
         }).then(data => {
-           
-            window.alert(
-                "Feedback is now provided."
-              );
+
+            showDialog({
+                title:'Feedback Status',
+                body: "Feedback is now provided.",
+                buttons: [Dialog.okButton({ label: 'Ok' })]
+              });
+
             })
             .catch(reason => {
+            showErrorMessage('Submission Feedback Error', reason);
             console.error(
                 `Failed to save feedback. \n${reason}`
             );

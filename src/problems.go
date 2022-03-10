@@ -19,14 +19,14 @@ func problemHandler() http.HandlerFunc {
 			return
 		}
 
-		student_id, ok := r.URL.Query()["student_id"]
-		if !ok || len(student_id[0]) < 1 {
-			log.Println("Url Param 'student_id' is missing")
-			return
-		}
-
 		switch r.Method {
 		case http.MethodGet:
+			student_id, ok := r.URL.Query()["student_id"]
+			if !ok || len(student_id[0]) < 1 {
+				log.Println("Url Param 'student_id' is missing")
+				return
+			}
+
 			rows, err := Database.Query("select id, teacher_id, question from problem order by created_at desc limit 1")
 			defer rows.Close()
 			if err != nil {
