@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func teacherFeedbackHandler() http.HandlerFunc {
@@ -27,14 +30,27 @@ func teacherFeedbackHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = UpdateFeedbackSQL.Exec(f.Code, f.Comment, time.Now(), f.TeacherID, f.SubmissionID)
+			_, err = AddFeedbackSQL.Exec(f.TeacherID, f.SubmissionID, f.StudnetID, f.Code, f.Comment, time.Now(), time.Now())
 
 			if err != nil {
+				var sqliteErr sqlite3.Error
+				if errors.As(err, &sqliteErr) {
+					log.Printf("Feedback already provided for %v. Updating...\n", f.SubmissionID)
+					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
+						_, err = UpdateFeedbackSQL.Exec(f.Code, f.Comment, time.Now(), f.TeacherID, f.SubmissionID)
+						if err != nil {
+							log.Printf("Failed to update feedback %+v. Err: %v", f, err)
+						}
+						log.Printf("Feedback successfully updated.")
+					}
 
-				fmt.Printf("Failed to save Feedback: %v Err. %v\n", f, err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to save Feedback.",
-					http.StatusInternalServerError)
+				} else {
+					fmt.Printf("Failed to save Feedback: %v Err. %v\n", f, err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, "Failed to save Feedback.",
+						http.StatusInternalServerError)
+
+				}
 
 			}
 
