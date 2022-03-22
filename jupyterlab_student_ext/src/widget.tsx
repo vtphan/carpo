@@ -54,12 +54,13 @@ const CodeCellButtonComponent = ({
   
     const shareCode = async () => {
 
-        console.log("From widget: ", info)
         let postBody = {
             "message": info.message,
-            "code": info.code,
+            "code": cell.model.value.text,
             "problem_id":info.problem_id
         }
+        
+        console.log("From widget: ", postBody)
 
         requestAPI<any>('submissions',{
             method: 'POST',

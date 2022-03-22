@@ -81,7 +81,7 @@ const CodeCellButtonComponent = ({
             "student_id": info.student_id,
             "submission_id": info.id,
             "problem_id": info.problem_id,
-            "score": val ? 1 : 0
+            "score": val ? 1 : 2
         }
         var status : string = val ? "Correct.": "Incorrect." 
 

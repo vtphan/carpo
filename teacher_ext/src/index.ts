@@ -215,10 +215,13 @@ export class ButtonExtension
 
           notebook.activeCellIndex = 0;
           for ( item of data.data) {
+            NotebookActions.changeCellType(notebook,'markdown')
 
             // Insert info block
             NotebookActions.insertBelow(notebook);
             notebook.activeCell.model.value.text = item.info;
+            
+            NotebookActions.changeCellType(notebook,'markdown')
 
             // Insert message
             NotebookActions.insertBelow(notebook);

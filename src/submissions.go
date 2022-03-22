@@ -94,8 +94,20 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			// Get Active question_id
+			question_id := 0
+			rows, err := Database.Query("select id from problem order by id desc limit 1")
+			if err != nil {
+				fmt.Printf("Error quering db. Err: %v", err)
+			}
+			for rows.Next() {
+				rows.Scan(&question_id)
+			}
+
+			fmt.Printf("Fetching all submissions of students on question_id %v...\n", question_id)
+
 			s := Submission{}
-			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status in (0,1) order by updated_at desc limit 3")
+			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status in (0,1) and submission.problem_id = ? order by updated_at desc limit 3", question_id)
 			defer rows.Close()
 			if err != nil {
 				fmt.Errorf("Error quering db. Err: %v", err)
@@ -103,20 +115,23 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 			for rows.Next() {
 				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.CreatedAt, &s.UpdatedAt)
-				// Add Previous grade info.
+				// Add Previous grading of the student's submissions.
 				var scoreTime string
-				var score, teacher_id int
-				grades, _ := Database.Query("select score, created_at, teacher_id from grade where student_id =?", s.StudentID)
-				s.Info = ""
+				var score, teacher_id, sub_id int
+				grades, _ := Database.Query("select score, grade.created_at, teacher_id, submission.id from grade inner JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and submission.problem_id = ? and submission.status = 2", s.StudentID, question_id)
+				s.Info = "---\n"
 				for grades.Next() {
-					grades.Scan(&score, &scoreTime, &teacher_id)
+					grades.Scan(&score, &scoreTime, &teacher_id, &sub_id)
 					t, _ := time.Parse(time.RFC3339, scoreTime)
-					s.Info += fmt.Sprintf("  [ %.2f minutes ago, %d points] ", time.Now().Sub(t).Minutes(), score)
+					s.Info += fmt.Sprintf("[ %.2f minutes ago &  Status: %v] \n", time.Now().Sub(t).Minutes(), GradingMessage[score])
 
 				}
+				s.Time = strconv.Itoa(s.CreatedAt.Hour()) + ":" + strconv.Itoa(s.CreatedAt.Minute())
 
 				submissions = append(submissions, s)
 			}
+
+			// Todo Update the submission status to 1.
 
 			// fmt.Printf("%v", submissions)
 			resp := Response{}

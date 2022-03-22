@@ -30,7 +30,7 @@ func teacherFeedbackHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddFeedbackSQL.Exec(f.TeacherID, f.SubmissionID, f.StudnetID, f.Code, f.Comment, time.Now(), time.Now())
+			_, err = AddFeedbackSQL.Exec(f.TeacherID, f.SubmissionID, f.StudnetID, 0, f.Code, f.Comment, time.Now(), time.Now())
 
 			if err != nil {
 				var sqliteErr sqlite3.Error
@@ -80,8 +80,21 @@ func getSubmissionFeedbacks() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			// Get Active question_id
+			question_id := 0
+			rows, err := Database.Query("select id from problem order by id desc limit 1")
+			if err != nil {
+				fmt.Printf("Error quering db. Err: %v", err)
+			}
+			for rows.Next() {
+				rows.Scan(&question_id)
+			}
+
+			fmt.Printf("Fetching Feedbacks for student_id %v on question_id %v...\n", student_id[0], question_id)
+
 			f := Feedback{}
-			rows, err := Database.Query("select student.name, student.id, code_feedback, comment, grade.updated_at from grade INNER JOIN student on grade.student_id = student.id where student.id = ? order by created_at desc", student_id[0])
+			rows, err = Database.Query("select student.name, student.id, code_feedback, comment, grade.updated_at from grade INNER JOIN submission on grade.submission_id = submission.id INNER JOIN student on grade.student_id = student.id where student.id = ? and submission.problem_id = ? order by grade.created_at desc", student_id[0], question_id)
+
 			// where submission.problem_id = ?", student_id[0]
 			defer rows.Close()
 			if err != nil {

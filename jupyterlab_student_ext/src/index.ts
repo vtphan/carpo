@@ -82,7 +82,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const activeIndex = notebook.activeCellIndex
 
           var info : CellInfo = {
-            code: cell.model.value.text,
             problem_id: parseInt((filename.split("-").pop()).replace(".ipynb",""))
           };
 

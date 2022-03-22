@@ -11,6 +11,12 @@ const (
 	SubGradedByTeacher int = 3
 )
 
+var GradingMessage = map[int]string{
+	0: "Ungraded",
+	1: "Correct",
+	2: "Incorrect",
+}
+
 var Database *sql.DB
 var AddStudentSQL *sql.Stmt
 var AddTeacherSQL *sql.Stmt
