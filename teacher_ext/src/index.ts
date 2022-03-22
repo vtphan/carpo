@@ -78,8 +78,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
-      // If current Notebook is not all_submissions.ipynb, disable all functionality.
-      if (!nbTrack.currentWidget.context.path.includes("all_submissions.ipynb")) {
+      // If current Notebook is not inside Submissions directory, disable all functionality.
+      if (!nbTrack.currentWidget.context.path.includes("Submissions/")) {
         return
       }
 
@@ -182,69 +182,22 @@ export class ButtonExtension
     const getSubmissions = () => {
       NotebookActions.clearAllOutputs(panel.content);
 
-      // InputDialog.getText({ title: 'Provide a text' }).then(value => {
-      //   console.log('text ' + value.value);
-      // });
-      // return
-
-
-      const notebook = panel.content;
-
-      var item: CellInfo
-      requestAPI<any>('code',{
+      requestAPI<any>('submissions',{
         method: 'GET'
       })
         .then(data => {
-          if (data.data.length != 0 ) {
-            var msg = "You have got " + data.data.length + " submissions.\n Go to all_submissions.ipynb Notebook inside FeedbackData directory."
           
-            showDialog({
-              title:'Submission Status',
-              body: msg,
-              buttons: [Dialog.okButton({ label: 'Ok' })]
-            });
-
-            if (panel.context.path !== "FeedbackData/all_submissions.ipynb"){
-              return
-            }
-          }
+          var msg = "You have got " + data.data.length + " submissions.\n Go to Notebooks inside Submissions directory."
+        
+          showDialog({
+            title:'Submission Status',
+            body: msg,
+            buttons: [Dialog.okButton({ label: 'Ok' })]
+          });
+          
 
           console.log(data)
-          // Change Cell Type
-          NotebookActions.changeCellType(notebook,'code')
-
-          notebook.activeCellIndex = 0;
-          for ( item of data.data) {
-            NotebookActions.changeCellType(notebook,'markdown')
-
-            // Insert info block
-            NotebookActions.insertBelow(notebook);
-            notebook.activeCell.model.value.text = item.info;
-            
-            NotebookActions.changeCellType(notebook,'markdown')
-
-            // Insert message
-            NotebookActions.insertBelow(notebook);
-            notebook.activeCell.model.value.text = item.student_name + " @ " + item.time + " wrote: \n" + item.message;
-
-            
-            NotebookActions.changeCellType(notebook,'markdown')
-
-            // Insert Code blocks:
-            NotebookActions.insertBelow(notebook);
-            notebook.activeCell.model.value.text = "#" + item.student_id + " " + item.problem_id + " " + item.id + "\n" +  item.code;
-           
-            NotebookActions.changeCellType(notebook,'code')
-
-            // Insert placeholder for Instructor feedback
-            NotebookActions.insertBelow(notebook);
-            notebook.activeCell.model.value.text = item.message;
-            notebook.activeCell.model.value.text = "Instructor Feedback for " + item.student_name + ": \n" ;
-            
-            NotebookActions.changeCellType(notebook,'markdown')
-                  
-          }
-
+    
         })
         .catch(reason => {
           showErrorMessage('Get recent submissions Error', reason);

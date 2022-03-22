@@ -10,12 +10,15 @@ from pathlib import Path
 import uuid
 
 
+def read_config_file():
+    f=open(os.getcwd()+'/teacher_config.json')
+    return json.load(f)
+
 class RegistrationHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
 
-        f=open(os.getcwd()+'/teacher_config.json')
-        config_data = json.load(f)
+        config_data = read_config_file()
         
         url = config_data['server'] + "/add_teacher"
 
@@ -36,23 +39,47 @@ class RouteHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
         # Check if submission file exist or not 
-        self.submission_file()
-
-        response = requests.get("http://localhost:8081/teachers/submissions")
-        self.finish(response.json())
-    
-    def submission_file(self):
-        path = 'FeedbackData'
-        file = 'all_submissions.ipynb'
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        if not os.path.exists(os.path.join(path, file)):
-            print("Creating File in path {}/{}".format(path,file))
-            submission_file = os.path.join(path, file)
         
-            content = {
+
+        config_data = read_config_file()
+        
+        url = config_data['server'] + "/teachers/submissions"
+        response = requests.get(url).json()
+
+        # Write response to individual Notebook
+        self.submission_file(response['data'])
+
+
+        self.finish(response)
+
+    def post(self):
+        input_data = self.get_json_body()
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        
+        config_data = read_config_file()
+        
+        url = config_data['server'] + "/teachers/submissions"
+
+        response = requests.post(url, data=json.dumps(input_data),headers=headers)
+
+        data = {
+            "go-server": response.json()
+        }
+
+        self.finish(json.dumps(data))
+
+    
+    def submission_file(self, data):
+
+        for res in data:
+            dir_path = "Submissions" + "/" + str(res['problem_id'])
+            file_path = "{:03d}".format(res['id']) + ".ipynb"
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            submission_file = os.path.join(dir_path, file_path)
+            if not os.path.exists(submission_file):
+                content = {
                         "cells": [],
                         "metadata": {
                             "kernelspec": {
@@ -76,25 +103,51 @@ class RouteHandler(APIHandler):
                         "nbformat": 4,
                         "nbformat_minor": 5
                     }
-    
+                info_block = ["---\n"]
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": info_block + [ x+"\n" for x in res['info'].split("\n") ]
+                        })
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": [ x+"\n" for x in res['message'].split("\n") ]
+                        })
 
-            # Serializing json 
-            json_object = json.dumps(content, indent = 4)
+                code_block = block = ["#{} {} {}\n".format(res['student_id'], res['problem_id'], res['id'])]
+                content["cells"].append({
+                        "cell_type": "code",
+                        "execution_count": 0,
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": code_block + [ x+"\n" for x in res['code'].split("\n") ],
+                        "outputs": []
+                        })
+
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": "Instructor Feedback for " + res['student_name'] + " :\n"
+                        })
+
+                # Serializing json 
+                json_object = json.dumps(content, indent = 4)
+
+                with open(submission_file, "w") as file:
+                    file.write(json_object)
             
-            # Writing to sample.json
-            with open(submission_file, "w") as outfile:
-                outfile.write(json_object)
-            outfile.close()
-
 class ProblemHandler(APIHandler):
 
     @tornado.web.authenticated
     def post(self):
         input_data = self.get_json_body()
 
-        # Read Json file and add infos.
-        f=open(os.getcwd()+'/teacher_config.json')
-        config_data = json.load(f)
+        config_data = read_config_file()
+        
         input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/problem"
 
@@ -114,11 +167,9 @@ class GradeHandler(APIHandler):
     def post(self):
         input_data = self.get_json_body()
 
-        # Read Json file and add infos.
-        f=open(os.getcwd()+'/teacher_config.json')
-        config_data = json.load(f)
+        config_data = read_config_file()
 
-        input_data['teacher_id'] = 1
+        input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/submissions/grade"
 
         print("Input Data: ", input_data)
@@ -135,10 +186,9 @@ class FeedbackHandler(APIHandler):
     def post(self):
         input_data = self.get_json_body()
 
-        # Read Json file and add infos.
-        f=open(os.getcwd()+'/teacher_config.json')
-        config_data = json.load(f)
-        input_data['teacher_id'] = 1
+        config_data = read_config_file()
+
+        input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/teachers/feedbacks" 
 
         print("Input Data: ", input_data)
@@ -149,79 +199,13 @@ class FeedbackHandler(APIHandler):
             "go-server": response.json()
         }
 
-        self.feedback_file(input_data["student_id"])
-
         self.finish(json.dumps(data))
     
-    def feedback_file(self,student_id):
-        path = 'FeedbackData'
-        url = "http://localhost:8081/students/get_submission_feedbacks?student_id="+str(student_id)
-        response = requests.get(url)
-        resp = response.json()
-
-        if len(resp['data']) == 0:
-            return
-            
-        studnet_name = resp['data'][0]['name']    
-        file = 'feedback_'+ studnet_name + '.ipynb'
-        submission_file = os.path.join(path, file)
-        sub_file_exist = os.path.exists(os.path.join(path, file))
-
-        if sub_file_exist:
-            os.remove(submission_file)
-
-        content = {
-                    "cells": [],
-                    "metadata": {
-                        "kernelspec": {
-                            "display_name": "Python 3 (ipykernel)",
-                            "language": "python",
-                            "name": "python3"
-                            },
-                        "language_info": {
-                        "codemirror_mode": {
-                            "name": "ipython",
-                            "version": 3
-                            },
-                        "file_extension": ".py",
-                        "mimetype": "text/x-python",
-                        "name": "python",
-                        "nbconvert_exporter": "python",
-                        "pygments_lexer": "ipython3",
-                        "version": "3.8.10"
-                        }
-                    },
-                    "nbformat": 4,
-                    "nbformat_minor": 5
-                }
-        
-        for feedback in resp['data']:
-            content["cells"].append({
-                    "cell_type": "markdown",
-                    "id": str(uuid.uuid4()),
-                    "metadata": {},
-                    "source": [ x+"\n" for x in feedback['comment'].split("\n") ]
-                    })
-            content["cells"].append({
-                    "cell_type": "code",
-                    "id": str(uuid.uuid4()),
-                    "metadata": {},
-                    "source": [ x+"\n" for x in feedback['code_feedback'].split("\n") ],
-                    "outputs": []
-                    })
-
-         # Serializing json 
-        json_object = json.dumps(content, indent = 4)
-
-        with open(submission_file, "w") as file:
-                file.write(json_object)
-    
-
 def setup_handlers(web_app):
     host_pattern = ".*$"
 
     base_url = web_app.settings["base_url"]
-    route_pattern_code = url_path_join(base_url, "teacher-ext", "code")
+    route_pattern_code = url_path_join(base_url, "teacher-ext", "submissions")
     handlers = [(route_pattern_code, RouteHandler)]
     web_app.add_handlers(host_pattern, handlers)
 

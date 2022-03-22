@@ -8,7 +8,8 @@ const (
 	NewSub             int = 0
 	SubBeingLookedAt   int = 1
 	SubGradedByStudent int = 2
-	SubGradedByTeacher int = 3
+	SubGradedByTA      int = 3
+	SubGradedByTeacher int = 4
 )
 
 var GradingMessage = map[int]string{

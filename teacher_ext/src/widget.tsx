@@ -4,7 +4,7 @@ import { Cell, CodeCell } from '@jupyterlab/cells';
 
 import { CellInfo } from './model'
 
-import { checkIcon, closeIcon,LabIcon,saveIcon } from '@jupyterlab/ui-components';
+import { checkIcon, closeIcon,LabIcon,saveIcon,redoIcon } from '@jupyterlab/ui-components';
 
 import React from 'react';
 import { requestAPI } from './handler';
@@ -24,6 +24,24 @@ import { Dialog, showDialog, showErrorMessage } from '@jupyterlab/apputils';
   }
   
 const GradeButton = ({
+    icon,
+    onClick
+  }: IButtonComponent) => (
+    <button
+        type="button"
+        onClick={() => onClick()}
+        className="cellButton">
+      <LabIcon.resolveReact
+          icon={icon}
+          className="cellButton-icon"
+          tag="span"
+          width="15px"
+          height="15px"
+      />
+    </button>
+  );
+
+  const ResetButton = ({
     icon,
     onClick
   }: IButtonComponent) => (
@@ -108,6 +126,26 @@ const CodeCellButtonComponent = ({
 
     };
   
+    const resetSubmission = async() => {
+        requestAPI<any>('submissions',{
+            method: 'POST',
+            body: JSON.stringify({ "submission_id": info.id})
+        }).then(data => {
+            var msg = "This submission is now ungraded."
+            showDialog({
+                title:'Grading Status Reset',
+                body: msg,
+                buttons: [Dialog.okButton({ label: 'Ok' })]
+              });
+            })
+            .catch(reason => {
+            showErrorMessage('Submission Grade Error', reason);
+            console.error(
+                `Failed to grade the submission. \n${reason}`
+            );
+        });
+
+    };
   
     return (
         <div>
@@ -119,7 +157,10 @@ const CodeCellButtonComponent = ({
                 icon={closeIcon}
                 onClick={() => (submitGrade)(false)}
             />
-
+            <ResetButton
+                icon={redoIcon}
+                onClick={() => (resetSubmission)()}
+            />
 
         </div>
       

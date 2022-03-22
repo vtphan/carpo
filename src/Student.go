@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 )
@@ -32,25 +31,22 @@ func (st *Studnet) Add() (msg string, alreadyExists bool, err error) {
 }
 
 func (st *Studnet) SaveSubmission(s Submission) (id int, err error) {
-	var result sql.Result
-	result, err = AddSubmissionSQL.Exec(s.ProblemID, s.Message, s.Code, st.ID, s.Status, s.CreatedAt, s.UpdatedAt)
-	if err != nil {
 
-		return 0, err
+	id, err = s.SaveSubmission(st.ID)
+	if err != nil {
+		log.Printf("Failed to Save Submission %v for student %v. Err: %v\n", s, st, err)
 	}
 
-	sid, _ := result.LastInsertId()
-	return int(sid), nil
-
+	return
 }
 
-func (st *Studnet) UpdateSubmission(s Submission) {
+func (st *Studnet) UpdateSubmission(s Submission) (err error) {
 
-	_, err := UpdateSubmissionSQL.Exec(s.Message, s.Code, s.Status, s.UpdatedAt, s.ProblemID, s.StudentID)
+	err = s.UpdateSubmission(st.ID)
 	if err != nil {
-		log.Printf("Failed to update row %+v. Err: %v", s, err)
+		log.Printf("Failed to update Submission %v for student %v. Err: %v", s, st, err)
 	}
-	log.Printf("Submission successfully updated.")
+	return
 }
 
 func (st *Studnet) GetIDFromName() (id int, err error) {
