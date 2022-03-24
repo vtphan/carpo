@@ -27,41 +27,72 @@ func problemHandler() http.HandlerFunc {
 				return
 			}
 
-			rows, err := Database.Query("select id, teacher_id, question from problem order by created_at desc limit 1")
+			activeQuestions := make([]map[string]interface{}, 0)
+			expiredID := make([]int, 0)
+			rows, err := Database.Query("select id, teacher_id, question, lifetime from problem where status = 1 order by created_at desc")
 			defer rows.Close()
 			if err != nil {
 				fmt.Errorf("Error quering db. Err: %v", err)
 			}
 
 			var (
-				id, teacher_id int
-				question       string
+				id, teacher_id     int
+				question, lifeTime string
 			)
 
-			fmt.Printf("%v\n", rows)
-
 			for rows.Next() {
-				rows.Scan(&id, &teacher_id, &question)
-			}
-			resp := map[string]interface{}{
-				"id":         id,
-				"teacher_id": teacher_id,
-				"question":   question,
+				rows.Scan(&id, &teacher_id, &question, &lifeTime)
+				question := map[string]interface{}{
+					"id":         id,
+					"teacher_id": teacher_id,
+					"question":   question,
+					"lifetime":   lifeTime,
+				}
+
+				// Skip Expired Problem
+				ExpiredAt, _ := time.Parse(time.RFC3339, lifeTime)
+				if time.Now().After(ExpiredAt) {
+					expiredID = append(expiredID, id)
+
+				} else {
+					activeQuestions = append(activeQuestions, question)
+				}
 			}
 
-			_, err = AddStudentProblemStatusSQL.Exec(student_id[0], id, 0, time.Now(), time.Now())
-			if err != nil {
-				fmt.Printf("Failed to update student problem status(0) to DB. Err. %v\n", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to update student problem status(0) to DB.",
-					http.StatusInternalServerError)
-				return
+			// For each downloaded questions, update the StudentProblemStatus Table.
+			for _, q := range activeQuestions {
+				_, err = AddStudentProblemStatusSQL.Exec(student_id[0], q["id"], 0, time.Now(), time.Now())
+				if err != nil {
+					fmt.Printf("Failed to update student problem status(0) to DB. Err. %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, "Failed to update student problem status(0) to DB.",
+						http.StatusInternalServerError)
+					return
+				}
+
 			}
+			// Set the status 0 for expired problems.
+			for _, id := range expiredID {
+				stmt, err := Database.Prepare("update problem set status=?, updated_at=?  where id=?")
+				if err != nil {
+					log.Printf("SQL Error. Err: %v", err)
+				}
+				fmt.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
+				_, err = stmt.Exec(0, time.Now(), id)
+			}
+
+			resp := Response{}
+			questions, _ := json.Marshal(activeQuestions)
+			d := []map[string]interface{}{}
+			_ = json.Unmarshal(questions, &d)
+			resp.Data = d
 			data, _ := json.Marshal(resp)
 			fmt.Fprint(w, string(data))
 
 		case http.MethodPost:
-			_, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], time.Now(), time.Now())
+			// QuestionLife defaults to 90 minutes and status is Active (1)
+			questionLife := time.Now().Add((time.Minute * time.Duration(90)))
+			_, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], questionLife, 1, time.Now(), time.Now())
 			if err != nil {
 
 				fmt.Printf("Failed to add question to DB. Err. %v\n", err)

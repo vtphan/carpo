@@ -53,8 +53,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebook = nbTrack.currentWidget.content;
       const filename = notebookPanel.context.path
 
-      // Disable Code Share functionality if not the "carpo-problem-"" Notebook.
-      if (!filename.includes("carpo-problem-")) {
+      // Disable Code Share functionality if not the "carpo_problem_"" Notebook.
+      if (!filename.includes("carpo_problem_")) {
         return
       }
 
@@ -82,7 +82,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const activeIndex = notebook.activeCellIndex
 
           var info : CellInfo = {
-            problem_id: parseInt((filename.split("-").pop()).replace(".ipynb",""))
+            problem_id: parseInt((filename.split("_").pop()).replace(".ipynb",""))
           };
 
           // Get the message block referencing the active cell.
@@ -143,8 +143,8 @@ export class GetQuestionButton
           console.log(data);
 
           showDialog({
-            title:'New Question Downloaded',
-            body: 'A new problem has been downloaded to ' + data.msg +" file.",
+            title:'Questions',
+            body:  data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
          

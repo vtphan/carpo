@@ -94,20 +94,11 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
-			// Get Active question_id
-			question_id := 0
-			rows, err := Database.Query("select id from problem order by id desc limit 1")
-			if err != nil {
-				fmt.Printf("Error quering db. Err: %v", err)
-			}
-			for rows.Next() {
-				rows.Scan(&question_id)
-			}
 
-			fmt.Printf("Fetching all submissions of students on question_id %v...\n", question_id)
+			fmt.Printf("Fetching all submissions of students...\n")
 
 			s := Submission{}
-			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0  and submission.problem_id = ? order by updated_at desc limit 3", question_id)
+			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by updated_at desc limit 3")
 			defer rows.Close()
 			if err != nil {
 				fmt.Errorf("Error quering db. Err: %v", err)
@@ -118,7 +109,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 				// Add Previous grading of the student's submissions.
 				var scoreTime string
 				var score, teacher_id, sub_id int
-				grades, _ := Database.Query("select score, grade.created_at, teacher_id, submission.id from grade inner JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and submission.problem_id = ? and submission.status = 2", s.StudentID, question_id)
+				grades, _ := Database.Query("select score, grade.created_at, teacher_id, submission.id from grade inner JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and submission.status <> 0", s.StudentID)
 				s.Info = ""
 				for grades.Next() {
 					grades.Scan(&score, &scoreTime, &teacher_id, &sub_id)
@@ -202,7 +193,7 @@ func submissionGradeHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, time.Now(), time.Now())
+			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 0, time.Now(), time.Now())
 
 			if err != nil {
 				var sqliteErr sqlite3.Error

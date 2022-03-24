@@ -18,21 +18,23 @@ class QuestionRouteHandler(APIHandler):
         url = config_data['server'] + "/problem?student_id="+str(config_data['id'])
         resp = requests.get(url).json()
 
-        # Create new file:
-        filename = 'carpo-problem-'+ str(resp['id']) +'.ipynb'
-
-        # Check if submission file exist or not 
-        self.input_file(filename, resp['question'])
+        # Write questions to individual Notebook
+        self.question_file(resp['data'])
+    
         msg = {
-            "msg": "{}".format(filename)
+            "msg": "You have got {} new problems.".format(len(resp['data']))
         }
         self.finish(json.dumps(msg))
 
-    def input_file(self, filename, question):
-        if os.path.exists(filename):
-            os.remove(filename)
-        
-        content = {
+    def question_file(self, data):
+         # File Prefix:
+        file_prefix = 'carpo_problem'
+
+        for res in data:
+            file_path = "{}_{:03d}".format(file_prefix, res['id']) + ".ipynb"
+
+            if not os.path.exists(file_path):
+                content = {
                         "cells": [],
                         "metadata": {
                             "kernelspec": {
@@ -56,27 +58,28 @@ class QuestionRouteHandler(APIHandler):
                         "nbformat": 4,
                         "nbformat_minor": 5
                     }
-        content["cells"].append({
-                        "cell_type": "markdown",
-                        "id": str(uuid.uuid4()),
-                        "metadata": {},
-                        "source": [ "## Message: \n" ],
-                        "outputs": []
-                        })
-        content["cells"].append({
-                        "cell_type": "code",
-                        "id": str(uuid.uuid4()),
-                        "metadata": {},
-                        "source": [ x+"\n" for x in question.split("\n") ],
-                        "outputs": []
-                        })
 
-        json_object = json.dumps(content, indent = 4)
-            
-        # Writing to Notebook
-        with open(filename, "w") as outfile:
-            outfile.write(json_object)
-        outfile.close()
+                content["cells"].append({
+                                "cell_type": "markdown",
+                                "id": str(uuid.uuid4()),
+                                "metadata": {},
+                                "source": [ "## Message: \n" ],
+                                "outputs": []
+                                })
+                content["cells"].append({
+                                "cell_type": "code",
+                                "execution_count": 0,
+                                "id": str(uuid.uuid4()),
+                                "metadata": {},
+                                "source": [ x+"\n" for x in res['question'].split("\n") ],
+                                "outputs": []
+                                })
+
+                # Serializing json 
+                json_object = json.dumps(content, indent = 4)
+
+                with open(file_path, "w") as file:
+                    file.write(json_object)
 
 
 class FeedbackRouteHandler(APIHandler):
