@@ -8,6 +8,27 @@ import requests
 import os
 import uuid
 
+class RegistrationHandler(APIHandler):
+    @tornado.web.authenticated
+    def get(self):
+
+        f=open(os.getcwd()+'/config.json')
+        config_data = json.load(f)
+        
+        url = config_data['server'] + "/add_student"
+
+        body = {}
+        body['name'] = config_data['name']
+
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        response = requests.post(url, data=json.dumps(body),headers=headers).json()
+
+        config_data['id'] = response['id']
+        # Write id to the json file.
+        with open(os.getcwd()+'/config.json', "w") as config_file:
+            config_file.write(json.dumps(config_data))
+
+        self.finish(json.dumps(response))
 
 class QuestionRouteHandler(APIHandler):
     @tornado.web.authenticated
@@ -208,6 +229,8 @@ def setup_handlers(web_app):
     handlers = [(route_pattern, SubmissionRouteHandler)]
     web_app.add_handlers(host_pattern, handlers)
 
+    route_pattern_grade =  url_path_join(web_app.settings['base_url'], "jupyterlab-student-ext", "register")
+    web_app.add_handlers(host_pattern, [(route_pattern_grade, RegistrationHandler)])
 
     route_pattern_grade =  url_path_join(web_app.settings['base_url'], "jupyterlab-student-ext", "question")
     web_app.add_handlers(host_pattern, [(route_pattern_grade, QuestionRouteHandler)])

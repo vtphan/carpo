@@ -10,23 +10,31 @@ type Studnet struct {
 	Name string `json:"name"`
 }
 
-func (st *Studnet) Add() (msg string, alreadyExists bool, err error) {
+func (st *Studnet) Add() (id int, alreadyExists bool, err error) {
 
-	rows, err := Database.Query("select name from student where name=?", st.Name)
+	rows, err := Database.Query("select id from student where name=?", st.Name)
 	defer rows.Close()
 	if err != nil {
-		return "", false, err
+		return 0, false, err
 	}
 
 	for rows.Next() {
-		return fmt.Sprintf("User %v already exists as %v.", st.Name, "student"), true, nil
-	}
-	_, err = AddStudentSQL.Exec(st.Name)
-	if err != nil {
-		return "", false, err
+		rows.Scan(&id)
+		fmt.Printf("User %v already exists as student with ID %v. \n", st.Name, id)
+		return id, true, nil
 	}
 
-	return fmt.Sprintf("User %v created as %v.", st.Name, "student"), false, nil
+	sqlStatement := `
+	insert into student (name) values ($1) returning id`
+
+	err = Database.QueryRow(sqlStatement, st.Name).Scan(&id)
+	if err != nil {
+		return 0, false, err
+	}
+
+	fmt.Printf("User %v created as student with ID %v.\n", st.Name, id)
+
+	return id, false, nil
 
 }
 

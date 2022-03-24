@@ -110,12 +110,67 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
 
     //  tell the document registry about your widget extension:
+    app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
     // app.docRegistry.addWidgetExtension('Notebook', new CodeSubmissionButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
 
   }
 };
+export class RegisterButton
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const register = () => {
+      // NotebookActions.clearAllOutputs(panel.content);
+
+      // const notebook = panel.content;
+
+      requestAPI<any>('register',{
+        method: 'GET'
+      })
+        .then(data => {
+          console.log(data);
+
+          showDialog({
+            title:'Register',
+            body:  "User "+ data.name + " created as Student.",
+            buttons: [Dialog.okButton({ label: 'Ok' })]
+          });
+         
+        })
+        .catch(reason => {
+          showErrorMessage('Registration Error', reason);
+          console.error(
+            `The student_ext server extension appears to be missing.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'get-question-button',
+      label: 'Register',
+      onClick: register,
+      tooltip: 'Register as a Student',
+    });
+
+    panel.toolbar.insertItem(10, 'register', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
 
 export class GetQuestionButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
@@ -165,7 +220,7 @@ export class GetQuestionButton
       tooltip: 'Get Latest Question from Server',
     });
 
-    panel.toolbar.insertItem(10, 'getQuestion', button);
+    panel.toolbar.insertItem(11, 'getQuestion', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -291,7 +346,7 @@ export class GetFeedbackButton
       tooltip: 'Get Feedback to your Submission',
     });
 
-    panel.toolbar.insertItem(11, 'getFeedback', button);
+    panel.toolbar.insertItem(12, 'getFeedback', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
