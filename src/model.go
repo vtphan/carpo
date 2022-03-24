@@ -28,7 +28,8 @@ type Grade struct {
 }
 
 type Feedback struct {
-	Name          string `json:"name"`
+	ID            int    `json:"id"`
+	ProblemID     int    `json:"problem_id"`
 	Message       string `json:"message"`
 	CodeFeedback  string `json:"code_feedback"`
 	Comment       string `json:"comment"`

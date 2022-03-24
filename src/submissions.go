@@ -128,10 +128,12 @@ func teacherSubmissionHandler() http.HandlerFunc {
 				}
 				s.Time = strconv.Itoa(s.CreatedAt.Hour()) + ":" + strconv.Itoa(s.CreatedAt.Minute())
 
-				// Set submission status to 1
-				s.SetSubmissionStatus(SubBeingLookedAt)
-
 				submissions = append(submissions, s)
+			}
+
+			// Set submission status to 1 which are sent to client
+			for _, subs := range submissions {
+				subs.SetSubmissionStatus(SubBeingLookedAt)
 			}
 
 			if len(submissions) == 0 {

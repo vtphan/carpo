@@ -80,30 +80,30 @@ func getSubmissionFeedbacks() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
-			// Get Active question_id
-			question_id := 0
-			rows, err := Database.Query("select id from problem order by id desc limit 1")
-			if err != nil {
-				fmt.Printf("Error quering db. Err: %v", err)
-			}
-			for rows.Next() {
-				rows.Scan(&question_id)
-			}
 
-			fmt.Printf("Fetching Feedbacks for student_id %v on question_id %v...\n", student_id[0], question_id)
+			fmt.Printf("Fetching Feedbacks for student_id %v... \n", student_id[0])
 
 			f := Feedback{}
-			rows, err = Database.Query("select student.name, student.id, code_feedback, comment, grade.updated_at from grade INNER JOIN submission on grade.submission_id = submission.id INNER JOIN student on grade.student_id = student.id where student.id = ? and submission.problem_id = ? order by grade.created_at desc", student_id[0], question_id)
+			rows, err := Database.Query("select grade.id, submission.problem_id, submission.message, code_feedback, comment, grade.updated_at from grade INNER JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and grade.status = 0 order by grade.created_at desc", student_id[0])
 
-			// where submission.problem_id = ?", student_id[0]
 			defer rows.Close()
 			if err != nil {
 				fmt.Printf("Error quering db. Err: %v", err)
 			}
 
 			for rows.Next() {
-				rows.Scan(&f.Name, &f.Message, &f.CodeFeedback, &f.Comment, &f.LastUpdatedAt)
+				rows.Scan(&f.ID, &f.ProblemID, &f.Message, &f.CodeFeedback, &f.Comment, &f.LastUpdatedAt)
 				feedbacks = append(feedbacks, f)
+			}
+
+			// Set grade status to 1 which are sent to client
+			for _, feedback := range feedbacks {
+				stmt, err := Database.Prepare("update grade set status=?, updated_at=?  where id=?")
+				if err != nil {
+					log.Printf("SQL Error. Err: %v", err)
+				}
+				fmt.Printf("Set Feedback status to %v for Grade id: %v.\n", 1, feedback.ID)
+				_, err = stmt.Exec(1, time.Now(), feedback.ID)
 			}
 
 			resp := Response{}

@@ -85,10 +85,6 @@ class FeedbackRouteHandler(APIHandler):
         f=open(os.getcwd()+'/config.json')
         config_data = json.load(f)
 
-        # Get latest problem id
-        # url = config_data['server'] + "/problem"
-        # resp = requests.get(url).json()
-
         url = config_data['server'] + "/students/get_submission_feedbacks?student_id="+str(config_data['id'])
         print("URL: ", url)
         response = requests.get(url)
@@ -99,81 +95,25 @@ class FeedbackRouteHandler(APIHandler):
                 "msg": "No Feedback available at the moment."
             }))
             return
-
-        # Create new file:
-        studnet_name = resp['data'][0]['name']    
-        feedback_file = 'feedback_'+ studnet_name + '.ipynb'
-
-        # Create a new feedback file if not exists.
-        if not os.path.exists(feedback_file):
-            content = {
-                        "cells": [],
-                        "metadata": {
-                            "kernelspec": {
-                                "display_name": "Python 3 (ipykernel)",
-                                "language": "python",
-                                "name": "python3"
-                                },
-                            "language_info": {
-                            "codemirror_mode": {
-                                "name": "ipython",
-                                "version": 3
-                                },
-                            "file_extension": ".py",
-                            "mimetype": "text/x-python",
-                            "name": "python",
-                            "nbconvert_exporter": "python",
-                            "pygments_lexer": "ipython3",
-                            "version": "3.8.10"
-                            }
-                        },
-                        "nbformat": 4,
-                        "nbformat_minor": 5
-                    }
         
-
-            # Serializing json 
-            json_object = json.dumps(content, indent = 4)
-            
-            # Writing to sample.json
-            with open(feedback_file, "w") as outfile:
-                outfile.write(json_object)
-            outfile.close()
-
-        # Append new feedbacks to the user
-        with open(feedback_file, "r") as file:
-            data = json.loads(file.read())
-            
-        data['cells'] = []
-        
-        for feedback in resp['data']:
-            data["cells"].append({
-                    "cell_type": "markdown",
-                    "id": str(uuid.uuid4()),
-                    "metadata": {},
-                    "source": [ x+"\n" for x in feedback['comment'].split("\n") ]
-                    })
-            data["cells"].append({
-                    "cell_type": "code",
-                    "id": str(uuid.uuid4()),
-                    "metadata": {},
-                    "source": [ x+"\n" for x in feedback['code_feedback'].split("\n") ],
-                    "outputs": []
-                    })
-
-        with open(feedback_file, "w") as file:
-                json.dump(data, file)
+        # Write feedbacks to individual Notebook
+        self.feedback_file(resp['data'])
 
         msg = {
-            "msg": "Latest feedback availabe at {}".format(feedback_file)
+            "msg": "Latest feedback availabe inside Feedback directory."
         }
         self.finish(json.dumps(msg))
 
-    def input_file(self, filename, question):
-        if os.path.exists(filename):
-            os.remove(filename)
-        
-        content = {
+    def feedback_file(self, data):
+        for res in data:
+            dir_path = "Feedback" + "/" 
+            file_path = "p{}_feedback_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            feedback_file = os.path.join(dir_path, file_path)
+            if not os.path.exists(feedback_file):
+                content = {
                         "cells": [],
                         "metadata": {
                             "kernelspec": {
@@ -197,22 +137,36 @@ class FeedbackRouteHandler(APIHandler):
                         "nbformat": 4,
                         "nbformat_minor": 5
                     }
-        
-        content["cells"].append({
-                        "cell_type": "code",
+               
+                content["cells"].append({
+                        "cell_type": "markdown",
                         "id": str(uuid.uuid4()),
                         "metadata": {},
-                        "source": [ x+"\n" for x in question.split("\n") ],
+                        "source": [ x+"\n" for x in res['message'].split("\n") ]
+                        })
+
+
+                content["cells"].append({
+                        "cell_type": "code",
+                        "execution_count": 0,
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": [ x+"\n" for x in res['code_feedback'].split("\n") ],
                         "outputs": []
                         })
 
-        json_object = json.dumps(content, indent = 4)
-            
-        # Writing to Notebook
-        with open(filename, "w") as outfile:
-            outfile.write(json_object)
-        outfile.close()
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": [ x+"\n" for x in res['comment'].split("\n") ]
+                        })
 
+                # Serializing json 
+                json_object = json.dumps(content, indent = 4)
+
+                with open(feedback_file, "w") as file:
+                    file.write(json_object)
 
 class SubmissionRouteHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
