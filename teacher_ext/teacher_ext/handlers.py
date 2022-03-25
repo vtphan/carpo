@@ -11,7 +11,7 @@ import uuid
 
 
 def read_config_file():
-    f=open(os.getcwd()+'/teacher_config.json')
+    f=open(os.getcwd()+'/config.json')
     return json.load(f)
 
 class RegistrationHandler(APIHandler):
@@ -26,12 +26,15 @@ class RegistrationHandler(APIHandler):
         body['name'] = config_data['name']
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(body),headers=headers)
+        response = requests.post(url, data=json.dumps(body),headers=headers).json()
 
-        data = {
-            "go-server": response.json()
-        }
-        self.finish(json.dumps(data))
+        config_data['id'] = response['id']
+        # Write id to the json file.
+        with open(os.getcwd()+'/config.json', "w") as config_file:
+            config_file.write(json.dumps(config_data))
+
+        self.finish(json.dumps(response))
+        
 class RouteHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
     # patch, put, delete, options) to ensure only authorized user can request the

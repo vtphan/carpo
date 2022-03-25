@@ -39,16 +39,14 @@ func addUserHandler(role string) http.HandlerFunc {
 			s := Teacher{
 				Name: name,
 			}
-			fmt.Printf("%v", s)
-			// msg, exists, err = s.Add()
-			// if err != nil {
-			// 	log.Printf("Failed to add Teacher. Err: %v\n", err)
-			// 	w.WriteHeader(http.StatusInternalServerError)
-			// 	return
-			// }
+			id, exists, err = s.Add()
+			if err != nil {
+				log.Printf("Failed to add Teacher. Err: %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 
 		} else {
-			// TODO: Student ID should be format U-<INT>
 			s := Studnet{
 				Name: name,
 			}
@@ -69,13 +67,11 @@ func addUserHandler(role string) http.HandlerFunc {
 		}
 
 		// fmt.Fprint(w, string(msg))
-
 		d := map[string]interface{}{
 			"id":   id,
 			"name": name,
 		}
 		data, _ := json.Marshal(d)
 		fmt.Fprint(w, string(data))
-
 	}
 }

@@ -38,7 +38,6 @@ func init_database(db_name string) {
 		log.Fatal(err)
 	}
 	create_tables()
-	AddStudentSQL = prepare("insert into student (name) values (?)")
 	AddSubmissionSQL = prepare("insert into submission (problem_id, message, code, student_id, status, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)")
 	UpdateSubmissionSQL = prepare("update submission set message=?, code=?, status=?, updated_at=? where problem_id=? and student_id=?")
 	AddScoreSQL = prepare("insert into grade (teacher_id, submission_id, student_id, score, status, created_at, updated_at) values (?,?, ?, ?, ?,?,?)")

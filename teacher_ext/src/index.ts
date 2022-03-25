@@ -48,30 +48,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
   autoStart: true,
   requires: [INotebookTracker],
   optional: [IFileBrowserFactory],
-  activate: async (
+  activate: (
       app: JupyterFrontEnd,
       nbTrack: INotebookTracker,
       browserFactory: IFileBrowserFactory | null,
       docManager: IDocumentManager,
       ) => {
     console.log('JupyterLab extension teacher-ext is activated!');
-
-    // Register user on extension startup. This is dependent on the <user>-config.json file.
-    var IsRegistered : Boolean = false
-
-    await requestAPI<any>('register',{
-      method: 'GET'
-    })
-      .then(data => {
-        console.log(data);
-        IsRegistered = true;
-
-      })
-      .catch(e => {
-        showErrorMessage('Register User Error', e);
-        console.log("Couldn't register User as Instructor.\n")
-        return 
-      });
 
     nbTrack.currentChanged.connect(() => {
 
@@ -156,13 +139,64 @@ const plugin: JupyterFrontEndPlugin<void> = {
     });
     
     //  tell the document registry about your widget extension:
-    if (IsRegistered)
-    {
-      app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
-      app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
-    }
+    app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
+    app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
+    app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
+ 
   }
 };
+
+export class RegisterButton
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const register = () => {
+
+      requestAPI<any>('register',{
+        method: 'GET'
+      })
+        .then(data => {
+          console.log(data);
+
+          showDialog({
+            title:'Register',
+            body:  "User "+ data.name + " created as Teacher.",
+            buttons: [Dialog.okButton({ label: 'Ok' })]
+          });
+         
+        })
+        .catch(reason => {
+          showErrorMessage('Registration Error', reason);
+          console.error(
+            `The teacher-ext server extension appears to be missing.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'register-button',
+      label: 'Register',
+      onClick: register,
+      tooltip: 'Register as a Teacher',
+    });
+
+    panel.toolbar.insertItem(10, 'register', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
 
 
 export class ButtonExtension
@@ -215,7 +249,7 @@ export class ButtonExtension
       tooltip: 'Get available codes from students.',
     });
 
-    panel.toolbar.insertItem(10, 'getStudentsCode', button);
+    panel.toolbar.insertItem(11, 'getStudentsCode', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -285,7 +319,7 @@ export class PublishProblemButtonExtension
       tooltip: 'Publish New Problem.',
     });
 
-    panel.toolbar.insertItem(11, 'publishNewProblem', button);
+    panel.toolbar.insertItem(12, 'publishNewProblem', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

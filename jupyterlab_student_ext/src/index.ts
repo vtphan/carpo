@@ -159,7 +159,7 @@ export class RegisterButton
     };
 
     const button = new ToolbarButton({
-      className: 'get-question-button',
+      className: 'register-button',
       label: 'Register',
       onClick: register,
       tooltip: 'Register as a Student',

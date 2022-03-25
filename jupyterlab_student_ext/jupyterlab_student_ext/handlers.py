@@ -207,7 +207,7 @@ class SubmissionRouteHandler(APIHandler):
         config_data = json.load(f)
 
         input_data['name'] = config_data['name']
-        input_data['course_name'] = config_data['course']
+        # input_data['course_name'] = config_data['course']
         url = config_data['server'] + "/students/submissions"
 
         print("Input Data: ", input_data)
