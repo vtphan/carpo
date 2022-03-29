@@ -1,4 +1,6 @@
 import json
+from socket import timeout
+import time
 
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
@@ -156,13 +158,24 @@ class ProblemHandler(APIHandler):
 
         print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(input_data),headers=headers)
+        response = requests.post(url, data=json.dumps(input_data),headers=headers, timeout=5).json()
 
-        data = {
-            "go-server": response.json()
-        }
+        self.finish(json.dumps(response))
 
-        self.finish(json.dumps(data))
+    @tornado.web.authenticated
+    def delete(self):
+        input_data = self.get_json_body()
+
+        config_data = read_config_file()
+        
+        input_data['teacher_id'] = config_data['id']
+        url = config_data['server'] + "/problem"
+
+        print("Input Data: ", input_data)
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        response = requests.delete(url, data=json.dumps(input_data),headers=headers, timeout=5)
+
+        self.finish(json.dumps(response.text))
     
 class GradeHandler(APIHandler):
 

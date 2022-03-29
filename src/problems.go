@@ -73,12 +73,10 @@ func problemHandler() http.HandlerFunc {
 			}
 			// Set the status 0 for expired problems.
 			for _, id := range expiredID {
-				stmt, err := Database.Prepare("update problem set status=?, updated_at=?  where id=?")
+				err = archiveProblem(id)
 				if err != nil {
-					log.Printf("SQL Error. Err: %v", err)
+					fmt.Printf("Failed to archive Problem ID: %v. Err: %v", id, err)
 				}
-				fmt.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
-				_, err = stmt.Exec(0, time.Now(), id)
 			}
 
 			resp := Response{}
@@ -92,7 +90,7 @@ func problemHandler() http.HandlerFunc {
 		case http.MethodPost:
 			// QuestionLife defaults to 90 minutes and status is Active (1)
 			questionLife := time.Now().Add((time.Minute * time.Duration(90)))
-			_, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], questionLife, 1, time.Now(), time.Now())
+			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], questionLife, 1, time.Now(), time.Now())
 			if err != nil {
 
 				fmt.Printf("Failed to add question to DB. Err. %v\n", err)
@@ -102,15 +100,58 @@ func problemHandler() http.HandlerFunc {
 				return
 
 			}
+
+			id, _ := res.LastInsertId()
 			fmt.Printf("Added Problem: %v\n", body)
 			w.WriteHeader(http.StatusCreated)
-			resp := []byte(`{"msg": "Question saved successfully."}`)
-			fmt.Fprint(w, string(resp))
+			d := map[string]interface{}{
+				"id":  id,
+				"msg": "Question saved successfully.",
+			}
+
+			data, _ := json.Marshal(d)
+			fmt.Fprint(w, string(data))
+
+		case http.MethodDelete:
+
+			id := int(body["problem_id"].(float64))
+			if id != 0 {
+				err = archiveProblem(id)
+				if err != nil {
+					fmt.Printf("Failed to archive Problem ID: %v. Err: %v", id, err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, "Failed to archive question to DB.",
+						http.StatusInternalServerError)
+					return
+				}
+
+				d := map[string]interface{}{
+					"id":  id,
+					"msg": "Question archived successfully.",
+				}
+
+				data, _ := json.Marshal(d)
+				fmt.Fprint(w, string(data))
+			} else {
+				fmt.Printf("Invalid Problem ID: %v.\n", body["problem_id"])
+			}
 
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 
 	}
+
+}
+
+func archiveProblem(id int) error {
+	stmt, err := Database.Prepare("update problem set status=?, updated_at=?  where id=?")
+	if err != nil {
+		log.Printf("SQL Error. Err: %v", err)
+	}
+	fmt.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
+	_, err = stmt.Exec(0, time.Now(), id)
+
+	return err
 
 }

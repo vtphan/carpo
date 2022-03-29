@@ -142,6 +142,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
+    app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
  
   }
 };
@@ -283,6 +284,11 @@ export class PublishProblemButtonExtension
         }
       });
 
+      if (problem.includes("#PublishID:")) {
+        showErrorMessage('Publish Question Error', "Problem already published.")
+        return
+      }
+
       let postBody = {
         "question": problem
       }
@@ -293,8 +299,13 @@ export class PublishProblemButtonExtension
 
       })
         .then(data => {
-
           console.log(data)
+          notebook.widgets.map((c:Cell,index:number) => {
+            if (index === activeIndex ) {
+             c.model.value.text = "#PublishID:" + data.id + "\n" + problem
+            }
+          });
+
 
           showDialog({
           title:'New Questions Published',
@@ -326,5 +337,78 @@ export class PublishProblemButtonExtension
   }
 }
 
+export class ArchiveProblemButtonExtension
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const archiveProblem = () => {
+      NotebookActions.clearAllOutputs(panel.content);
+
+      const notebook = panel.content;
+      const activeIndex = notebook.activeCellIndex
+      var problem:string
+
+      notebook.widgets.map((c:Cell,index:number) => {
+        if (index === activeIndex ) {
+          problem = c.model.value.text
+        }
+      });
+
+      if (!problem.includes("#PublishID:")) {
+        showErrorMessage('Publish Question Error', "Active problem not found.")
+        return
+      }
+
+      let body = {
+        "problem_id": parseInt((problem.split("\n")[0]).split("#PublishID:")[1])
+      }
+
+      requestAPI<any>('problem',{
+        method: 'DELETE',
+        body: JSON.stringify(body)
+
+      })
+        .then(data => {
+          console.log(data)
+         
+          showDialog({
+          title:'Questions Archived',
+          body: 'Problem has been archived.',
+          buttons: [Dialog.okButton({ label: 'Ok' })]
+        });
+
+        })
+        .catch(reason => {
+          showErrorMessage('Archive Question Error', reason);
+          console.error(
+            `Failed to archive question in the server.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'archive-problem-button',
+      label: 'Archive Problem',
+      onClick: archiveProblem,
+      tooltip: 'Archive Problem.',
+    });
+
+    panel.toolbar.insertItem(13, 'archivesProblem', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
 
 export default plugin;
