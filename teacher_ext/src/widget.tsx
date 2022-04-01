@@ -129,7 +129,7 @@ const CodeCellButtonComponent = ({
     const resetSubmission = async() => {
         requestAPI<any>('submissions',{
             method: 'POST',
-            body: JSON.stringify({ "submission_id": info.id})
+            body: JSON.stringify({ "submission_id": info.id, "problem_id": info.problem_id})
         }).then(data => {
             var msg = "This submission is now ungraded."
             showDialog({

@@ -71,13 +71,18 @@ class RouteHandler(APIHandler):
             "go-server": response.json()
         }
 
+        # Delete the local submission notebook
+        notebook_path = os.path.join("Submissions", str(input_data['problem_id']), "{:03d}".format(input_data['submission_id']) + ".ipynb" )
+        if os.path.exists(notebook_path):
+            os.remove(notebook_path)
+
         self.finish(json.dumps(data))
 
     
     def submission_file(self, data):
 
         for res in data:
-            dir_path = "Submissions" + "/" + str(res['problem_id'])
+            dir_path = os.path.join("Submissions", str(res['problem_id']))
             file_path = "{:03d}".format(res['id']) + ".ipynb"
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)

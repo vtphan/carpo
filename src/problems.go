@@ -158,7 +158,7 @@ func archiveProblem(id int) error {
 
 func expireProblems() error {
 
-	rows, err := Database.Query("select id from problem where status = 1  and lifetime <= CURRENT_TIMESTAMP order by created_at desc")
+	rows, err := Database.Query("select id,lifetime from problem where status = 1  and datetime(lifetime) <= CURRENT_TIMESTAMP order by created_at desc")
 	defer rows.Close()
 	if err != nil {
 		fmt.Errorf("Error quering db. Err: %v", err)
