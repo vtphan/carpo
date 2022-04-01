@@ -155,3 +155,40 @@ func archiveProblem(id int) error {
 	return err
 
 }
+
+func expireProblems() error {
+
+	rows, err := Database.Query("select id from problem where status = 1  and lifetime <= CURRENT_TIMESTAMP order by created_at desc")
+	defer rows.Close()
+	if err != nil {
+		fmt.Errorf("Error quering db. Err: %v", err)
+	}
+
+	var (
+		expiredIDs []int
+	)
+
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		expiredIDs = append(expiredIDs, id)
+	}
+
+	if len(expiredIDs) == 0 {
+		fmt.Printf("No expired problems in DB.\n")
+		return nil
+	}
+
+	for _, id := range expiredIDs {
+		err = archiveProblem(id)
+		if err != nil {
+			return fmt.Errorf("Failed to auto archive expired Problem ID: %v.. Err: %v\n", id, err)
+		}
+
+		fmt.Printf("Successfully archived expired Problem ID: %v.\n", id)
+
+	}
+
+	return nil
+
+}

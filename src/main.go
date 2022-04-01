@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -26,6 +27,22 @@ func main() {
 	init_database("my_test_db.sqlite3")
 
 	fmt.Println("serving at port: 8081")
+
+	// Archive expire problems in DB
+	ticker := time.NewTicker(10 * time.Minute)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Printf("Running Problem Expiry Checks:\n")
+				expireProblems()
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
 
 	err := http.ListenAndServe(":8081", nil)
 	if err != nil {

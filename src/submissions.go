@@ -106,16 +106,28 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 			for rows.Next() {
 				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.CreatedAt, &s.UpdatedAt)
+
 				// Add Previous grading of the student's submissions.
-				var scoreTime string
-				var score, teacher_id, sub_id int
-				grades, _ := Database.Query("select score, grade.created_at, teacher_id, submission.id from grade inner JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and submission.status <> 0", s.StudentID)
+				grades, _ := Database.Query("select submission.id, submission.created_at, problem.lifetime, grade.score, grade.created_at, grade.teacher_id from submission INNER join problem on submission.problem_id = problem.id left join grade on grade.submission_id = submission.id where submission.student_id = ? and problem.id = ? order by submission.created_at desc", s.StudentID, s.ProblemID)
 				s.Info = ""
 				for grades.Next() {
-					grades.Scan(&score, &scoreTime, &teacher_id, &sub_id)
-					t, _ := time.Parse(time.RFC3339, scoreTime)
-					s.Info += fmt.Sprintf("[ %.2f minutes ago &  Status: %v] \n", time.Now().Sub(t).Minutes(), GradingMessage[score])
+					var scoreTime, subTime, problemLifeTime string
+					var score, teacher_id, sub_id int
 
+					grades.Scan(&sub_id, &subTime, &problemLifeTime, &score, &scoreTime, &teacher_id)
+					sTime, _ := time.Parse(time.RFC3339, subTime)
+					lifeTime, _ := time.Parse(time.RFC3339, problemLifeTime)
+					subMin := time.Now().Sub(sTime).Minutes()
+					timeLeft := lifeTime.Sub(sTime).Minutes()
+
+					if score != 0 {
+						gTime, _ := time.Parse(time.RFC3339, scoreTime)
+						s.Info += fmt.Sprintf("[ Submitted(%v): %.2f minutes ago | Graded: %.2f minutes ago | Status: %v | Time Left: %.2f ] \n", sub_id, subMin, time.Now().Sub(gTime).Minutes(), GradingMessage[score], timeLeft)
+					} else {
+						s.Info += fmt.Sprintf("[ Submitted(%v): %.2f minutes ago | Graded: %.2f minutes ago | Status: %v | Time Left: %.2f ] \n", sub_id, subMin, 0.0, GradingMessage[score], timeLeft)
+					}
+
+					s.Info += "\n\n"
 				}
 				s.Time = strconv.Itoa(s.CreatedAt.Hour()) + ":" + strconv.Itoa(s.CreatedAt.Minute())
 
