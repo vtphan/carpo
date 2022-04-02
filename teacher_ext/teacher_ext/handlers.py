@@ -13,14 +13,25 @@ import uuid
 
 
 def read_config_file():
-    f=open(os.getcwd()+'/config.json')
-    return json.load(f)
+    """
+    reads config.json file
+    :return: dict
+    """
+    config_file = os.path.join(os.getcwd(),'config.json')
+    if os.path.exists(config_file):
+        f=open(config_file)
+        return json.load(f)
+    return {}
 
 class RegistrationHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
 
         config_data = read_config_file()
+        if not {'name','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
+            return
         
         url = config_data['server'] + "/add_teacher"
 
@@ -28,14 +39,20 @@ class RegistrationHandler(APIHandler):
         body['name'] = config_data['name']
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(body),headers=headers).json()
+       
+        try:
+            response = requests.post(url, data=json.dumps(body),headers=headers).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
         config_data['id'] = response['id']
         # Write id to the json file.
         with open(os.getcwd()+'/config.json', "w") as config_file:
             config_file.write(json.dumps(config_data))
 
-        self.finish(json.dumps(response))
+        self.finish(response)
         
 class RouteHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
@@ -43,13 +60,22 @@ class RouteHandler(APIHandler):
     # Jupyter server
     @tornado.web.authenticated
     def get(self):
-        # Check if submission file exist or not 
-        
 
         config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
         
         url = config_data['server'] + "/teachers/submissions"
-        response = requests.get(url).json()
+        
+        try:
+            response = requests.get(url).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
         # Write response to individual Notebook
         self.submission_file(response['data'])
@@ -62,21 +88,26 @@ class RouteHandler(APIHandler):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         
         config_data = read_config_file()
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
         
         url = config_data['server'] + "/teachers/submissions"
 
-        response = requests.post(url, data=json.dumps(input_data),headers=headers)
-
-        data = {
-            "go-server": response.json()
-        }
+        try:
+            response = requests.post(url, data=json.dumps(input_data),headers=headers).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
         # Delete the local submission notebook
         notebook_path = os.path.join("Submissions", str(input_data['problem_id']), "{:03d}".format(input_data['submission_id']) + ".ipynb" )
         if os.path.exists(notebook_path):
             os.remove(notebook_path)
 
-        self.finish(json.dumps(data))
+        self.finish(response)
 
     
     def submission_file(self, data):
@@ -157,29 +188,47 @@ class ProblemHandler(APIHandler):
         input_data = self.get_json_body()
 
         config_data = read_config_file()
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
         
         input_data['teacher_id'] = config_data['id']
+        
         url = config_data['server'] + "/problem"
 
-        print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(input_data),headers=headers, timeout=5).json()
+        try:
+            response = requests.post(url, data=json.dumps(input_data),headers=headers, timeout=5).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
-        self.finish(json.dumps(response))
+        self.finish(response)
 
     @tornado.web.authenticated
     def delete(self):
         input_data = self.get_json_body()
 
         config_data = read_config_file()
-        
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
         input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/problem"
 
         print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.delete(url, data=json.dumps(input_data),headers=headers, timeout=5)
-
+        try:
+            response = requests.delete(url, data=json.dumps(input_data),headers=headers, timeout=5)
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
         self.finish(json.dumps(response.text))
     
 class GradeHandler(APIHandler):
@@ -189,6 +238,10 @@ class GradeHandler(APIHandler):
         input_data = self.get_json_body()
 
         config_data = read_config_file()
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
 
         input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/submissions/grade"
@@ -200,7 +253,7 @@ class GradeHandler(APIHandler):
         data = {
             "go-server": response.json()
         }
-        self.finish(json.dumps(data))
+        self.finish(data)
 class FeedbackHandler(APIHandler):
 
     @tornado.web.authenticated
@@ -208,19 +261,24 @@ class FeedbackHandler(APIHandler):
         input_data = self.get_json_body()
 
         config_data = read_config_file()
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
 
         input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/teachers/feedbacks" 
 
-        print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(input_data),headers=headers)
+        try:
+            response = requests.post(url, data=json.dumps(input_data),headers=headers).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
-        data = {
-            "go-server": response.json()
-        }
 
-        self.finish(json.dumps(data))
+        self.finish(response)
     
 def setup_handlers(web_app):
     host_pattern = ".*$"

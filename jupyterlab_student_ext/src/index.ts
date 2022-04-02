@@ -152,7 +152,7 @@ export class RegisterButton
         .catch(reason => {
           showErrorMessage('Registration Error', reason);
           console.error(
-            `The student_ext server extension appears to be missing.\n${reason}`
+            `Failed to register user as Student.\n${reason}`
           );
         });
 
@@ -207,7 +207,7 @@ export class GetQuestionButton
         .catch(reason => {
           showErrorMessage('Get Question Error', reason);
           console.error(
-            `The student_ext server extension appears to be missing.\n${reason}`
+            `Failed to get active questions.\n${reason}`
           );
         });
 
@@ -278,13 +278,18 @@ export class CodeSubmissionButton
       })
         .then(data => {
           console.log(data);
-          window.alert(
-            `This code has been shared to the server.`
-          );
+
+          showDialog({
+            title:'Code Submission',
+            body:  data.msg,
+            buttons: [Dialog.okButton({ label: 'Ok' })]
+          });
+
         })
         .catch(reason => {
+          showErrorMessage('Code Submission Error', reason);
           console.error(
-            `The student_ext server extension appears to be missing.\n${reason}`
+            `Failed to share code to server.\n${reason}`
           );
         });
 
@@ -332,8 +337,9 @@ export class GetFeedbackButton
           });
         })
         .catch(reason => {
+          showErrorMessage('Get Feedback Error', reason);
           console.error(
-            `The student_ext server extension appears to be missing.\n${reason}`
+            `Failed to fetch recent feedbacks.\n${reason}`
           );
         });
 

@@ -179,7 +179,7 @@ export class RegisterButton
         .catch(reason => {
           showErrorMessage('Registration Error', reason);
           console.error(
-            `The teacher-ext server extension appears to be missing.\n${reason}`
+            `Failed to register user as Teacher.\n${reason}`
           );
         });
 
@@ -237,7 +237,7 @@ export class ButtonExtension
         .catch(reason => {
           showErrorMessage('Get recent submissions Error', reason);
           console.error(
-            `Failed to get code from the server. Please check your connection.\n${reason}`
+            `Failed to get student's code from the server. Please check your connection.\n${reason}`
           );
         });
 

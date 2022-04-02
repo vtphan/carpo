@@ -8,12 +8,27 @@ import requests
 import os
 import uuid
 
+
+def read_config_file():
+    """
+    reads config.json file
+    :return: dict
+    """
+    config_file = os.path.join(os.getcwd(),'config.json')
+    if os.path.exists(config_file):
+        f=open(config_file)
+        return json.load(f)
+    return {}
+
 class RegistrationHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
 
-        f=open(os.getcwd()+'/config.json')
-        config_data = json.load(f)
+        config_data = read_config_file()
+        if not {'name','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
+            return
         
         url = config_data['server'] + "/add_student"
 
@@ -21,23 +36,39 @@ class RegistrationHandler(APIHandler):
         body['name'] = config_data['name']
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(body),headers=headers).json()
+        
+        try:
+            response = requests.post(url, data=json.dumps(body),headers=headers).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
         config_data['id'] = response['id']
         # Write id to the json file.
         with open(os.getcwd()+'/config.json', "w") as config_file:
             config_file.write(json.dumps(config_data))
 
-        self.finish(json.dumps(response))
+        self.finish(response)
 
 class QuestionRouteHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        f=open(os.getcwd()+'/config.json')
-        config_data = json.load(f)
+
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
 
         url = config_data['server'] + "/problem?student_id="+str(config_data['id'])
-        resp = requests.get(url).json()
+        try:
+            resp = requests.get(url).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
         # Write questions to individual Notebook
         self.question_file(resp['data'])
@@ -106,22 +137,30 @@ class QuestionRouteHandler(APIHandler):
 class FeedbackRouteHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        f=open(os.getcwd()+'/config.json')
-        config_data = json.load(f)
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
 
         url = config_data['server'] + "/students/get_submission_feedbacks?student_id="+str(config_data['id'])
-        print("URL: ", url)
-        response = requests.get(url)
-        resp = response.json()
+        
+        try:
+            response = requests.get(url).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
 
-        if len(resp['data']) == 0:
+        if len(response['data']) == 0:
             self.finish(json.dumps({
                 "msg": "No Feedback available at the moment."
             }))
             return
         
         # Write feedbacks to individual Notebook
-        self.feedback_file(resp['data'])
+        self.feedback_file(response['data'])
 
         msg = {
             "msg": "Latest feedback availabe inside Feedback directory."
@@ -202,23 +241,26 @@ class SubmissionRouteHandler(APIHandler):
         # input_data is a dictionary with a key "name"
         input_data = self.get_json_body()
 
-        # Read Json file and add infos.
-        f=open(os.getcwd()+'/config.json')
-        config_data = json.load(f)
+        config_data = read_config_file()
+
+        if not {'id', 'name', 'server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
 
         input_data['name'] = config_data['name']
-        # input_data['course_name'] = config_data['course']
         url = config_data['server'] + "/students/submissions"
 
-        print("Input Data: ", input_data)
-        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(input_data),headers=headers)
 
-        data = {
-            "filepath": "File {}!".format(input_data["name"]),
-            "go-server": response.json()
-        }
-        self.finish(json.dumps(data))
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        try:
+            response = requests.post(url, data=json.dumps(input_data),headers=headers).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
+
+        self.finish(response)
 
 
 def setup_handlers(web_app):
