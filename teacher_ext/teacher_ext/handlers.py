@@ -63,7 +63,7 @@ class RouteHandler(APIHandler):
 
         config_data = read_config_file()
 
-        if not {'id','server'}.issubset(config_data):
+        if not {'id', 'server'}.issubset(config_data):
             self.set_status(500)
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
@@ -79,7 +79,6 @@ class RouteHandler(APIHandler):
 
         # Write response to individual Notebook
         self.submission_file(response['data'])
-
 
         self.finish(response)
 
@@ -151,14 +150,16 @@ class RouteHandler(APIHandler):
                         "metadata": {},
                         "source": info_block + [ x+"\n" for x in res['info'].split("\n") ]
                         })
+
+                msg_prefix = ["Student: {} at {} says: ".format(res['student_name'], res['time'])]
                 content["cells"].append({
                         "cell_type": "markdown",
                         "id": str(uuid.uuid4()),
                         "metadata": {},
-                        "source": [ x+"\n" for x in res['message'].split("\n") ]
+                        "source": msg_prefix + [ x+"\n" for x in res['message'].split("\n") ]
                         })
 
-                code_block = block = ["#{} {} {}\n".format(res['student_id'], res['problem_id'], res['id'])]
+                code_block = ["#{} {} {}\n".format(res['student_id'], res['problem_id'], res['id'])]
                 content["cells"].append({
                         "cell_type": "code",
                         "execution_count": 0,
