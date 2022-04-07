@@ -41,7 +41,7 @@ class RegistrationHandler(APIHandler):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
        
         try:
-            response = requests.post(url, data=json.dumps(body),headers=headers).json()
+            response = requests.post(url, data=json.dumps(body),headers=headers,timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
@@ -71,7 +71,7 @@ class RouteHandler(APIHandler):
         url = config_data['server'] + "/teachers/submissions"
         
         try:
-            response = requests.get(url).json()
+            response = requests.get(url,timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
@@ -95,14 +95,14 @@ class RouteHandler(APIHandler):
         url = config_data['server'] + "/teachers/submissions"
 
         try:
-            response = requests.post(url, data=json.dumps(input_data),headers=headers).json()
+            response = requests.post(url, data=json.dumps(input_data),headers=headers,timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
             return
 
         # Delete the local submission notebook
-        notebook_path = os.path.join("Submissions", str(input_data['problem_id']), "{:03d}".format(input_data['submission_id']) + ".ipynb" )
+        notebook_path = os.path.join("Submissions", "problem_{}".format(input_data['problem_id']), "{:03d}".format(input_data['submission_id']) + ".ipynb" )
         if os.path.exists(notebook_path):
             os.remove(notebook_path)
 
@@ -112,8 +112,8 @@ class RouteHandler(APIHandler):
     def submission_file(self, data):
 
         for res in data:
-            dir_path = os.path.join("Submissions", str(res['problem_id']))
-            file_path = "{:03d}".format(res['id']) + ".ipynb"
+            dir_path = os.path.join("Submissions", "problem_{}".format(res['problem_id']))
+            file_path = "submission_{:03d}".format(res['id']) + ".ipynb"
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
@@ -151,7 +151,7 @@ class RouteHandler(APIHandler):
                         "source": info_block + [ x+"\n" for x in res['info'].split("\n") ]
                         })
 
-                msg_prefix = ["Student: {} at {} says: ".format(res['student_name'], res['time'])]
+                msg_prefix = ["Student: {} at {} says:\n ".format(res['student_name'], res['time'])]
                 content["cells"].append({
                         "cell_type": "markdown",
                         "id": str(uuid.uuid4()),
@@ -173,7 +173,7 @@ class RouteHandler(APIHandler):
                         "cell_type": "markdown",
                         "id": str(uuid.uuid4()),
                         "metadata": {},
-                        "source": "Instructor Feedback for " + res['student_name'] + " :\n"
+                        "source": "Instructor Feedback for " + res['student_name'] + " :\n\n"
                         })
 
                 # Serializing json 
@@ -249,7 +249,7 @@ class GradeHandler(APIHandler):
 
         print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        response = requests.post(url, data=json.dumps(input_data),headers=headers)
+        response = requests.post(url, data=json.dumps(input_data),headers=headers,timeout=5)
 
         data = {
             "go-server": response.json()
@@ -272,7 +272,7 @@ class FeedbackHandler(APIHandler):
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         try:
-            response = requests.post(url, data=json.dumps(input_data),headers=headers).json()
+            response = requests.post(url, data=json.dumps(input_data),headers=headers,timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))

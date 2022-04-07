@@ -38,7 +38,7 @@ class RegistrationHandler(APIHandler):
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         
         try:
-            response = requests.post(url, data=json.dumps(body),headers=headers).json()
+            response = requests.post(url, data=json.dumps(body),headers=headers,timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
@@ -64,7 +64,7 @@ class QuestionRouteHandler(APIHandler):
 
         url = config_data['server'] + "/problem?student_id="+str(config_data['id'])
         try:
-            resp = requests.get(url).json()
+            resp = requests.get(url,timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
@@ -147,7 +147,7 @@ class FeedbackRouteHandler(APIHandler):
         url = config_data['server'] + "/students/get_submission_feedbacks?student_id="+str(config_data['id'])
         
         try:
-            response = requests.get(url).json()
+            response = requests.get(url,timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))

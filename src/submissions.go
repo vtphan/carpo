@@ -122,9 +122,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 					if score != 0 {
 						gTime, _ := time.Parse(time.RFC3339, scoreTime)
-						s.Info += fmt.Sprintf("[ Submitted(%v): %.2f minutes ago | Graded: %.2f minutes ago | Status: %v | Time Left: %.2f ] \n", sub_id, subMin, time.Now().Sub(gTime).Minutes(), GradingMessage[score], timeLeft)
+						s.Info += fmt.Sprintf("[ Submission %v submitted: %.1f minutes ago | Graded: %.1f minutes ago | Status: %v | Time Left: %.1f ] \n", sub_id, subMin, time.Now().Sub(gTime).Minutes(), GradingMessage[score], timeLeft)
 					} else {
-						s.Info += fmt.Sprintf("[ Submitted(%v): %.2f minutes ago | Graded: %.2f minutes ago | Status: %v | Time Left: %.2f ] \n", sub_id, subMin, 0.0, GradingMessage[score], timeLeft)
+						s.Info += fmt.Sprintf("[ Submission %v submitted: %.1f minutes ago | Graded: %.1f minutes ago | Status: %v | Time Left: %.1f ] \n", sub_id, subMin, 0.0, GradingMessage[score], timeLeft)
 					}
 
 					s.Info += "\n\n"

@@ -70,7 +70,7 @@ const CodeCellButtonComponent = ({
             console.log(data);
             showDialog({
                 title:'Code Share',
-                body: 'This code has been shared to the server.',
+                body: 'Code in this block has been shared with the instructor.',
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
 
@@ -78,7 +78,7 @@ const CodeCellButtonComponent = ({
         .catch(reason => {
             showErrorMessage('Code Share Error', reason);
             console.error(
-            `The student_ext server extension appears to be missing.\n${reason}`
+            `Failed to share code to server.\n${reason}`
             );
         });
 

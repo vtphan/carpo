@@ -95,7 +95,7 @@ func problemHandler() http.HandlerFunc {
 
 				fmt.Printf("Failed to add question to DB. Err. %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to add question to DB.",
+				http.Error(w, fmt.Sprintf("Failed to add question to DB.%v", err),
 					http.StatusInternalServerError)
 				return
 

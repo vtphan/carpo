@@ -187,7 +187,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Register',
+      label: 'Setup Carpo',
       onClick: register,
       tooltip: 'Register as a Teacher',
     });
@@ -245,9 +245,9 @@ export class ButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'Students’ Code',
+      label: 'Get Student Code',
       onClick: getSubmissions,
-      tooltip: 'Get available codes from students.',
+      tooltip: 'Get submissions from students.',
     });
 
     panel.toolbar.insertItem(11, 'getStudentsCode', button);
@@ -284,8 +284,13 @@ export class PublishProblemButtonExtension
         }
       });
 
-      if (problem.includes("#PublishID:")) {
+      if (problem.includes("#PID:")) {
         showErrorMessage('Publish Question Error', "Problem already published.")
+        return
+      }
+
+      if (!problem) {
+        showErrorMessage('Publish Question Error', "Problem is empty.")
         return
       }
 
@@ -302,14 +307,14 @@ export class PublishProblemButtonExtension
           console.log(data)
           notebook.widgets.map((c:Cell,index:number) => {
             if (index === activeIndex ) {
-             c.model.value.text = "#PublishID:" + data.id + "\n" + problem
+             c.model.value.text = "#PID:" + data.id + "\n" + problem
             }
           });
 
 
           showDialog({
           title:'New Questions Published',
-          body: 'A new problem has been published for all students.',
+          body: 'Problem ' + data.id + " is published.",
           buttons: [Dialog.okButton({ label: 'Ok' })]
         });
 
@@ -364,13 +369,15 @@ export class ArchiveProblemButtonExtension
         }
       });
 
-      if (!problem.includes("#PublishID:")) {
-        showErrorMessage('Publish Question Error', "Active problem not found.")
+      if (!problem.includes("#PID:")) {
+        showErrorMessage('Unpublish Question Error', "Active problem not found.")
         return
       }
 
+      var problem_id: number = parseInt((problem.split("\n")[0]).split("#PID:")[1]);
+
       let body = {
-        "problem_id": parseInt((problem.split("\n")[0]).split("#PublishID:")[1])
+        "problem_id": problem_id
       }
 
       requestAPI<any>('problem',{
@@ -382,16 +389,16 @@ export class ArchiveProblemButtonExtension
           console.log(data)
          
           showDialog({
-          title:'Questions Archived',
-          body: 'Problem has been archived.',
+          title:'Question Unpublished',
+          body: 'Problem id ' + problem_id +' is  unpublished.',
           buttons: [Dialog.okButton({ label: 'Ok' })]
         });
 
         })
         .catch(reason => {
-          showErrorMessage('Archive Question Error', reason);
+          showErrorMessage('Unpublish Question Error', reason);
           console.error(
-            `Failed to archive question in the server.\n${reason}`
+            `Failed to unpublish question.\n${reason}`
           );
         });
 
@@ -399,7 +406,7 @@ export class ArchiveProblemButtonExtension
 
     const button = new ToolbarButton({
       className: 'archive-problem-button',
-      label: 'Archive Problem',
+      label: 'Unpublish Problem',
       onClick: archiveProblem,
       tooltip: 'Archive Problem.',
     });

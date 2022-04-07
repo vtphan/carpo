@@ -53,8 +53,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebook = nbTrack.currentWidget.content;
       const filename = notebookPanel.context.path
 
-      // Disable Code Share functionality if not the "carpo_problem_"" Notebook.
-      if (!filename.includes("carpo_problem_")) {
+      // Disable Code Share functionality if not the "problem_"" Notebook.
+      if (!filename.includes("problem_")) {
         return
       }
 
@@ -160,7 +160,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Register',
+      label: 'Setup Carpo',
       onClick: register,
       tooltip: 'Register as a Student',
     });
@@ -227,6 +227,7 @@ export class GetQuestionButton
   }
 }
 
+// Outdated.
 export class CodeSubmissionButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
