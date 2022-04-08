@@ -92,6 +92,16 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
             return
         
+        if config_data['name'] == "Dummy User":
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and Re-register again."}))
+            return
+
+        if not {'name','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
+            return
+        
         url = config_data['server'] + "/add_student"
 
         body = {}
