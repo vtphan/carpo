@@ -21,3 +21,7 @@ func readRequestBody(r *http.Request) (req map[string]interface{}, err error) {
 	}
 	return
 }
+
+func add(x, y int) int {
+	return x + y
+}

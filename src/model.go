@@ -35,6 +35,19 @@ type Feedback struct {
 	Comment       string `json:"comment"`
 	LastUpdatedAt string `json:"last_updated_at"`
 }
+
+type StudentSubmissionStatus struct {
+	ProblemID int
+	Submitted string
+	Score     int
+	Graded    string
+}
+
+type ProblemGradeStatus struct {
+	ProblemID int
+	Score     int
+	Count     int
+}
 type Response struct {
 	Data []map[string]interface{} `json:"data"`
 }
