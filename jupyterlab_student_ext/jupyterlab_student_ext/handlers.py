@@ -14,17 +14,79 @@ def read_config_file():
     reads config.json file
     :return: dict
     """
-    config_file = os.path.join(os.getcwd(),'config.json')
+    config_file = os.path.join(os.getcwd() ,"Carpo",'config.json')
     if os.path.exists(config_file):
         f=open(config_file)
         return json.load(f)
     return {}
 
+def create_initial_files():
+    print('======================================')
+    print("Check and Create Initial Files:")
+    print('======================================')
+    current_dir = os.getcwd()
+    print(current_dir)
+    if "Carpo" not in os.listdir():
+        os.makedirs(os.path.join(current_dir,"Carpo"))
+   
+    # Create config.json file
+    config_path = os.path.join(current_dir,"Carpo","config.json")
+    if not os.path.isfile(config_path):
+        config_data = {}
+        config_data['name'] = "Dummy User"
+        config_data['server'] = "http://localhost:8081"
+        # Write dummy config
+        with open(config_path, "w") as config_file:
+            config_file.write(json.dumps(config_data))
+    
+    # Create blank notebook
+    notebook_path = os.path.join(current_dir,"Carpo","Untitled.ipynb")
+    if not os.path.isfile(notebook_path):
+        content = {
+                        "cells": [],
+                        "metadata": {
+                            "kernelspec": {
+                                "display_name": "Python 3 (ipykernel)",
+                                "language": "python",
+                                "name": "python3"
+                                },
+                            "language_info": {
+                            "codemirror_mode": {
+                                "name": "ipython",
+                                "version": 3
+                                },
+                            "file_extension": ".py",
+                            "mimetype": "text/x-python",
+                            "name": "python",
+                            "nbconvert_exporter": "python",
+                            "pygments_lexer": "ipython3",
+                            "version": "3.8.10"
+                            }
+                        },
+                        "nbformat": 4,
+                        "nbformat_minor": 5
+                    }
+
+        with open(notebook_path, "w") as file:
+            file.write(json.dumps(content, indent = 4))
+
+
 class RegistrationHandler(APIHandler):
+    def initialize(self,config_files):
+        self.config_files = config_files
+
     @tornado.web.authenticated
     def get(self):
 
         config_data = read_config_file()
+
+        if config_data == {}:
+
+            create_initial_files()
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and Re-register again."}))
+            return 
+            
         if not {'name','server'}.issubset(config_data):
             self.set_status(500)
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
@@ -46,7 +108,7 @@ class RegistrationHandler(APIHandler):
 
         config_data['id'] = response['id']
         # Write id to the json file.
-        with open(os.getcwd()+'/config.json', "w") as config_file:
+        with open(os.path.join(os.getcwd(),"Carpo",'config.json'), "w") as config_file:
             config_file.write(json.dumps(config_data))
 
         self.finish(response)
@@ -79,11 +141,9 @@ class QuestionRouteHandler(APIHandler):
         self.finish(json.dumps(msg))
 
     def question_file(self, data):
-         # File Prefix:
-        file_prefix = 'carpo_problem'
 
         for res in data:
-            file_path = "{}_{:03d}".format(file_prefix, res['id']) + ".ipynb"
+            file_path = os.path.join(os.getcwd(),"Carpo","problem_{:03d}".format( res['id']) + ".ipynb")
 
             if not os.path.exists(file_path):
                 content = {
@@ -169,7 +229,7 @@ class FeedbackRouteHandler(APIHandler):
 
     def feedback_file(self, data):
         for res in data:
-            dir_path = "Feedback" + "/" 
+            dir_path = os.path.join("Carpo","Feedback")
             file_path = "p{}_feedback_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
@@ -272,7 +332,7 @@ def setup_handlers(web_app):
     web_app.add_handlers(host_pattern, handlers)
 
     route_pattern_grade =  url_path_join(web_app.settings['base_url'], "jupyterlab-student-ext", "register")
-    web_app.add_handlers(host_pattern, [(route_pattern_grade, RegistrationHandler)])
+    web_app.add_handlers(host_pattern, [(route_pattern_grade, RegistrationHandler, dict(config_files = create_initial_files()))])
 
     route_pattern_grade =  url_path_join(web_app.settings['base_url'], "jupyterlab-student-ext", "question")
     web_app.add_handlers(host_pattern, [(route_pattern_grade, QuestionRouteHandler)])

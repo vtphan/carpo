@@ -61,8 +61,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
-      // If current Notebook is not inside Submissions directory, disable all functionality.
-      if (!nbTrack.currentWidget.context.path.includes("Submissions/")) {
+      // If current Notebook is not inside Carpo directory, disable all functionality.
+      if (!nbTrack.currentWidget.context.path.includes("Carpo")) {
         return
       }
 
