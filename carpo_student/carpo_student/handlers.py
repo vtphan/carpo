@@ -84,7 +84,7 @@ class RegistrationHandler(APIHandler):
 
             create_initial_files()
             self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and Re-register again."}))
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and register again."}))
             return 
             
         if not {'name','server'}.issubset(config_data):
@@ -94,7 +94,7 @@ class RegistrationHandler(APIHandler):
         
         if config_data['name'] == "Dummy User":
             self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and Re-register again."}))
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and register again."}))
             return
 
         if not {'name','server'}.issubset(config_data):

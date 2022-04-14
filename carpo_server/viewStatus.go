@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
@@ -11,9 +12,18 @@ import (
 func viewStudentSubmissionStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		student_id, ok := r.URL.Query()["student_id"]
-		if !ok || len(student_id[0]) < 1 {
+		query := r.URL.Query()
+		student_id, ok := query["student_id"]
+		if !ok || len(student_id) < 1 {
 			log.Printf("Url Param 'student_id' is missing.\n")
+			http.Error(w, fmt.Sprintf("You are not authorized to view this status."), http.StatusUnauthorized)
+			return
+		}
+
+		student_name, ok := query["student_name"]
+		if !ok || len(student_name) < 1 {
+			log.Printf("Url Param 'student_name' is missing.\n")
+			http.Error(w, fmt.Sprintf("You are not authorized to view this status."), http.StatusUnauthorized)
 			return
 		}
 
@@ -27,6 +37,11 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 
 		for rows.Next() {
 			rows.Scan(&name)
+		}
+
+		if name != student_name[0] {
+			http.Error(w, fmt.Sprintf("You are not authorized to view this status."), http.StatusUnauthorized)
+			return
 		}
 
 		// Get Submission status
@@ -83,8 +98,7 @@ func viewProblemStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get Problem Grading Status
 		pGradeStats := make([]ProblemGradeStatus, 0)
-		pGradeStat := ProblemGradeStatus{}
-		rows, err := Database.Query("select problem_id, grade.score, count(*) from submission LEFT join grade on submission.id = grade.submission_id group by submission.problem_id,grade.score order by submission.problem_id desc")
+		rows, err := Database.Query("select submission.problem_id, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id group by problem_id order by problem_id desc")
 
 		defer rows.Close()
 		if err != nil {
@@ -92,8 +106,23 @@ func viewProblemStatus() http.HandlerFunc {
 		}
 
 		for rows.Next() {
+			pGradeStat := ProblemGradeStatus{}
+			var (
+				correct, incorrect sql.NullInt64
+			)
 
-			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Score, &pGradeStat.Count)
+			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Ungraded, &correct, &incorrect)
+
+			if !correct.Valid {
+				correct.Int64 = 0
+			}
+			pGradeStat.Correct = int(correct.Int64)
+
+			if !incorrect.Valid {
+				incorrect.Int64 = 0
+			}
+			pGradeStat.Incorrect = int(incorrect.Int64)
+
 			pGradeStats = append(pGradeStats, pGradeStat)
 		}
 

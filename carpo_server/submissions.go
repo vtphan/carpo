@@ -12,6 +12,24 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+func isAllowedSubmission(sID int) bool {
+
+	var prevSubAt string
+	rows, err := Database.Query("select created_at from submission where student_id=? order by created_at desc limit 1", sID)
+	defer rows.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for rows.Next() {
+		rows.Scan(&prevSubAt)
+	}
+
+	oldSubTime, _ := time.Parse(time.RFC3339, prevSubAt)
+
+	return time.Now().Sub(oldSubTime).Seconds() >= 30.0
+}
+
 func studentSubmissionHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -50,6 +68,14 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
+			if !isAllowedSubmission(studnet.ID) {
+				fmt.Printf("Submission is not allowed within 30 seconds of previous submission.\n")
+				w.WriteHeader(http.StatusTooManyRequests)
+				http.Error(w, "Please wait for 30 seconds before you make another submission on this problem.",
+					http.StatusTooManyRequests)
+				return
+
+			}
 			_, err := studnet.SaveSubmission(sub)
 			if err != nil {
 				var sqliteErr sqlite3.Error

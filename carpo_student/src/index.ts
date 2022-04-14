@@ -144,7 +144,7 @@ export class RegisterButton
 
           showDialog({
             title:'Register',
-            body:  "User "+ data.name + " created as Student.",
+            body:  "Student "+ data.name + " has been registered.",
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
          

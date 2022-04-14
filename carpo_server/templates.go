@@ -97,8 +97,9 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 			<thead>
 				<tr>
 					<th>ProblemID</th>
-					<th>Grade As </th>
-					<th>Count</th>
+					<th>Ungraded </th>
+					<th>Correct </th>
+					<th>Incorrect </th>
 				</tr>
 			</thead>
 
@@ -106,8 +107,9 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 			{{ range .Stats }}
 			<tr>
 				<td>{{ .ProblemID }}</td>
-				<td>{{ if eq .Score 0 }} Ungraded {{else if eq .Score 1}} Correct {{else if eq .Score 2}} Incorrect {{end}}</td>
-				<td>{{ .Count }} </td>
+				<td>{{ .Ungraded}}</td>
+				<td>{{ .Correct }} </td>
+				<td>{{ .Incorrect }} </td>
 			</tr>
 			{{ end }}
 			</tbody>

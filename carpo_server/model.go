@@ -1,6 +1,8 @@
 package main
 
-import "time"
+import (
+	"time"
+)
 
 type Submission struct {
 	ID        int       `json:"id" db:"id"`
@@ -45,8 +47,9 @@ type StudentSubmissionStatus struct {
 
 type ProblemGradeStatus struct {
 	ProblemID int
-	Score     int
-	Count     int
+	Ungraded  int
+	Correct   int
+	Incorrect int
 }
 type Response struct {
 	Data []map[string]interface{} `json:"data"`
