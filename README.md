@@ -2,7 +2,7 @@
 
 ### Running carpo_server
 1. cd carpo_server
-2. go run *.go
+2. go run *.go -c config.json
 
 ## Requirements to run the JupyterLab Extensions
 

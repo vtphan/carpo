@@ -18,6 +18,8 @@ var GradingMessage = map[int]string{
 	2: "Incorrect",
 }
 
+var Config *Configuration
+
 var Database *sql.DB
 var AddSubmissionSQL *sql.Stmt
 var UpdateSubmissionSQL *sql.Stmt

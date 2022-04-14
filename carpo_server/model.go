@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+type Configuration struct {
+	IP       string
+	Port     int
+	Database string
+	Address  string
+}
+
 type Submission struct {
 	ID        int       `json:"id" db:"id"`
 	ProblemID int       `json:"problem_id" db:"problem_id"`

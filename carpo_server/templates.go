@@ -37,7 +37,6 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 		<table class="table is-striped is-fullwidth is-hoverable is-narrow">
 			<thead>
 				<tr>
-					<th>S.N</th>
 					<th>ProblemID</th>
 					<th>Submitted</th>
 					<th>Grade</th>
@@ -46,9 +45,8 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 			</thead>
 
 			<tbody>
-			{{ range $i,$s := .Stats }}
+			{{ range .Stats }}
 			<tr>
-				<td>{{ add $i 1}}</td>
 				<td>{{ .ProblemID }}</td>
 				<td>{{ .Submitted }}</td>
 				<td>{{ if eq .Score 0 }} Ungraded {{else if eq .Score 1}} Correct {{else if eq .Score 2}} Incorrect {{end}}</td>
