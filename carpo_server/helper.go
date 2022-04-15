@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 func readRequestBody(r *http.Request) (req map[string]interface{}, err error) {
@@ -24,4 +26,15 @@ func readRequestBody(r *http.Request) (req map[string]interface{}, err error) {
 
 func add(x, y int) int {
 	return x + y
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Minute)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	if h == 0 {
+		return fmt.Sprintf("%dM", m)
+	}
+	return fmt.Sprintf("%dH:%dM", h, m)
 }

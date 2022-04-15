@@ -61,11 +61,11 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 			rows.Scan(&stat.ProblemID, &SubCreatedAt, &stat.Score, &GradeCreatedAt)
 
 			stime, _ := time.Parse(time.RFC3339, SubCreatedAt)
-			stat.Submitted = fmt.Sprintf("%.1f min ago", time.Now().Sub(stime).Minutes())
+			stat.Submitted = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(stime)))
 
 			if GradeCreatedAt != "" {
 				gtime, _ := time.Parse(time.RFC3339, GradeCreatedAt)
-				stat.Graded = fmt.Sprintf("%.1f min ago", time.Now().Sub(gtime).Minutes())
+				stat.Graded = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(gtime)))
 			}
 
 			subStats = append(subStats, stat)

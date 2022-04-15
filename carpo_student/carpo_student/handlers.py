@@ -335,6 +335,29 @@ class SubmissionRouteHandler(APIHandler):
 
         self.finish(response)
 
+class ViewStatusRouteHandler(APIHandler):
+    # The following decorator should be present on all verb methods (head, get, post,
+    # patch, put, delete, options) to ensure only authorized user can request the
+    # Jupyter server
+
+    @tornado.web.authenticated
+    def get(self):
+        # input_data is a dictionary with a key "name"
+        input_data = self.get_json_body()
+
+        config_data = read_config_file()
+
+        if not {'id', 'name', 'server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        id = config_data['id']
+        name = config_data['name']
+        student_status_url = config_data['server'] + "/students/status" + "?student_id=" + str(id) + "&student_name=" + name
+
+        self.finish({"url":student_status_url })
+
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
@@ -344,15 +367,19 @@ def setup_handlers(web_app):
     handlers = [(route_pattern, SubmissionRouteHandler)]
     web_app.add_handlers(host_pattern, handlers)
 
-    route_pattern_grade =  url_path_join(web_app.settings['base_url'], "carpo-student", "register")
-    web_app.add_handlers(host_pattern, [(route_pattern_grade, RegistrationHandler, dict(config_files = create_initial_files()))])
+    route_pattern_register =  url_path_join(web_app.settings['base_url'], "carpo-student", "register")
+    web_app.add_handlers(host_pattern, [(route_pattern_register, RegistrationHandler, dict(config_files = create_initial_files()))])
 
-    route_pattern_grade =  url_path_join(web_app.settings['base_url'], "carpo-student", "question")
-    web_app.add_handlers(host_pattern, [(route_pattern_grade, QuestionRouteHandler)])
+    route_pattern_question =  url_path_join(web_app.settings['base_url'], "carpo-student", "question")
+    web_app.add_handlers(host_pattern, [(route_pattern_question, QuestionRouteHandler)])
 
 
-    route_pattern_grade =  url_path_join(web_app.settings['base_url'], "carpo-student", "feedback")
-    web_app.add_handlers(host_pattern, [(route_pattern_grade, FeedbackRouteHandler)])
+    route_pattern_feedback =  url_path_join(web_app.settings['base_url'], "carpo-student", "feedback")
+    web_app.add_handlers(host_pattern, [(route_pattern_feedback, FeedbackRouteHandler)])
+
+    route_pattern_view_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "view_student_status")
+    web_app.add_handlers(host_pattern, [(route_pattern_view_status, ViewStatusRouteHandler)])
+
 
 
 

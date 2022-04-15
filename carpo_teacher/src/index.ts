@@ -143,7 +143,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
- 
+    app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
+    
   }
 };
 
@@ -412,6 +413,53 @@ export class ArchiveProblemButtonExtension
     });
 
     panel.toolbar.insertItem(13, 'archivesProblem', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
+
+export class viewProblemStatusExtension
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const viewProblemStatus = () => {
+
+      requestAPI<any>('view_problems_status',{
+        method: 'GET'
+      })
+        .then(data => {
+          console.log(data);
+          window.open(
+            data.url, "_blank");
+        })
+        .catch(reason => {
+          showErrorMessage('View Problem Status Error', reason);
+          console.error(
+            `Failed to view problem status.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'get-status-button',
+      label: 'View Problem Status',
+      onClick: viewProblemStatus,
+      tooltip: 'View all problem status',
+    });
+
+    panel.toolbar.insertItem(14, 'viewProblemStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

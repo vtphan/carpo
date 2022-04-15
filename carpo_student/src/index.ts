@@ -114,6 +114,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
     // app.docRegistry.addWidgetExtension('Notebook', new CodeSubmissionButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
+    app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
+
 
   }
 };
@@ -359,5 +361,53 @@ export class GetFeedbackButton
     });
   }
 }
+
+export class ViewSubmissionStatusButton
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const viewStatus = () => {
+
+      requestAPI<any>('view_student_status',{
+        method: 'GET'
+      })
+        .then(data => {
+          console.log(data);
+          window.open(
+            data.url, "_blank");
+        })
+        .catch(reason => {
+          showErrorMessage('View Status Error', reason);
+          console.error(
+            `Failed to view student submission status.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'get-status-button',
+      label: 'View Submission Status',
+      onClick: viewStatus,
+      tooltip: 'View your submissions status',
+    });
+
+    panel.toolbar.insertItem(13, 'viewStatus', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
+
 
 export default plugin;

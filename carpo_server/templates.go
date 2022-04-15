@@ -40,7 +40,7 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 					<th>ProblemID</th>
 					<th>Submitted</th>
 					<th>Grade</th>
-					<th>Graded</th>
+					<th>Graded/Feedback</th>
 				</tr>
 			</thead>
 

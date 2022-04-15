@@ -231,7 +231,7 @@ func submissionGradeHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 0, time.Now(), time.Now())
+			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 1, time.Now(), time.Now())
 
 			if err != nil {
 				var sqliteErr sqlite3.Error
