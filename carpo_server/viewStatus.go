@@ -47,7 +47,7 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		// Get Submission status
 		subStats := make([]StudentSubmissionStatus, 0)
 		stat := StudentSubmissionStatus{}
-		rows, err = Database.Query("select submission.problem_id, submission.created_at, grade.score, grade.created_at from submission LEFT JOIN grade on submission.id = grade.submission_id where submission.student_id = ? order by submission.created_at desc", student_id[0])
+		rows, err = Database.Query("select submission.problem_id, submission.id, submission.created_at, grade.score, grade.created_at from submission LEFT JOIN grade on submission.id = grade.submission_id where submission.student_id = ? order by submission.created_at desc", student_id[0])
 
 		defer rows.Close()
 		if err != nil {
@@ -57,8 +57,13 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		for rows.Next() {
 			var (
 				SubCreatedAt, GradeCreatedAt string
+				score                        sql.NullInt64
 			)
-			rows.Scan(&stat.ProblemID, &SubCreatedAt, &stat.Score, &GradeCreatedAt)
+			rows.Scan(&stat.ProblemID, &stat.SubmissionID, &SubCreatedAt, &score, &GradeCreatedAt)
+			if !score.Valid {
+				score.Int64 = 0
+			}
+			stat.Score = int(score.Int64)
 
 			stime, _ := time.Parse(time.RFC3339, SubCreatedAt)
 			stat.Submitted = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(stime)))
@@ -98,7 +103,7 @@ func viewProblemStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get Problem Grading Status
 		pGradeStats := make([]ProblemGradeStatus, 0)
-		rows, err := Database.Query("select submission.problem_id, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id group by problem_id order by problem_id desc")
+		rows, err := Database.Query("select submission.problem_id, problem.created_at, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id group by problem_id order by problem_id desc")
 
 		defer rows.Close()
 		if err != nil {
@@ -111,7 +116,7 @@ func viewProblemStatus() http.HandlerFunc {
 				correct, incorrect sql.NullInt64
 			)
 
-			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Ungraded, &correct, &incorrect)
+			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated, &pGradeStat.Ungraded, &correct, &incorrect)
 
 			if !correct.Valid {
 				correct.Int64 = 0

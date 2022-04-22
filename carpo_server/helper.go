@@ -34,7 +34,7 @@ func fmtDuration(d time.Duration) string {
 	d -= h * time.Hour
 	m := d / time.Minute
 	if h == 0 {
-		return fmt.Sprintf("%dM", m)
+		return fmt.Sprintf("%dm", m)
 	}
-	return fmt.Sprintf("%dH:%dM", h, m)
+	return fmt.Sprintf("%dh:%dm", h, m)
 }

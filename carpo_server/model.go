@@ -46,17 +46,21 @@ type Feedback struct {
 }
 
 type StudentSubmissionStatus struct {
-	ProblemID int
-	Submitted string
-	Score     int
-	Graded    string
+	ProblemID    int
+	SubmissionID int
+	Submitted    string
+	Score        int
+	Graded       string
 }
 
 type ProblemGradeStatus struct {
-	ProblemID int
-	Ungraded  int
-	Correct   int
-	Incorrect int
+	ProblemID        int
+	Ungraded         int
+	Correct          int
+	Incorrect        int
+	ProblemStatus    int
+	PublishedDate    time.Time
+	UnpublishedDated time.Time
 }
 type Response struct {
 	Data []map[string]interface{} `json:"data"`
