@@ -44,7 +44,7 @@ def create_initial_files():
             config_file.write(json.dumps(config_data))
     
     # Create blank notebook
-    notebook_path = os.path.join(current_dir,"Carpo","Untitled.ipynb")
+    notebook_path = os.path.join(current_dir,"Carpo","Workspace.ipynb")
     if not os.path.isfile(notebook_path):
         content = {
                         "cells": [],
@@ -169,7 +169,7 @@ class RouteHandler(APIHandler):
             return
 
         # Delete the local submission notebook
-        notebook_path = os.path.join("Carpo", "Submissions", "problem_{}".format(input_data['problem_id']), "{:03d}".format(input_data['submission_id']) + ".ipynb" )
+        notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "{:03d}".format(input_data['submission_id']) + ".ipynb" )
         if os.path.exists(notebook_path):
             os.remove(notebook_path)
 
@@ -179,8 +179,8 @@ class RouteHandler(APIHandler):
     def submission_file(self, data):
 
         for res in data:
-            dir_path = os.path.join("Carpo", "Submissions", "problem_{}".format(res['problem_id']))
-            file_path = "submission_{:03d}".format(res['id']) + ".ipynb"
+            dir_path = os.path.join("Carpo", "problem_{}".format(res['problem_id']))
+            file_path = "sub_{:03d}".format(res['id']) + ".ipynb"
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
@@ -390,7 +390,7 @@ def setup_handlers(web_app):
     route_pattern_register =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "register")
     web_app.add_handlers(host_pattern, [(route_pattern_register, RegistrationHandler, dict(config_files = create_initial_files()))])
 
-    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "view_problems_status")
+    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "view_problem_list")
     web_app.add_handlers(host_pattern, [(route_pattern_problems_status, ViewProblemStatusRouteHandler)])
 
 

@@ -53,8 +53,8 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 				<td>{{ .SubmissionID }}</td>
 				<td>{{ .Submitted }}</td>
 				<td>{{ if eq .Score 0 }} Ungraded {{else if eq .Score 1}} Correct {{else if eq .Score 2}} Incorrect {{end}}</td>
-				<td> {{ if .Score }} {{ .Graded }} {{ end }} </td>
-				<td> {{ if not .Score }} {{ .Graded }} {{ end }} </td>
+				<td>{{ if .Score }} {{ .Graded }} {{ end }} </td>
+				<td>{{ if not .Score }} {{ .Graded }} {{ end }} </td>
 			</tr>
 			{{ end }}
 			</tbody>
@@ -115,7 +115,7 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 				<td>{{ .Correct }} </td>
 				<td>{{ .Incorrect }} </td>
 				<td>{{ .PublishedDate.Format "Jan 02, 2006 3:04:05 PM" }} </td>
-				<td>{{ .UnpublishedDated.Format "Jan 02, 2006 3:04:05 PM" }} </td>
+				<td>{{ if eq .ProblemStatus 0 }} {{ .UnpublishedDated.Format "Jan 02, 2006 3:04:05 PM" }} {{ end }} </td>
 			</tr>
 			{{ end }}
 			</tbody>

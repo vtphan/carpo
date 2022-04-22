@@ -61,8 +61,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
-      // If current Notebook is not inside Carpo/Submissions directory, disable all functionality.
-      if (!nbTrack.currentWidget.context.path.includes("Submissions")) {
+      // If current Notebook is not inside Carpo/problem_ directory, disable all functionality.
+      if (!nbTrack.currentWidget.context.path.includes("problem_")) {
         return
       }
 
@@ -223,7 +223,7 @@ export class ButtonExtension
       })
         .then(data => {
           
-          var msg = "You have got " + data.data.length + " submissions.\n Go to Notebooks inside Submissions directory."
+          var msg = "You have got " + data.data.length + " submissions.\n"
         
           showDialog({
             title:'Submission Status',
@@ -435,7 +435,7 @@ export class viewProblemStatusExtension
   ): IDisposable {
     const viewProblemStatus = () => {
 
-      requestAPI<any>('view_problems_status',{
+      requestAPI<any>('view_problem_list',{
         method: 'GET'
       })
         .then(data => {
@@ -454,7 +454,7 @@ export class viewProblemStatusExtension
 
     const button = new ToolbarButton({
       className: 'get-status-button',
-      label: 'View Problem Status',
+      label: 'Problem List',
       onClick: viewProblemStatus,
       tooltip: 'View all problem status',
     });

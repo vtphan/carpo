@@ -40,7 +40,7 @@ def create_initial_files():
             config_file.write(json.dumps(config_data))
     
     # Create blank notebook
-    notebook_path = os.path.join(current_dir,"Carpo","Untitled.ipynb")
+    notebook_path = os.path.join(current_dir,"Carpo","Workspace.ipynb")
     if not os.path.isfile(notebook_path):
         content = {
                         "cells": [],

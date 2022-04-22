@@ -56,10 +56,11 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 
 		for rows.Next() {
 			var (
-				SubCreatedAt, GradeCreatedAt string
-				score                        sql.NullInt64
+				SubCreatedAt           string
+				GradeFeedbackCreatedAt string
+				score                  sql.NullInt64
 			)
-			rows.Scan(&stat.ProblemID, &stat.SubmissionID, &SubCreatedAt, &score, &GradeCreatedAt)
+			rows.Scan(&stat.ProblemID, &stat.SubmissionID, &SubCreatedAt, &score, &GradeFeedbackCreatedAt)
 			if !score.Valid {
 				score.Int64 = 0
 			}
@@ -68,8 +69,10 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 			stime, _ := time.Parse(time.RFC3339, SubCreatedAt)
 			stat.Submitted = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(stime)))
 
-			if GradeCreatedAt != "" {
-				gtime, _ := time.Parse(time.RFC3339, GradeCreatedAt)
+			if !score.Valid {
+				stat.Graded = ""
+			} else {
+				gtime, _ := time.Parse(time.RFC3339, GradeFeedbackCreatedAt)
 				stat.Graded = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(gtime)))
 			}
 
@@ -113,10 +116,15 @@ func viewProblemStatus() http.HandlerFunc {
 		for rows.Next() {
 			pGradeStat := ProblemGradeStatus{}
 			var (
-				correct, incorrect sql.NullInt64
+				ungraded, correct, incorrect sql.NullInt64
 			)
 
-			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated, &pGradeStat.Ungraded, &correct, &incorrect)
+			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated, &ungraded, &correct, &incorrect)
+
+			if !ungraded.Valid {
+				ungraded.Int64 = 0
+			}
+			pGradeStat.Ungraded = int(ungraded.Int64)
 
 			if !correct.Valid {
 				correct.Int64 = 0
