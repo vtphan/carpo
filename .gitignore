@@ -1,2 +1,2 @@
 .vscode
-src/my_test_db
+**/*.sqlite3
