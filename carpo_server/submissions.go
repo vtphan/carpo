@@ -45,7 +45,7 @@ func studentSubmissionHandler() http.HandlerFunc {
 		studnet := Studnet{
 			Name: name,
 		}
-		fmt.Printf("Studnet: %v\n", studnet)
+
 		id, err := studnet.GetIDFromName()
 		if err != nil || id == 0 {
 			w.WriteHeader(http.StatusInternalServerError)

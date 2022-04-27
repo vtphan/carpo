@@ -53,8 +53,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebook = nbTrack.currentWidget.content;
       const filename = notebookPanel.context.path
 
-      // Disable Code Share functionality if not the "problem_"" Notebook.
-      if (!filename.includes("problem_")) {
+      // Disable Code Share functionality if inside Feedback directory
+      if (filename.includes("Feedback")){
+        return 
+      }
+
+      // Disable if not inside Carpo directory
+      if (!filename.includes("Carpo")) {
         return
       }
 
@@ -82,7 +87,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const activeIndex = notebook.activeCellIndex
 
           var info : CellInfo = {
-            problem_id: parseInt((filename.split("_").pop()).replace(".ipynb",""))
+            problem_id: parseInt((filename.split("/").pop()).replace("p","").replace(".ipynb",""))
           };
 
           // Get the message block referencing the active cell.
@@ -112,7 +117,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
     //  tell the document registry about your widget extension:
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
-    // app.docRegistry.addWidgetExtension('Notebook', new CodeSubmissionButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
 
@@ -228,90 +232,6 @@ export class GetQuestionButton
     });
   }
 }
-
-// Outdated.
-export class CodeSubmissionButton
-  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-{
-  /**
-   * Create a new extension for the notebook panel widget.
-   *
-   * @param panel Notebook panel
-   * @param context Notebook context
-   * @returns Disposable on the added button
-   */
-  createNew(
-    panel: NotebookPanel,
-    context: DocumentRegistry.IContext<INotebookModel>
-  ): IDisposable {
-    const sendCode = () => {
-      // NotebookActions.clearAllOutputs(panel.content);
-
-      const notebook = panel.content;
-
-      const activeIndex = notebook.activeCellIndex
-      var message:string, code :string
-
-      notebook.widgets.map((c:Cell,index:number) => {
-        // This is Markdown cell
-        if (index === activeIndex-1 ) {
-          message = c.model.value.text
-
-        }
-        // This is Code cell & Active cell
-        if (index === activeIndex) {
-          code = c.model.value.text
-        }
-      });
-
-      const filename = panel.context.path
-
-
-      let postBody = {
-        "message": message,
-        "code": code,
-        "problem_id":(filename.split("-").pop()).replace(".ipynb","")
-      }
-
-      console.log("body: ",postBody)
-
-      requestAPI<any>('submissions',{
-        method: 'POST',
-        body: JSON.stringify(postBody)
-      })
-        .then(data => {
-          console.log(data);
-
-          showDialog({
-            title:'Code Submission',
-            body:  data.msg,
-            buttons: [Dialog.okButton({ label: 'Ok' })]
-          });
-
-        })
-        .catch(reason => {
-          showErrorMessage('Code Submission Error', reason);
-          console.error(
-            `Failed to share code to server.\n${reason}`
-          );
-        });
-
-    };
-
-    const button = new ToolbarButton({
-      className: 'send-code-button',
-      label: 'Send All Code',
-      onClick: sendCode,
-      tooltip: 'Send code to Go Server',
-    });
-
-    panel.toolbar.insertItem(11, 'sendCodes', button);
-    return new DisposableDelegate(() => {
-      button.dispose();
-    });
-  }
-}
-
 export class GetFeedbackButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
@@ -397,7 +317,7 @@ export class ViewSubmissionStatusButton
 
     const button = new ToolbarButton({
       className: 'get-status-button',
-      label: 'View Submission Status',
+      label: 'Submission Status',
       onClick: viewStatus,
       tooltip: 'View your submissions status',
     });

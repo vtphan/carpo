@@ -153,7 +153,7 @@ class QuestionRouteHandler(APIHandler):
     def question_file(self, data):
 
         for res in data:
-            file_path = os.path.join(os.getcwd(),"Carpo","problem_{:03d}".format( res['id']) + ".ipynb")
+            file_path = os.path.join(os.getcwd(),"Carpo","p{:03d}".format( res['id']) + ".ipynb")
 
             if not os.path.exists(file_path):
                 content = {
@@ -240,7 +240,7 @@ class FeedbackRouteHandler(APIHandler):
     def feedback_file(self, data):
         for res in data:
             dir_path = os.path.join("Carpo","Feedback")
-            file_path = "p{}_feedback_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
+            file_path = "p{:03d}_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
