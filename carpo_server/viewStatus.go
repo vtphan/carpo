@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -102,6 +103,33 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 	}
 }
 
+func problemStatus(rows *sql.Rows) (pGradeStat ProblemGradeStatus) {
+
+	var (
+		ungraded, correct, incorrect sql.NullInt64
+	)
+
+	rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated, &ungraded, &correct, &incorrect)
+
+	if !ungraded.Valid {
+		ungraded.Int64 = 0
+	}
+	pGradeStat.Ungraded = int(ungraded.Int64)
+
+	if !correct.Valid {
+		correct.Int64 = 0
+	}
+	pGradeStat.Correct = int(correct.Int64)
+
+	if !incorrect.Valid {
+		incorrect.Int64 = 0
+	}
+	pGradeStat.Incorrect = int(incorrect.Int64)
+
+	return
+
+}
+
 func viewProblemStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get Problem Grading Status
@@ -114,28 +142,7 @@ func viewProblemStatus() http.HandlerFunc {
 		}
 
 		for rows.Next() {
-			pGradeStat := ProblemGradeStatus{}
-			var (
-				ungraded, correct, incorrect sql.NullInt64
-			)
-
-			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated, &ungraded, &correct, &incorrect)
-
-			if !ungraded.Valid {
-				ungraded.Int64 = 0
-			}
-			pGradeStat.Ungraded = int(ungraded.Int64)
-
-			if !correct.Valid {
-				correct.Int64 = 0
-			}
-			pGradeStat.Correct = int(correct.Int64)
-
-			if !incorrect.Valid {
-				incorrect.Int64 = 0
-			}
-			pGradeStat.Incorrect = int(incorrect.Int64)
-
+			pGradeStat := problemStatus(rows)
 			pGradeStats = append(pGradeStats, pGradeStat)
 		}
 
@@ -155,6 +162,73 @@ func viewProblemStatus() http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Printf("%v\n", err)
+		}
+
+	}
+
+}
+
+func problemDetail() http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		query := r.URL.Query()
+		problem_id, ok := query["problem_id"]
+		if !ok || len(problem_id) < 1 {
+			log.Printf("Url Param 'problem_id' is missing.\n")
+			http.Error(w, fmt.Sprintf("Invalid Problem Id."), http.StatusUnauthorized)
+			return
+		}
+
+		var (
+			problem    string
+			pGradeStat ProblemGradeStatus
+		)
+
+		rows, err := Database.Query("select question from problem where id = ?", problem_id[0])
+		defer rows.Close()
+		if err != nil {
+			fmt.Errorf("Error quering db. Err: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for rows.Next() {
+			rows.Scan(&problem)
+		}
+
+		rows, err = Database.Query("select submission.problem_id, problem.created_at, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id where problem.id =? group by problem_id order by problem_id desc", problem_id[0])
+
+		defer rows.Close()
+		if err != nil {
+			fmt.Printf("Error quering db. Err: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for rows.Next() {
+			pGradeStat = problemStatus(rows)
+		}
+
+		data := struct {
+			Stats    ProblemGradeStatus
+			Question string
+		}{
+			Stats:    pGradeStat,
+			Question: strings.TrimSpace(problem),
+		}
+
+		t, err := template.New("").Parse(PROBLEM_DETAIL_TEMPLATE)
+		if err != nil {
+			log.Printf("%v\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		err = t.Execute(w, data)
+		if err != nil {
+			log.Printf("%v\n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
 	}

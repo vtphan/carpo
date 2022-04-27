@@ -10,7 +10,7 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" integrity="sha512-IgmDkwzs96t4SrChW29No3NXBIBv8baW490zk5aXvhCD8vuZM3yUSkbyTBcXohkySecyzIrUwiF/qV0cuPcL3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<style>
 		#modal {
-			width: 800px;
+			width: 60%;
 			border: 1px solid #CCC;
 			box-shadow: 0 1px 5px #CCC;
 			margin: 25px auto;
@@ -74,7 +74,7 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" integrity="sha512-IgmDkwzs96t4SrChW29No3NXBIBv8baW490zk5aXvhCD8vuZM3yUSkbyTBcXohkySecyzIrUwiF/qV0cuPcL3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<style>
 		#modal {
-			width: 800px;
+			width: 60%;
 			border: 1px solid #CCC;
 			box-shadow: 0 1px 5px #CCC;
 			margin: 25px auto;
@@ -110,7 +110,7 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 			<tbody>
 			{{ range .Stats }}
 			<tr>
-				<td>{{ .ProblemID }}</td>
+				<td><a href="/problem_detail?problem_id={{.ProblemID}}"> {{ .ProblemID }} </a> </td>
 				<td>{{ .Ungraded}}</td>
 				<td>{{ .Correct }} </td>
 				<td>{{ .Incorrect }} </td>
@@ -121,6 +121,96 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 			</tbody>
 		</table>
 	</div>
+	</body>
+</html>
+`
+
+var PROBLEM_DETAIL_TEMPLATE = `
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Problem Detail</title>
+		<meta http-equiv="refresh" content="120" >
+		<script src="https://kit.fontawesome.com/923539b4ee.js" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" integrity="sha512-IgmDkwzs96t4SrChW29No3NXBIBv8baW490zk5aXvhCD8vuZM3yUSkbyTBcXohkySecyzIrUwiF/qV0cuPcL3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+		<style>
+			.row {
+				display: flex;
+			}
+			.column {
+				float: left;
+				width: 50%;
+				padding: 0 10px;
+			}
+			#modal {
+				width: 60%;
+				border: 1px solid #CCC;
+				box-shadow: 0 1px 5px #CCC;
+				margin: 25px auto;
+			}
+			#modal header {
+				background: #f1f1f1;
+				box-shadow: 0 1px 2px #888;
+				padding: 10px;
+			}
+			#modal h1 {
+				padding: 0;
+				margin: 0;
+				font-size: 18px;
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="modal" class="container">
+			<header><h1><a href="/problems/status">Problem Status</a></h1></header>
+			<div class="row">
+				<div class="column">
+					<h4> Question </h4>
+					<pre><code>{{ .Question }}</code></pre>
+				</div>
+
+				<div class="column">
+					<h4> Problem Status </h4>
+					<table class="table is-fullwidth is-hoverable is-narrow">
+						<thead>
+							<tr>
+								<th></th>
+								<th></th>
+								
+							</tr>
+						</thead>
+
+						<tbody>
+							<tr> 
+								<td> ID: </td> 
+								<td> {{ .Stats.ProblemID }} </td>
+							</tr>
+							<tr> 
+								<td> Ungraded Submissions: </td> 
+								<td>{{ .Stats.Ungraded}} </td>
+							</tr>
+							<tr> 
+								<td> Correct Submissions: </td> 
+								<td>{{ .Stats.Correct }}  </td>
+							</tr>
+							<tr> 
+								<td> Incorrect Submissions: </td> 
+								<td>{{ .Stats.Incorrect }} </td>
+							</tr>
+							<tr> 
+								<td> Published At: </td> 
+								<td>{{ .Stats.PublishedDate.Format "Jan 02, 2006 3:04:05 PM" }} </td>
+							</tr>
+							<tr> 
+								<td> Unpublished At: </td> 
+								<td>{{ if eq .Stats.ProblemStatus 0 }} {{ .Stats.UnpublishedDated.Format "Jan 02, 2006 3:04:05 PM" }} {{ end }}  </td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
 `

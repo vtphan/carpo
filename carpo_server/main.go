@@ -81,6 +81,7 @@ func main() {
 
 	http.HandleFunc("/students/status", viewStudentSubmissionStatus())
 	http.HandleFunc("/problems/status", viewProblemStatus())
+	http.HandleFunc("/problem_detail", problemDetail())
 
 	fmt.Println("serving at port: 8081")
 
