@@ -54,6 +54,11 @@ const CodeCellButtonComponent = ({
   
     const shareCode = async () => {
 
+        if (isNaN(info.problem_id)) {
+            showErrorMessage('Code Share Error', "Invalid code block. Use specific problem notebook.");
+            return
+        }
+
         let postBody = {
             "message": info.message,
             "code": cell.model.value.text,

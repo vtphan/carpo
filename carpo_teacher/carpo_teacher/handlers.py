@@ -169,7 +169,7 @@ class RouteHandler(APIHandler):
             return
 
         # Delete the local submission notebook
-        notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "{:03d}".format(input_data['submission_id']) + ".ipynb" )
+        notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "sub_{:03d}".format(input_data['submission_id']) + ".ipynb" )
         if os.path.exists(notebook_path):
             os.remove(notebook_path)
 

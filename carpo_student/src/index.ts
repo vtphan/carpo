@@ -211,7 +211,7 @@ export class GetQuestionButton
          
         })
         .catch(reason => {
-          showErrorMessage('Get Question Error', reason);
+          showErrorMessage('Get Problem Error', reason);
           console.error(
             `Failed to get active questions.\n${reason}`
           );
@@ -221,9 +221,9 @@ export class GetQuestionButton
 
     const button = new ToolbarButton({
       className: 'get-question-button',
-      label: 'Get Question',
+      label: 'Get Problem',
       onClick: getQuestion,
-      tooltip: 'Get Latest Question from Server',
+      tooltip: 'Get Latest Problem From Server',
     });
 
     panel.toolbar.insertItem(11, 'getQuestion', button);

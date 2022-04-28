@@ -86,7 +86,7 @@ func main() {
 	fmt.Println("serving at port: 8081")
 
 	// Archive expire problems in DB
-	ticker := time.NewTicker(10 * time.Minute)
+	ticker := time.NewTicker(1 * time.Hour)
 	quit := make(chan struct{})
 	go func() {
 		for {
