@@ -18,7 +18,7 @@ func isAllowedSubmission(sID int) bool {
 	rows, err := Database.Query("select created_at from submission where student_id=? order by created_at desc limit 1", sID)
 	defer rows.Close()
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error SQL isAllowedSubmission. Error %v", err)
 	}
 
 	for rows.Next() {
@@ -69,7 +69,7 @@ func studentSubmissionHandler() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			if !isAllowedSubmission(studnet.ID) {
-				fmt.Printf("Submission is not allowed within 30 seconds of previous submission.\n")
+				log.Printf("Submission is not allowed within 30 seconds of previous submission.\n")
 				w.WriteHeader(http.StatusTooManyRequests)
 				http.Error(w, "Please wait for 30 seconds before you make another submission on this problem.",
 					http.StatusTooManyRequests)
@@ -86,7 +86,7 @@ func studentSubmissionHandler() http.HandlerFunc {
 					}
 				} else {
 
-					fmt.Printf("Failed to Save Submission. %v Err. %v\n", sub, err)
+					log.Printf("Failed to Save Submission. %v Err. %v\n", sub, err)
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to save submission.",
 						http.StatusInternalServerError)
@@ -95,7 +95,7 @@ func studentSubmissionHandler() http.HandlerFunc {
 			}
 			_, err = AddStudentProblemStatusSQL.Exec(studnet.ID, pid, 1, time.Now(), time.Now())
 			if err != nil {
-				fmt.Printf("Failed to update student problem status (1) to DB. Err. %v\n", err)
+				log.Printf("Failed to update student problem status (1) to DB. Err. %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				http.Error(w, "Failed to update student problem status (1) to DB.",
 					http.StatusInternalServerError)
@@ -121,13 +121,14 @@ func teacherSubmissionHandler() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 
-			fmt.Printf("Fetching all submissions of students...\n")
+			log.Printf("Fetching all submissions of students...\n")
 
 			s := Submission{}
 			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by updated_at desc limit 3")
 			defer rows.Close()
 			if err != nil {
-				fmt.Errorf("Error quering db. Err: %v", err)
+				log.Printf("Error quering db teacherSubmissionHandler. Err: %v", err)
+				return
 			}
 
 			for rows.Next() {
@@ -166,7 +167,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			}
 
 			if len(submissions) == 0 {
-				fmt.Printf("No new submissions found.\n")
+				log.Printf("No new submissions found.\n")
 			}
 
 			// fmt.Printf("%v", submissions)
@@ -192,18 +193,27 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			sub := Submission{
 				ID: subID,
 			}
+			graded, err := sub.IsGraded()
+			if graded {
+				log.Printf("Failed to requeue Submission %v. Submission already graded. Err. %v\n", sub.ID, err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to requeue submission. Submission already graded",
+					http.StatusInternalServerError)
+				return
+			}
+
 			err = sub.SetSubmissionStatus(NewSub)
 			if err != nil {
-				fmt.Printf("Failed to reset Submission . %v Err. %v\n", sub, err)
+				log.Printf("Failed to requeue Submission . %v Err. %v\n", sub, err)
 				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to reset submission.",
+				http.Error(w, "Failed to requeue submission.",
 					http.StatusInternalServerError)
 				return
 
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := []byte(`{"msg": "Submission reset successfully."}`)
+			resp := []byte(`{"msg": "Submission requeue successfully."}`)
 			fmt.Fprint(w, string(resp))
 
 		default:
@@ -245,7 +255,7 @@ func submissionGradeHandler() http.HandlerFunc {
 						log.Printf("Score successfully updated.")
 					}
 				} else {
-					fmt.Printf("Failed to Save Score %+v. Err. %v\n", s, err)
+					log.Printf("Failed to Save Score %+v. Err. %v\n", s, err)
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to save Score.",
 						http.StatusInternalServerError)
@@ -264,7 +274,7 @@ func submissionGradeHandler() http.HandlerFunc {
 
 			_, err = AddStudentProblemStatusSQL.Exec(s.StudnetID, s.ProblemID, 2, time.Now(), time.Now())
 			if err != nil {
-				fmt.Printf("Failed to update student problem status (2) to DB. Err. %v\n", err)
+				log.Printf("Failed to update student problem status (2) to DB. Err. %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				http.Error(w, "Failed to update student problem status (2) to DB.",
 					http.StatusInternalServerError)

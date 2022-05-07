@@ -52,7 +52,7 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 
 		defer rows.Close()
 		if err != nil {
-			fmt.Printf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db viewStudentSubmissionStatus. Err: %v", err)
 		}
 
 		for rows.Next() {
@@ -138,7 +138,7 @@ func viewProblemStatus() http.HandlerFunc {
 
 		defer rows.Close()
 		if err != nil {
-			fmt.Printf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db viewProblemStatus. Err: %v", err)
 		}
 
 		for rows.Next() {
@@ -188,7 +188,7 @@ func problemDetail() http.HandlerFunc {
 		rows, err := Database.Query("select question from problem where id = ?", problem_id[0])
 		defer rows.Close()
 		if err != nil {
-			fmt.Errorf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db problemQuestion. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -200,7 +200,7 @@ func problemDetail() http.HandlerFunc {
 
 		defer rows.Close()
 		if err != nil {
-			fmt.Printf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db problemDetail. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

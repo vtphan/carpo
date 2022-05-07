@@ -171,7 +171,7 @@ var PROBLEM_DETAIL_TEMPLATE = `
 				</div>
 
 				<div class="column">
-					<h4> Problem Status </h4>
+					<h4> Status </h4>
 					<table class="table is-fullwidth is-hoverable is-narrow">
 						<thead>
 							<tr>
