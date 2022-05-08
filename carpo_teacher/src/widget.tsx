@@ -203,13 +203,13 @@ const MarkdownCellButtonComponent = ({
 
             showDialog({
                 title:'Feedback Status',
-                body: "Feedback is now provided.",
+                body: "Feedback is sent to the student",
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
 
             })
             .catch(reason => {
-            showErrorMessage('Submission Feedback Error', reason);
+            showErrorMessage('Feedback Send Error', reason);
             console.error(
                 `Failed to save feedback. \n${reason}`
             );
