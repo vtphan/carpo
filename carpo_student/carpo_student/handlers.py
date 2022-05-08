@@ -143,17 +143,21 @@ class QuestionRouteHandler(APIHandler):
             return
 
         # Write questions to individual Notebook
-        self.question_file(resp['data'])
+        file_paths = self.question_file(resp['data'])
+        print(file_paths)
+        if file_paths:
+            msg = "Problem(s) placed in notebook(s) " + ', '.join(file_paths) + '.'
+        else: 
+            msg = "You have got {} new problems. Please check again later.".format(len(resp['data']))
     
-        msg = {
-            "msg": "You have got {} new problems.".format(len(resp['data']))
-        }
-        self.finish(json.dumps(msg))
+        self.finish(json.dumps({'msg': msg}))
 
     def question_file(self, data):
-
+        file_paths = []
         for res in data:
             file_path = os.path.join(os.getcwd(),"Carpo","p{:03d}".format( res['id']) + ".ipynb")
+
+            file_paths.append("p{:03d}".format( res['id']) + ".ipynb")
 
             if not os.path.exists(file_path):
                 content = {
@@ -202,7 +206,7 @@ class QuestionRouteHandler(APIHandler):
 
                 with open(file_path, "w") as file:
                     file.write(json_object)
-
+        return file_paths
 
 class FeedbackRouteHandler(APIHandler):
     @tornado.web.authenticated

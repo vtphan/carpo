@@ -222,9 +222,13 @@ export class ButtonExtension
         method: 'GET'
       })
         .then(data => {
+
+          if (data.Remaining != 0 ){
+            var msg = "Notebook " + data.sub_file + " is placed in folder Problem_"+ data.question +". There are " + data.remaining + " submissions in the queue."
+          } else {
+            var msg = "You have got 0 submissions. Please check again later.\n"
+          }
           
-          var msg = "You have got " + data.data.length + " submissions.\n"
-        
           showDialog({
             title:'Submission Status',
             body: msg,
@@ -236,7 +240,7 @@ export class ButtonExtension
     
         })
         .catch(reason => {
-          showErrorMessage('Get recent submissions Error', reason);
+          showErrorMessage('Get Student Code Error', reason);
           console.error(
             `Failed to get student's code from the server. Please check your connection.\n${reason}`
           );

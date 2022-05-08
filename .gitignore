@@ -1,2 +1,5 @@
 .vscode
 **/*.sqlite3
+
+
+**/*.log

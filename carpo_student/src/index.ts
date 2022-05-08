@@ -204,7 +204,7 @@ export class GetQuestionButton
           console.log(data);
 
           showDialog({
-            title:'Questions',
+            title:'',
             body:  data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });

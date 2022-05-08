@@ -29,7 +29,7 @@ func problemHandler() http.HandlerFunc {
 
 			activeQuestions := make([]map[string]interface{}, 0)
 			expiredID := make([]int, 0)
-			rows, err := Database.Query("select id, teacher_id, question, lifetime from problem where status = 1 order by created_at desc")
+			rows, err := Database.Query("select id, teacher_id, question, lifetime from problem where status = 1 order by created_at asc")
 			defer rows.Close()
 			if err != nil {
 				fmt.Errorf("Error quering db. Err: %v", err)

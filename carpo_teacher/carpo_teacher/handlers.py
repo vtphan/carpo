@@ -145,9 +145,11 @@ class RouteHandler(APIHandler):
             return
 
         # Write response to individual Notebook
-        self.submission_file(response['data'])
-
-        self.finish(response)
+        file_paths = self.submission_file(response['data'])
+        if file_paths:
+            self.finish(json.dumps({'remaining': response['Remaining'], 'sub_file': file_paths[0]['Notebook'], 'question': file_paths[0]['Question']}))
+        else: 
+            self.finish(response)
 
     def post(self):
         input_data = self.get_json_body()
@@ -177,12 +179,14 @@ class RouteHandler(APIHandler):
 
     
     def submission_file(self, data):
-
+        file_paths = []
         for res in data:
             dir_path = os.path.join("Carpo", "problem_{}".format(res['problem_id']))
             file_path = "sub_{:03d}".format(res['id']) + ".ipynb"
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
+
+            file_paths.append({'Notebook': file_path, 'Question': "{}".format(res['problem_id'])})
 
             submission_file = os.path.join(dir_path, file_path)
             if not os.path.exists(submission_file):
@@ -248,7 +252,7 @@ class RouteHandler(APIHandler):
 
                 with open(submission_file, "w") as file:
                     file.write(json_object)
-            
+        return file_paths
 class ProblemHandler(APIHandler):
 
     @tornado.web.authenticated

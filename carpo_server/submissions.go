@@ -120,11 +120,14 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			newSub := 0
+			sqlSmt := `select count(*) from submission where status = 0`
+			_ = Database.QueryRow(sqlSmt).Scan(&newSub)
 
-			log.Printf("Fetching all submissions of students...\n")
+			log.Printf("Fetching submissions of students LIMIT 1...\n")
 
 			s := Submission{}
-			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by updated_at desc limit 3")
+			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by updated_at desc limit 1")
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error quering db teacherSubmissionHandler. Err: %v", err)
@@ -172,6 +175,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 			// fmt.Printf("%v", submissions)
 			resp := Response{}
+			if newSub >= 1 {
+				resp.Remaining = newSub - 1
+			}
 			sub, _ := json.Marshal(submissions)
 
 			d := []map[string]interface{}{}

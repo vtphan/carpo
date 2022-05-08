@@ -63,5 +63,6 @@ type ProblemGradeStatus struct {
 	UnpublishedDated time.Time
 }
 type Response struct {
-	Data []map[string]interface{} `json:"data"`
+	Data      []map[string]interface{} `json:"data"`
+	Remaining int
 }
