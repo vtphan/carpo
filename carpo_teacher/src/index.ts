@@ -171,7 +171,7 @@ export class RegisterButton
           console.log(data);
 
           showDialog({
-            title:'Register',
+            title:'',
             body:  "Teacher "+ data.name + " has been registered.",
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
