@@ -30,7 +30,7 @@ func teacherFeedbackHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddFeedbackSQL.Exec(f.TeacherID, f.SubmissionID, f.StudnetID, 0, f.Code, f.Comment, 0, time.Now(), time.Now())
+			_, err = AddFeedbackSQL.Exec(f.TeacherID, f.SubmissionID, f.StudnetID, 0, f.Code, f.Comment, 0, 1, time.Now(), time.Now(), time.Now())
 
 			if err != nil {
 				var sqliteErr sqlite3.Error

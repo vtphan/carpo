@@ -53,8 +53,8 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 				<td>{{ .SubmissionID }}</td>
 				<td>{{ .Submitted }}</td>
 				<td>{{ if eq .Score 0 }} Ungraded {{else if eq .Score 1}} Correct {{else if eq .Score 2}} Incorrect {{end}}</td>
-				<td>{{ if .Score }} {{ .Graded }} {{ end }} </td>
-				<td>{{ if not .Score }} {{ .Graded }} {{ end }} </td>
+				<td>{{ if .Score }} {{ .GradeAt }} {{ end }} </td>
+				<td>{{ if .HasFeedback }} {{ .FeedbackAt }} {{ end }} </td>
 			</tr>
 			{{ end }}
 			</tbody>

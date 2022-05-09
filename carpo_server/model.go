@@ -50,7 +50,9 @@ type StudentSubmissionStatus struct {
 	SubmissionID int
 	Submitted    string
 	Score        int
-	Graded       string
+	GradeAt      string
+	HasFeedback  int
+	FeedbackAt   string
 }
 
 type ProblemGradeStatus struct {
