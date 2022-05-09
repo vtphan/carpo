@@ -74,7 +74,7 @@ const CodeCellButtonComponent = ({
         .then(data => {
             console.log(data);
             showDialog({
-                title:'Code Share',
+                title:'',
                 body: 'Code in this block has been shared with the instructor.',
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });

@@ -63,6 +63,9 @@ func main() {
 	Config = init_config(config_file)
 	init_database(Config.Database)
 
+	// file, _ := os.OpenFile("server.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	// log.SetOutput(file)
+
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "pong") })
 
 	http.HandleFunc("/add_teacher", addUserHandler("teacher"))
@@ -83,7 +86,7 @@ func main() {
 	http.HandleFunc("/problems/status", viewProblemStatus())
 	http.HandleFunc("/problem_detail", problemDetail())
 
-	fmt.Println("serving at port: 8081")
+	log.Println("serving at port: 8081")
 
 	// Archive expire problems in DB
 	ticker := time.NewTicker(1 * time.Hour)
@@ -92,7 +95,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				fmt.Printf("Running Problem Expiry Checks:\n")
+				log.Printf("Running Problem Expiry Checks:\n")
 				expireProblems()
 			case <-quit:
 				ticker.Stop()
@@ -101,7 +104,7 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("Serving at: %s\n", Config.Address)
+	log.Printf("Serving at: %s\n", Config.Address)
 
 	err := http.ListenAndServe(Config.Address, nil)
 	if err != nil {

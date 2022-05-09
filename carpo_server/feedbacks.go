@@ -30,7 +30,7 @@ func teacherFeedbackHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddFeedbackSQL.Exec(f.TeacherID, f.SubmissionID, f.StudnetID, 0, f.Code, f.Comment, 0, time.Now(), time.Now())
+			_, err = AddFeedbackSQL.Exec(f.TeacherID, f.SubmissionID, f.StudnetID, 0, f.Code, f.Comment, 0, 1, time.Now(), time.Now(), time.Now())
 
 			if err != nil {
 				var sqliteErr sqlite3.Error
@@ -45,7 +45,7 @@ func teacherFeedbackHandler() http.HandlerFunc {
 					}
 
 				} else {
-					fmt.Printf("Failed to save Feedback: %v Err. %v\n", f, err)
+					log.Printf("Failed to save Feedback: %v Err. %v\n", f, err)
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to save Feedback.",
 						http.StatusInternalServerError)
@@ -81,14 +81,15 @@ func getSubmissionFeedbacks() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 
-			fmt.Printf("Fetching Feedbacks for student_id %v... \n", student_id[0])
+			log.Printf("Fetching Feedbacks for student_id %v... \n", student_id[0])
 
 			f := Feedback{}
 			rows, err := Database.Query("select grade.id, submission.problem_id, submission.message, code_feedback, comment, grade.updated_at from grade INNER JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and grade.status = 0 order by grade.created_at desc", student_id[0])
 
 			defer rows.Close()
 			if err != nil {
-				fmt.Printf("Error quering db. Err: %v", err)
+				log.Printf("Error quering db for getSubmissionFeedbacks. Err: %v", err)
+				return
 			}
 
 			for rows.Next() {
@@ -102,7 +103,7 @@ func getSubmissionFeedbacks() http.HandlerFunc {
 				if err != nil {
 					log.Printf("SQL Error. Err: %v", err)
 				}
-				fmt.Printf("Set Feedback status to %v for Grade id: %v.\n", 1, feedback.ID)
+				log.Printf("Set Feedback status to %v for Grade id: %v.\n", 1, feedback.ID)
 				_, err = stmt.Exec(1, time.Now(), feedback.ID)
 			}
 

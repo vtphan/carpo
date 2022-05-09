@@ -53,8 +53,8 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 				<td>{{ .SubmissionID }}</td>
 				<td>{{ .Submitted }}</td>
 				<td>{{ if eq .Score 0 }} Ungraded {{else if eq .Score 1}} Correct {{else if eq .Score 2}} Incorrect {{end}}</td>
-				<td>{{ if .Score }} {{ .Graded }} {{ end }} </td>
-				<td>{{ if not .Score }} {{ .Graded }} {{ end }} </td>
+				<td>{{ if .Score }} {{ .GradeAt }} {{ end }} </td>
+				<td>{{ if .HasFeedback }} {{ .FeedbackAt }} {{ end }} </td>
 			</tr>
 			{{ end }}
 			</tbody>
@@ -137,9 +137,14 @@ var PROBLEM_DETAIL_TEMPLATE = `
 			.row {
 				display: flex;
 			}
-			.column {
+			.code-col {
 				float: left;
-				width: 50%;
+				width: 70%;
+				padding: 0 10px;
+			}
+			.detail-col {
+				float: left;
+				width: 30%;
 				padding: 0 10px;
 			}
 			#modal {
@@ -165,13 +170,13 @@ var PROBLEM_DETAIL_TEMPLATE = `
 		<div id="modal" class="container">
 			<header><h1><a href="/problems/status">Problem Status</a></h1></header>
 			<div class="row">
-				<div class="column">
+				<div class="code-col">
 					<h4> Question </h4>
 					<pre><code>{{ .Question }}</code></pre>
 				</div>
 
-				<div class="column">
-					<h4> Problem Status </h4>
+				<div class="detail-col">
+					<h4> Status </h4>
 					<table class="table is-fullwidth is-hoverable is-narrow">
 						<thead>
 							<tr>

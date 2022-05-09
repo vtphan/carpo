@@ -143,17 +143,20 @@ class QuestionRouteHandler(APIHandler):
             return
 
         # Write questions to individual Notebook
-        self.question_file(resp['data'])
+        file_paths = self.question_file(resp['data'])
+        if file_paths:
+            msg = "Problem(s) placed in notebook(s) " + ', '.join(file_paths) + '.'
+        else: 
+            msg = "You have got {} new problems. Please check again later.".format(len(resp['data']))
     
-        msg = {
-            "msg": "You have got {} new problems.".format(len(resp['data']))
-        }
-        self.finish(json.dumps(msg))
+        self.finish(json.dumps({'msg': msg}))
 
     def question_file(self, data):
-
+        file_paths = []
         for res in data:
             file_path = os.path.join(os.getcwd(),"Carpo","p{:03d}".format( res['id']) + ".ipynb")
+
+            file_paths.append("p{:03d}".format( res['id']) + ".ipynb")
 
             if not os.path.exists(file_path):
                 content = {
@@ -202,7 +205,7 @@ class QuestionRouteHandler(APIHandler):
 
                 with open(file_path, "w") as file:
                     file.write(json_object)
-
+        return file_paths
 
 class FeedbackRouteHandler(APIHandler):
     @tornado.web.authenticated
@@ -225,22 +228,24 @@ class FeedbackRouteHandler(APIHandler):
 
         if len(response['data']) == 0:
             self.finish(json.dumps({
-                "msg": "No Feedback available at the moment."
+                "msg": "No Feedback available at the moment. Please check again later."
             }))
             return
         
         # Write feedbacks to individual Notebook
-        self.feedback_file(response['data'])
-
-        msg = {
-            "msg": "Latest feedback availabe inside Feedback directory."
-        }
-        self.finish(json.dumps(msg))
+        file_paths = self.feedback_file(response['data'])
+        if file_paths:
+            msg = "Feedback(s) placed in " + ','.join(file_paths) + '.'
+        
+        self.finish(json.dumps({'msg':msg}))
 
     def feedback_file(self, data):
+        file_paths = []
         for res in data:
             dir_path = os.path.join("Carpo","Feedback")
             file_path = "p{:03d}_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
+            file_paths.append("Feedback/" + file_path)
+
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
@@ -303,7 +308,7 @@ class FeedbackRouteHandler(APIHandler):
 
                 with open(feedback_file, "w") as file:
                     file.write(json_object)
-
+        return file_paths
 class SubmissionRouteHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
     # patch, put, delete, options) to ensure only authorized user can request the

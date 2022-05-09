@@ -149,7 +149,7 @@ export class RegisterButton
           console.log(data);
 
           showDialog({
-            title:'Register',
+            title:'',
             body:  "Student "+ data.name + " has been registered.",
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
@@ -204,7 +204,7 @@ export class GetQuestionButton
           console.log(data);
 
           showDialog({
-            title:'Questions',
+            title:'',
             body:  data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
@@ -254,7 +254,7 @@ export class GetFeedbackButton
         .then(data => {
           console.log(data);
           showDialog({
-            title:'Teacher Feedback',
+            title:'',
             body: data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });

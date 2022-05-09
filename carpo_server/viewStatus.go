@@ -47,21 +47,23 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 
 		// Get Submission status
 		subStats := make([]StudentSubmissionStatus, 0)
-		stat := StudentSubmissionStatus{}
-		rows, err = Database.Query("select submission.problem_id, submission.id, submission.created_at, grade.score, grade.created_at from submission LEFT JOIN grade on submission.id = grade.submission_id where submission.student_id = ? order by submission.created_at desc", student_id[0])
+
+		rows, err = Database.Query("select submission.problem_id, submission.id, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.feedback_at from submission LEFT JOIN grade on submission.id = grade.submission_id where submission.student_id = ? order by submission.created_at desc", student_id[0])
 
 		defer rows.Close()
 		if err != nil {
-			fmt.Printf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db viewStudentSubmissionStatus. Err: %v", err)
 		}
 
 		for rows.Next() {
+			stat := StudentSubmissionStatus{}
 			var (
-				SubCreatedAt           string
-				GradeFeedbackCreatedAt string
-				score                  sql.NullInt64
+				SubCreatedAt      string
+				GradeCreatedAt    string
+				FeedbackCreatedAt string
+				score             sql.NullInt64
 			)
-			rows.Scan(&stat.ProblemID, &stat.SubmissionID, &SubCreatedAt, &score, &GradeFeedbackCreatedAt)
+			rows.Scan(&stat.ProblemID, &stat.SubmissionID, &SubCreatedAt, &score, &GradeCreatedAt, &stat.HasFeedback, &FeedbackCreatedAt)
 			if !score.Valid {
 				score.Int64 = 0
 			}
@@ -70,11 +72,16 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 			stime, _ := time.Parse(time.RFC3339, SubCreatedAt)
 			stat.Submitted = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(stime)))
 
-			if !score.Valid {
-				stat.Graded = ""
-			} else {
-				gtime, _ := time.Parse(time.RFC3339, GradeFeedbackCreatedAt)
-				stat.Graded = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(gtime)))
+			stat.GradeAt = ""
+			ftime, _ := time.Parse(time.RFC3339, GradeCreatedAt)
+			if stat.Score == 1 || stat.Score == 2 {
+				stat.GradeAt = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(ftime)))
+			}
+
+			stat.FeedbackAt = ""
+			gtime, _ := time.Parse(time.RFC3339, FeedbackCreatedAt)
+			if stat.HasFeedback == 1 {
+				stat.FeedbackAt = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(gtime)))
 			}
 
 			subStats = append(subStats, stat)
@@ -138,7 +145,7 @@ func viewProblemStatus() http.HandlerFunc {
 
 		defer rows.Close()
 		if err != nil {
-			fmt.Printf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db viewProblemStatus. Err: %v", err)
 		}
 
 		for rows.Next() {
@@ -188,7 +195,7 @@ func problemDetail() http.HandlerFunc {
 		rows, err := Database.Query("select question from problem where id = ?", problem_id[0])
 		defer rows.Close()
 		if err != nil {
-			fmt.Errorf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db problemQuestion. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -200,7 +207,7 @@ func problemDetail() http.HandlerFunc {
 
 		defer rows.Close()
 		if err != nil {
-			fmt.Printf("Error quering db. Err: %v", err)
+			log.Printf("Error quering db problemDetail. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

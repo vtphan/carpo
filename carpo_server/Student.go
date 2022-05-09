@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -20,7 +19,7 @@ func (st *Studnet) Add() (id int, alreadyExists bool, err error) {
 
 	for rows.Next() {
 		rows.Scan(&id)
-		fmt.Printf("User %v already exists as student with ID %v. \n", st.Name, id)
+		log.Printf("User %v already exists as student with ID %v. \n", st.Name, id)
 		return id, true, nil
 	}
 
@@ -32,7 +31,7 @@ func (st *Studnet) Add() (id int, alreadyExists bool, err error) {
 		return 0, false, err
 	}
 
-	fmt.Printf("User %v created as student with ID %v.\n", st.Name, id)
+	log.Printf("User %v created as student with ID %v.\n", st.Name, id)
 
 	return id, false, nil
 

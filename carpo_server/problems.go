@@ -29,7 +29,7 @@ func problemHandler() http.HandlerFunc {
 
 			activeQuestions := make([]map[string]interface{}, 0)
 			expiredID := make([]int, 0)
-			rows, err := Database.Query("select id, teacher_id, question, lifetime from problem where status = 1 order by created_at desc")
+			rows, err := Database.Query("select id, teacher_id, question, lifetime from problem where status = 1 order by created_at asc")
 			defer rows.Close()
 			if err != nil {
 				fmt.Errorf("Error quering db. Err: %v", err)
@@ -63,7 +63,7 @@ func problemHandler() http.HandlerFunc {
 			for _, q := range activeQuestions {
 				_, err = AddStudentProblemStatusSQL.Exec(student_id[0], q["id"], 0, time.Now(), time.Now())
 				if err != nil {
-					fmt.Printf("Failed to update student problem status(0) to DB. Err. %v\n", err)
+					log.Printf("Failed to update student problem status(0) to DB. Err. %v\n", err)
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to update student problem status(0) to DB.",
 						http.StatusInternalServerError)
@@ -75,7 +75,7 @@ func problemHandler() http.HandlerFunc {
 			for _, id := range expiredID {
 				err = archiveProblem(id)
 				if err != nil {
-					fmt.Printf("Failed to archive Problem ID: %v. Err: %v", id, err)
+					log.Printf("Failed to archive Problem ID: %v. Err: %v", id, err)
 				}
 			}
 
@@ -93,7 +93,7 @@ func problemHandler() http.HandlerFunc {
 			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], questionLife, 1, time.Now(), time.Now())
 			if err != nil {
 
-				fmt.Printf("Failed to add question to DB. Err. %v\n", err)
+				log.Printf("Failed to add question to DB. Err. %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				http.Error(w, fmt.Sprintf("Failed to add question to DB.%v", err),
 					http.StatusInternalServerError)
@@ -102,7 +102,7 @@ func problemHandler() http.HandlerFunc {
 			}
 
 			id, _ := res.LastInsertId()
-			fmt.Printf("Added Problem: %v\n", body)
+			log.Printf("Added Problem: %v\n", body)
 			w.WriteHeader(http.StatusCreated)
 			d := map[string]interface{}{
 				"id":  id,
@@ -118,7 +118,7 @@ func problemHandler() http.HandlerFunc {
 			if id != 0 {
 				err = archiveProblem(id)
 				if err != nil {
-					fmt.Printf("Failed to archive Problem ID: %v. Err: %v", id, err)
+					log.Printf("Failed to archive Problem ID: %v. Err: %v", id, err)
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to archive question to DB.",
 						http.StatusInternalServerError)
@@ -133,7 +133,7 @@ func problemHandler() http.HandlerFunc {
 				data, _ := json.Marshal(d)
 				fmt.Fprint(w, string(data))
 			} else {
-				fmt.Printf("Invalid Problem ID: %v.\n", body["problem_id"])
+				log.Printf("Invalid Problem ID: %v.\n", body["problem_id"])
 			}
 
 		default:
@@ -147,9 +147,9 @@ func problemHandler() http.HandlerFunc {
 func archiveProblem(id int) error {
 	stmt, err := Database.Prepare("update problem set status=?, updated_at=?  where id=?")
 	if err != nil {
-		log.Printf("SQL Error. Err: %v", err)
+		log.Printf("SQL Error on archiveProblem. Err: %v", err)
 	}
-	fmt.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
+	log.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
 	_, err = stmt.Exec(0, time.Now(), id)
 
 	return err
@@ -175,7 +175,7 @@ func expireProblems() error {
 	}
 
 	if len(expiredIDs) == 0 {
-		fmt.Printf("No expired problems in DB.\n")
+		log.Printf("No expired problems in DB.\n")
 		return nil
 	}
 
@@ -185,7 +185,7 @@ func expireProblems() error {
 			return fmt.Errorf("Failed to auto archive expired Problem ID: %v.. Err: %v\n", pid, err)
 		}
 
-		fmt.Printf("Successfully archived expired Problem ID: %v.\n", pid)
+		log.Printf("Successfully archived expired Problem ID: %v.\n", pid)
 
 	}
 

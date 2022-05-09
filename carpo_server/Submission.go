@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 )
@@ -22,9 +21,27 @@ func (sub *Submission) UpdateSubmission(studentID int) (err error) {
 func (sub *Submission) SetSubmissionStatus(status int) (err error) {
 	stmt, err := Database.Prepare("update submission set status=?, updated_at=?  where id=?")
 	if err != nil {
-		log.Printf("SQL Error. Err: %v", err)
+		log.Printf("SQL Error %v. Err: %v", stmt, err)
 	}
-	fmt.Printf("Submission status set to %v for sub id: %v.\n", status, sub.ID)
+	log.Printf("Submission status set to %v for sub id: %v.\n", status, sub.ID)
 	_, err = stmt.Exec(status, time.Now(), sub.ID)
 	return
+}
+
+func (sub *Submission) IsGraded() (graded bool, err error) {
+	score := 0
+	sqlSmt := `select score from grade where submission_id=?`
+	err = Database.QueryRow(sqlSmt, sub.ID).Scan(&score)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			log.Printf("SQL Error %v. Err: %v", sqlSmt, err)
+		}
+
+		return
+	}
+	if score == 1 || score == 2 {
+		return true, nil
+	}
+	return
+
 }
