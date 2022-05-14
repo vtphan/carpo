@@ -127,7 +127,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			log.Printf("Fetching submissions of students LIMIT 1...\n")
 
 			s := Submission{}
-			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by updated_at desc limit 1")
+			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by created_at asc limit 1")
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error quering db teacherSubmissionHandler. Err: %v", err)
@@ -202,9 +202,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			graded, err := sub.IsGraded()
 			if graded {
 				log.Printf("Failed to requeue Submission %v. Submission already graded. Err. %v\n", sub.ID, err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to requeue submission. Submission already graded",
-					http.StatusInternalServerError)
+				w.WriteHeader(http.StatusOK)
+				resp := []byte(`{"msg": "This submission is already graded. It cannot go back into the submission queue."}`)
+				fmt.Fprint(w, string(resp))
 				return
 			}
 
@@ -219,7 +219,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := []byte(`{"msg": "Submission requeue successfully."}`)
+			resp := []byte(`{"msg": "Submission put back into the queue successfully."}`)
 			fmt.Fprint(w, string(resp))
 
 		default:

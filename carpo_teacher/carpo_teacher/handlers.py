@@ -170,10 +170,11 @@ class RouteHandler(APIHandler):
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
             return
 
-        # Delete the local submission notebook
-        notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "sub_{:03d}".format(input_data['submission_id']) + ".ipynb" )
-        if os.path.exists(notebook_path):
-            os.remove(notebook_path)
+        if response['msg'] == "Submission put back into the queue successfully.":
+            # Delete the local submission notebook
+            notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "sub_{:03d}".format(input_data['submission_id']) + ".ipynb" )
+            if os.path.exists(notebook_path):
+                os.remove(notebook_path)
 
         self.finish(response)
 

@@ -143,17 +143,16 @@ const CodeCellButtonComponent = ({
             method: 'POST',
             body: JSON.stringify({ "submission_id": info.id, "problem_id": info.problem_id})
         }).then(data => {
-            var msg = "This submission is now ungraded."
             showDialog({
                 title:'Grading Status Reset',
-                body: msg,
+                body: data.msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
             })
             .catch(reason => {
-            showErrorMessage('Submission Grade Error', reason);
+            showErrorMessage('Submission Reset Error', reason);
             console.error(
-                `Failed to grade the submission. \n${reason}`
+                `Failed to put back the submission. \n${reason}`
             );
         });
 
