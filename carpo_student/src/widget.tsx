@@ -72,10 +72,12 @@ const CodeCellButtonComponent = ({
             body: JSON.stringify(postBody)
         })
         .then(data => {
-            console.log(data);
+            if (data.msg === "Submission saved successfully." ){
+                data.msg = 'Code in this block has been shared with the instructor.'
+            }
             showDialog({
                 title:'',
-                body: 'Code in this block has been shared with the instructor.',
+                body: data.msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
 

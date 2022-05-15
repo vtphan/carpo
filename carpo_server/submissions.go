@@ -69,10 +69,9 @@ func studentSubmissionHandler() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			if !isAllowedSubmission(studnet.ID) {
-				log.Printf("Submission is not allowed within 30 seconds of previous submission.\n")
-				w.WriteHeader(http.StatusTooManyRequests)
-				http.Error(w, "Please wait for 30 seconds before you make another submission on this problem.",
-					http.StatusTooManyRequests)
+				log.Printf("Submission is not allowed within 30 seconds of previous submission. StudentID: %v\n", studnet.ID)
+				resp := []byte(`{"msg": "Please wait for 30 seconds before you make another submission on this problem."}`)
+				fmt.Fprint(w, string(resp))
 				return
 
 			}
@@ -127,7 +126,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			log.Printf("Fetching submissions of students LIMIT 1...\n")
 
 			s := Submission{}
-			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by updated_at desc limit 1")
+			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by created_at asc limit 1")
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error quering db teacherSubmissionHandler. Err: %v", err)
@@ -152,9 +151,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 					if score != 0 {
 						gTime, _ := time.Parse(time.RFC3339, scoreTime)
-						s.Info += fmt.Sprintf("[ SubID %v Submitted: %.1f minutes ago | Graded: %.1f minutes ago | Status: %v | Time Left: %.1f ] \n", sub_id, subMin, time.Now().Sub(gTime).Minutes(), GradingMessage[score], timeLeft)
+						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], time.Now().Sub(gTime).Minutes(), timeLeft)
 					} else {
-						s.Info += fmt.Sprintf("[ SubID %v Submitted: %.1f minutes ago | Graded: %.1f minutes ago | Status: %v | Time Left: %.1f ] \n", sub_id, subMin, 0.0, GradingMessage[score], timeLeft)
+						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], 0.0, timeLeft)
 					}
 
 					s.Info += "\n\n"
@@ -202,9 +201,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			graded, err := sub.IsGraded()
 			if graded {
 				log.Printf("Failed to requeue Submission %v. Submission already graded. Err. %v\n", sub.ID, err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to requeue submission. Submission already graded",
-					http.StatusInternalServerError)
+				w.WriteHeader(http.StatusOK)
+				resp := []byte(`{"msg": "This submission is already graded. It cannot go back into the submission queue."}`)
+				fmt.Fprint(w, string(resp))
 				return
 			}
 
@@ -219,7 +218,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := []byte(`{"msg": "Submission requeue successfully."}`)
+			resp := []byte(`{"msg": "Submission put back into the queue successfully."}`)
 			fmt.Fprint(w, string(resp))
 
 		default:
@@ -296,4 +295,42 @@ func submissionGradeHandler() http.HandlerFunc {
 		}
 
 	}
+}
+
+func gradedSubmissionHandler() http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		gradedSubmissions := make([]GradedSubmission, 0)
+
+		switch r.Method {
+		case http.MethodGet:
+			log.Printf("Fetching all graded submissions...\n")
+
+			s := GradedSubmission{}
+			rows, err := Database.Query("select submission.id, submission.message, submission.code, submission.created_at as sub_created_at, submission.student_id, grade.score, grade.created_at as grade_created_at, problem.id as problem_id, problem.lifetime, grade.comment from submission INNER join problem on submission.problem_id = problem.id left join grade on grade.submission_id = submission.id where grade.score in (1,2) order by submission.created_at desc")
+			defer rows.Close()
+			if err != nil {
+				log.Printf("Error quering db gradedSubmissionHandler. Err: %v", err)
+				return
+			}
+
+			for rows.Next() {
+				rows.Scan(&s.ID, &s.Message, &s.Code, &s.SubCreatedAt, &s.StudentID, &s.Score, &s.GradedCreatedAt, &s.ProblemID, &s.ProblemLifeTime, &s.Comment)
+				s.Time = strconv.Itoa(s.SubCreatedAt.Hour()) + ":" + strconv.Itoa(s.SubCreatedAt.Minute())
+				gradedSubmissions = append(gradedSubmissions, s)
+			}
+
+			resp := Response{}
+
+			sub, _ := json.Marshal(gradedSubmissions)
+
+			d := []map[string]interface{}{}
+			_ = json.Unmarshal(sub, &d)
+			resp.Data = d
+			data, _ := json.Marshal(resp)
+			fmt.Fprint(w, string(data))
+		}
+	}
+
 }

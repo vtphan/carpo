@@ -25,6 +25,20 @@ type Submission struct {
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
+type GradedSubmission struct {
+	ID              int       `json:"id"`
+	Message         string    `json:"message"`
+	Code            string    `json:"code"`
+	StudentID       int       `json:"student_id"`
+	Score           int       `json:"score"`
+	Comment         string    `json:"comment"`
+	ProblemID       int       `json:"problem_id"`
+	Time            string    `json:"time"`
+	ProblemLifeTime time.Time `json:"problem_life_time"`
+	SubCreatedAt    time.Time `json:"sub_created_at"`
+	GradedCreatedAt time.Time `json:"grade_created_at"`
+}
+
 type Grade struct {
 	ID           int    `json:"id"`
 	TeacherID    int    `json:"teacher_id"`

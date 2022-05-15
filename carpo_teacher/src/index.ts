@@ -140,7 +140,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
     
     //  tell the document registry about your widget extension:
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
-    app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
+    app.docRegistry.addWidgetExtension('Notebook', new NewSubmissionButtonExtension());
+    app.docRegistry.addWidgetExtension('Notebook', new AllSubmissionButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
@@ -201,7 +202,7 @@ export class RegisterButton
 }
 
 
-export class ButtonExtension
+export class NewSubmissionButtonExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
   /**
@@ -250,9 +251,9 @@ export class ButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'Get Student Code',
+      label: 'New Submission',
       onClick: getSubmissions,
-      tooltip: 'Get submissions from students.',
+      tooltip: 'Get new submissions from students.',
     });
 
     panel.toolbar.insertItem(11, 'getStudentsCode', button);
@@ -261,6 +262,62 @@ export class ButtonExtension
     });
   }
 }
+
+export class AllSubmissionButtonExtension
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const getGradedSubmissions = () => {
+      NotebookActions.clearAllOutputs(panel.content);
+
+      requestAPI<any>('graded_submissions',{
+        method: 'GET'
+      })
+        .then(data => {
+          
+          showDialog({
+            title:'',
+            body: data.msg,
+            buttons: [Dialog.okButton({ label: 'Ok' })]
+          });
+          
+
+          console.log(data)
+    
+        })
+        .catch(reason => {
+          showErrorMessage('Get Graded Submissions Error', reason);
+          console.error(
+            `Failed to get student's code from the server. Please check your connection.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'sync-code-button',
+      label: 'All Submission',
+      onClick: getGradedSubmissions,
+      tooltip: 'Get all graded submissions.',
+    });
+
+    panel.toolbar.insertItem(12, 'getAllGradedSubmissions', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
+
 
 export class PublishProblemButtonExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
@@ -340,7 +397,7 @@ export class PublishProblemButtonExtension
       tooltip: 'Publish New Problem.',
     });
 
-    panel.toolbar.insertItem(12, 'publishNewProblem', button);
+    panel.toolbar.insertItem(13, 'publishNewProblem', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -416,7 +473,7 @@ export class ArchiveProblemButtonExtension
       tooltip: 'Archive Problem.',
     });
 
-    panel.toolbar.insertItem(13, 'archivesProblem', button);
+    panel.toolbar.insertItem(14, 'archivesProblem', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -463,7 +520,7 @@ export class viewProblemStatusExtension
       tooltip: 'View all problem status',
     });
 
-    panel.toolbar.insertItem(14, 'viewProblemStatus', button);
+    panel.toolbar.insertItem(15, 'viewProblemStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
