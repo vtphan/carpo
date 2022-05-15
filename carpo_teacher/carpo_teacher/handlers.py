@@ -121,7 +121,7 @@ class RegistrationHandler(APIHandler):
         print(response)
         self.finish(response)
         
-class RouteHandler(APIHandler):
+class SubmissionHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
     # patch, put, delete, options) to ensure only authorized user can request the
     # Jupyter server
@@ -260,6 +260,108 @@ class RouteHandler(APIHandler):
                 with open(submission_file, "w") as file:
                     file.write(json_object)
         return file_paths
+
+class GradedSubmissionHandler(APIHandler):
+    @tornado.web.authenticated
+    def get(self):
+
+        config_data = read_config_file()
+
+        if not {'id', 'server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+        
+        url = config_data['server'] + "/teachers/graded_submissions"
+        
+        try:
+            response = requests.get(url,timeout=5).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
+
+        # Write response to individual Notebook
+        file_paths = self.submission_file(response['data'])
+        if file_paths:
+            self.finish(json.dumps({'msg':"Graded submissions placed inside "+ ", ".join(file_paths) +"."}))
+        else: 
+            self.finish(json.dumps({'msg':"New graded submissions not available. Please check again later."}))
+
+    def submission_file(self, data):
+        file_paths = []
+        for res in data:
+            dir_path = os.path.join("Carpo", "problem_{}".format(res['problem_id']),"Graded")
+            status = 'c' if res['score'] == 1 else 'i'
+            file_path = "{:03d}_{:03d}_{}".format(res['student_id'],res['id'],status) + ".ipynb"
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            
+            submission_file = os.path.join(dir_path, file_path)
+            if not os.path.exists(submission_file):
+                file_paths.append(submission_file.replace("Carpo/",""))
+                content = {
+                        "cells": [],
+                        "metadata": {
+                            "kernelspec": {
+                                "display_name": "Python 3 (ipykernel)",
+                                "language": "python",
+                                "name": "python3"
+                                },
+                            "language_info": {
+                            "codemirror_mode": {
+                                "name": "ipython",
+                                "version": 3
+                                },
+                            "file_extension": ".py",
+                            "mimetype": "text/x-python",
+                            "name": "python",
+                            "nbconvert_exporter": "python",
+                            "pygments_lexer": "ipython3",
+                            "version": "3.8.10"
+                            }
+                        },
+                        "nbformat": 4,
+                        "nbformat_minor": 5
+                    }
+
+                msg_block = ["## Submission {}\n".format( res['id'])]
+                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message:", "")+"\n" for x in res['message'].split("\n") ]
+
+                if res['message'].strip(' \t\n\r') != "## Message:":
+                    msg_block = msg_block + student_msg
+
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": msg_block
+                        })
+
+                code_block = ["#{} {} {}\n".format(res['student_id'], res['problem_id'], res['id'])]
+                content["cells"].append({
+                        "cell_type": "code",
+                        "execution_count": 0,
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": code_block + [ x+"\n" for x in res['code'].split("\n") ],
+                        "outputs": []
+                        })
+
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": [ x+"\n" for x in res['comment'].split("\n") ]
+                        })
+
+                # Serializing json 
+                json_object = json.dumps(content, indent = 4)
+
+                with open(submission_file, "w") as file:
+                    file.write(json_object)
+        return file_paths
+
 class ProblemHandler(APIHandler):
 
     @tornado.web.authenticated
@@ -386,8 +488,11 @@ def setup_handlers(web_app):
 
     base_url = web_app.settings["base_url"]
     route_pattern_code = url_path_join(base_url, "carpo-teacher", "submissions")
-    handlers = [(route_pattern_code, RouteHandler)]
+    handlers = [(route_pattern_code, SubmissionHandler)]
     web_app.add_handlers(host_pattern, handlers)
+
+    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "graded_submissions")
+    web_app.add_handlers(host_pattern, [(route_pattern_problems_status, GradedSubmissionHandler)])
 
     route_pattern_problem =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "problem")
     web_app.add_handlers(host_pattern, [(route_pattern_problem, ProblemHandler)])
@@ -403,7 +508,6 @@ def setup_handlers(web_app):
 
     route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "view_problem_list")
     web_app.add_handlers(host_pattern, [(route_pattern_problems_status, ViewProblemStatusRouteHandler)])
-
 
 
 

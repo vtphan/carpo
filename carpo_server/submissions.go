@@ -296,3 +296,41 @@ func submissionGradeHandler() http.HandlerFunc {
 
 	}
 }
+
+func gradedSubmissionHandler() http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		gradedSubmissions := make([]GradedSubmission, 0)
+
+		switch r.Method {
+		case http.MethodGet:
+			log.Printf("Fetching all graded submissions...\n")
+
+			s := GradedSubmission{}
+			rows, err := Database.Query("select submission.id, submission.message, submission.code, submission.created_at as sub_created_at, submission.student_id, grade.score, grade.created_at as grade_created_at, problem.id as problem_id, problem.lifetime, grade.comment from submission INNER join problem on submission.problem_id = problem.id left join grade on grade.submission_id = submission.id where grade.score in (1,2) order by submission.created_at desc")
+			defer rows.Close()
+			if err != nil {
+				log.Printf("Error quering db gradedSubmissionHandler. Err: %v", err)
+				return
+			}
+
+			for rows.Next() {
+				rows.Scan(&s.ID, &s.Message, &s.Code, &s.SubCreatedAt, &s.StudentID, &s.Score, &s.GradedCreatedAt, &s.ProblemID, &s.ProblemLifeTime, &s.Comment)
+				s.Time = strconv.Itoa(s.SubCreatedAt.Hour()) + ":" + strconv.Itoa(s.SubCreatedAt.Minute())
+				gradedSubmissions = append(gradedSubmissions, s)
+			}
+
+			resp := Response{}
+
+			sub, _ := json.Marshal(gradedSubmissions)
+
+			d := []map[string]interface{}{}
+			_ = json.Unmarshal(sub, &d)
+			resp.Data = d
+			data, _ := json.Marshal(resp)
+			fmt.Fprint(w, string(data))
+		}
+	}
+
+}
