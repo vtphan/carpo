@@ -215,20 +215,18 @@ class RouteHandler(APIHandler):
                         "nbformat": 4,
                         "nbformat_minor": 5
                     }
-                info_block = ["---\n"]
-                content["cells"].append({
-                        "cell_type": "markdown",
-                        "id": str(uuid.uuid4()),
-                        "metadata": {},
-                        "source": info_block + [ x+"\n" for x in res['info'].split("\n") ]
-                        })
 
-                msg_prefix = ["Student: {} at {} says:\n ".format(res['student_name'], res['time'])]
+                msg_block = ["## Submission {}\n".format( res['id'])]
+                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message:", "")+"\n" for x in res['message'].split("\n") ]
+
+                if res['message'].strip(' \t\n\r') != "## Message:":
+                    msg_block = msg_block + student_msg
+
                 content["cells"].append({
                         "cell_type": "markdown",
                         "id": str(uuid.uuid4()),
                         "metadata": {},
-                        "source": msg_prefix + [ x+"\n" for x in res['message'].split("\n") ]
+                        "source": msg_block
                         })
 
                 code_block = ["#{} {} {}\n".format(res['student_id'], res['problem_id'], res['id'])]
@@ -245,7 +243,15 @@ class RouteHandler(APIHandler):
                         "cell_type": "markdown",
                         "id": str(uuid.uuid4()),
                         "metadata": {},
-                        "source": "Instructor Feedback for " + res['student_name'] + " :\n\n"
+                        "source": "Instructor feedback for the student:\n"
+                        })
+                
+                sub_history = ["## Submission History\n"]
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": sub_history + [ x+"\n" for x in res['info'].split("\n") ] + ["---\n"]
                         })
 
                 # Serializing json 
