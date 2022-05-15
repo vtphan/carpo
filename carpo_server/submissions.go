@@ -69,10 +69,9 @@ func studentSubmissionHandler() http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			if !isAllowedSubmission(studnet.ID) {
-				log.Printf("Submission is not allowed within 30 seconds of previous submission.\n")
-				w.WriteHeader(http.StatusTooManyRequests)
-				http.Error(w, "Please wait for 30 seconds before you make another submission on this problem.",
-					http.StatusTooManyRequests)
+				log.Printf("Submission is not allowed within 30 seconds of previous submission. StudentID: %v\n", studnet.ID)
+				resp := []byte(`{"msg": "Please wait for 30 seconds before you make another submission on this problem."}`)
+				fmt.Fprint(w, string(resp))
 				return
 
 			}
@@ -152,9 +151,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 					if score != 0 {
 						gTime, _ := time.Parse(time.RFC3339, scoreTime)
-						s.Info += fmt.Sprintf("[ SubID %v Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], time.Now().Sub(gTime).Minutes(), timeLeft)
+						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], time.Now().Sub(gTime).Minutes(), timeLeft)
 					} else {
-						s.Info += fmt.Sprintf("[ SubID %v Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], 0.0, timeLeft)
+						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], 0.0, timeLeft)
 					}
 
 					s.Info += "\n\n"
