@@ -1,8 +1,8 @@
 # carpo
 ### Running carpo_server
 1. cd carpo_server
-2. go run *.go -c config.json
-
+2. go build
+3. ./carpo -c config.json
 ### Requirements to run carpo JupyterLab Extensions
 
 * JupyterLab >= 3.0
