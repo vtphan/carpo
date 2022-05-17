@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 )
@@ -139,6 +140,7 @@ func problemStatus(rows *sql.Rows) (pGradeStat ProblemGradeStatus) {
 
 func viewProblemStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ids := []int{}
 		// Get Problem Grading Status
 		pGradeStats := make([]ProblemGradeStatus, 0)
 		rows, err := Database.Query("select submission.problem_id, problem.created_at, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id group by problem_id order by problem_id desc")
@@ -151,7 +153,29 @@ func viewProblemStatus() http.HandlerFunc {
 		for rows.Next() {
 			pGradeStat := problemStatus(rows)
 			pGradeStats = append(pGradeStats, pGradeStat)
+			ids = append(ids, pGradeStat.ProblemID)
 		}
+
+		// Array of int to string with ,
+		IDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
+		// Get Problems that don't have submissions yet.
+		rows, err = Database.Query(fmt.Sprintf("select id, created_at, status, updated_at from problem where id not in (%s) order by id desc", IDs))
+
+		defer rows.Close()
+		if err != nil {
+			log.Printf("Error quering db getProblems. Err: %v", err)
+		}
+
+		for rows.Next() {
+			pGradeStat := ProblemGradeStatus{}
+			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated)
+			pGradeStats = append(pGradeStats, pGradeStat)
+		}
+
+		// Sort the merged array of struct by ProblemID
+		sort.Slice(pGradeStats, func(i, j int) bool {
+			return pGradeStats[i].ProblemID > pGradeStats[j].ProblemID
+		})
 
 		data := struct {
 			Stats []ProblemGradeStatus

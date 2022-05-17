@@ -145,12 +145,12 @@ func problemHandler() http.HandlerFunc {
 }
 
 func archiveProblem(id int) error {
-	stmt, err := Database.Prepare("update problem set status=?, updated_at=?  where id=?")
+	stmt, err := Database.Prepare("update problem set status=?, lifetime=?, updated_at=?  where id=?")
 	if err != nil {
 		log.Printf("SQL Error on archiveProblem. Err: %v", err)
 	}
 	log.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
-	_, err = stmt.Exec(0, time.Now(), id)
+	_, err = stmt.Exec(0, time.Now(), time.Now(), id)
 
 	return err
 
