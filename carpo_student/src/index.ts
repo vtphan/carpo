@@ -70,9 +70,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
         nbTrack.activeCellChanged.connect(() => {
 
+          var question:string
+
           if (currentCell) {
             notebook.widgets.map((c: Cell) => {
-              if (c.model.type == 'code') {
+              if (c.model.type == 'code' || c.model.type == 'markdown' ) {
                 const currentLayout = c.layout as PanelLayout;
                 currentLayout.widgets.map(w => {
                   if (w === currentCellCheckButton) {
@@ -95,18 +97,23 @@ const plugin: JupyterFrontEndPlugin<void> = {
             if(index == activeIndex-1) {
               info.message = c.model.value.text
             }
+            if (index == activeIndex) {
+              question = c.model.value.text
+            }
           })
        
 
           const newCheckButton: CellCheckButton = new CellCheckButton(
             cell,info);
-
-          (cell.layout as PanelLayout).addWidget(newCheckButton);
+          
+          if (question.includes("## PID ")){
+            (cell.layout as PanelLayout).addWidget(newCheckButton);
+            currentCellCheckButton = newCheckButton;
+          }
 
           // Set the current cell and button for future
           // reference
           currentCell = cell;
-          currentCellCheckButton = newCheckButton;
 
         });
 

@@ -191,12 +191,13 @@ class QuestionRouteHandler(APIHandler):
                                 "source": [ "## Message: \n" ],
                                 "outputs": []
                                 })
+                problem_block = ["## PID {}\n".format(res['id'])]
                 content["cells"].append({
-                                "cell_type": "code",
+                                "cell_type": res['format'],
                                 "execution_count": 0,
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
-                                "source": [ x+"\n" for x in res['question'].split("\n") ],
+                                "source": problem_block + [ x+"\n" for x in res['question'].split("\n") ],
                                 "outputs": []
                                 })
 

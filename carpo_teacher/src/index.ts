@@ -339,10 +339,12 @@ export class PublishProblemButtonExtension
       const notebook = panel.content;
       const activeIndex = notebook.activeCellIndex
       var problem:string
+      var format:string
 
       notebook.widgets.map((c:Cell,index:number) => {
         if (index === activeIndex ) {
           problem = c.model.value.text
+          format = c.model.type
         }
       });
 
@@ -357,7 +359,8 @@ export class PublishProblemButtonExtension
       }
 
       let postBody = {
-        "question": problem
+        "question": problem,
+        "format": format
       }
 
       requestAPI<any>('problem',{

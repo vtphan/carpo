@@ -29,23 +29,24 @@ func problemHandler() http.HandlerFunc {
 
 			activeQuestions := make([]map[string]interface{}, 0)
 			expiredID := make([]int, 0)
-			rows, err := Database.Query("select id, teacher_id, question, lifetime from problem where status = 1 order by created_at asc")
+			rows, err := Database.Query("select id, teacher_id, question, format, lifetime from problem where status = 1 order by created_at asc")
 			defer rows.Close()
 			if err != nil {
 				fmt.Errorf("Error quering db. Err: %v", err)
 			}
 
 			var (
-				id, teacher_id     int
-				question, lifeTime string
+				id, teacher_id             int
+				question, format, lifeTime string
 			)
 
 			for rows.Next() {
-				rows.Scan(&id, &teacher_id, &question, &lifeTime)
+				rows.Scan(&id, &teacher_id, &question, &format, &lifeTime)
 				question := map[string]interface{}{
 					"id":         id,
 					"teacher_id": teacher_id,
 					"question":   question,
+					"format":     format,
 					"lifetime":   lifeTime,
 				}
 
@@ -90,7 +91,7 @@ func problemHandler() http.HandlerFunc {
 		case http.MethodPost:
 			// QuestionLife defaults to 90 minutes and status is Active (1)
 			questionLife := time.Now().Add((time.Minute * time.Duration(90)))
-			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], questionLife, 1, time.Now(), time.Now())
+			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], body["format"], questionLife, 1, time.Now(), time.Now())
 			if err != nil {
 
 				log.Printf("Failed to add question to DB. Err. %v\n", err)
