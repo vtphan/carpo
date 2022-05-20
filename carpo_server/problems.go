@@ -89,8 +89,25 @@ func problemHandler() http.HandlerFunc {
 			fmt.Fprint(w, string(data))
 
 		case http.MethodPost:
-			// QuestionLife defaults to 90 minutes and status is Active (1)
-			questionLife := time.Now().Add((time.Minute * time.Duration(90)))
+			var questionLife time.Time
+
+			if body["time_limit"] == nil {
+				// if no limit is provided,
+				// QuestionLife defaults to 90 minutes and status is Active (1)
+				questionLife = time.Now().Add((time.Minute * time.Duration(90)))
+			} else {
+				limit, err := getTimeLimit(fmt.Sprintf("%v", body["time_limit"]))
+				if err != nil {
+					log.Printf("Failed to parse time_limit of the problem. Err. %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, fmt.Sprintf("Failed to parse time_limit of the problem. %v", err),
+						http.StatusInternalServerError)
+					return
+
+				}
+				questionLife = time.Now().Add((time.Minute * time.Duration(limit)))
+			}
+
 			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], body["format"], questionLife, 1, time.Now(), time.Now())
 			if err != nil {
 
@@ -162,7 +179,7 @@ func expireProblems() error {
 	rows, err := Database.Query("select id from problem where status = 1  and datetime(lifetime) <= CURRENT_TIMESTAMP order by created_at desc")
 	defer rows.Close()
 	if err != nil {
-		return fmt.Errorf("Error quering db. Err: %v", err)
+		return fmt.Errorf("Error querying db. Err: %v", err)
 	}
 
 	var (
@@ -176,7 +193,6 @@ func expireProblems() error {
 	}
 
 	if len(expiredIDs) == 0 {
-		log.Printf("No expired problems in DB.\n")
 		return nil
 	}
 

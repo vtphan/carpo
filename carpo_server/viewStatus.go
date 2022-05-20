@@ -219,7 +219,7 @@ func problemDetail() http.HandlerFunc {
 		rows, err := Database.Query("select question from problem where id = ?", problem_id[0])
 		defer rows.Close()
 		if err != nil {
-			log.Printf("Error quering db problemQuestion. Err: %v", err)
+			log.Printf("Error querying db problemQuestion. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -231,7 +231,7 @@ func problemDetail() http.HandlerFunc {
 
 		defer rows.Close()
 		if err != nil {
-			log.Printf("Error quering db problemDetail. Err: %v", err)
+			log.Printf("Error querying db problemDetail. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

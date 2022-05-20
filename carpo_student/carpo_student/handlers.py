@@ -150,7 +150,7 @@ class QuestionRouteHandler(APIHandler):
             msg = "New Problem(s) downloaded and placed in notebook(s) " + ', '.join(file_paths['new_download']) + '.'
 
         if file_paths['already_downloaded']:
-            msg += " Problem(s) already downloaded and placed in notebook(s) " + ', '.join(file_paths['already_downloaded']) + '.'
+            msg += "\nProblem(s) already downloaded and placed in notebook(s) " + ', '.join(file_paths['already_downloaded']) + '.'
 
         if len(resp['data']) == 0: 
             msg = "You have got 0 new problems. Please check again later."
@@ -198,7 +198,7 @@ class QuestionRouteHandler(APIHandler):
                                 "source": [ "## Message: \n" ],
                                 "outputs": []
                                 })
-                problem_block = ["## PID {}\n".format(res['id'])]
+                problem_block = ["## PID {}\n## Expires At {}\n".format(res['id'], res['lifetime'])]
                 content["cells"].append({
                                 "cell_type": res['format'],
                                 "execution_count": 0,

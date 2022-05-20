@@ -340,8 +340,10 @@ export class PublishProblemButtonExtension
       const activeIndex = notebook.activeCellIndex
       var problem:string
       var format:string
+      var header:string
+      var time_limit:string
 
-      notebook.widgets.map((c:Cell,index:number) => {
+      notebook.widgets.map((c:Cell, index:number) => {
         if (index === activeIndex ) {
           problem = c.model.value.text
           format = c.model.type
@@ -358,9 +360,17 @@ export class PublishProblemButtonExtension
         return
       }
 
+
+      header = problem.split('\n')[0]
+      if(header.match(/[0-9]+[a-zA-Z]/)) {
+        time_limit = header.match(/[0-9]+[a-zA-Z]/)[0]
+      }
+
+
       let postBody = {
         "question": problem,
-        "format": format
+        "format": format,
+        "time_limit": time_limit
       }
 
       requestAPI<any>('problem',{
