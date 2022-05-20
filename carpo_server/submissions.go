@@ -129,7 +129,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by created_at asc limit 1")
 			defer rows.Close()
 			if err != nil {
-				log.Printf("Error quering db teacherSubmissionHandler. Err: %v", err)
+				log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)
 				return
 			}
 

@@ -144,21 +144,28 @@ class QuestionRouteHandler(APIHandler):
 
         # Write questions to individual Notebook
         file_paths = self.question_file(resp['data'])
-        if file_paths:
-            msg = "Problem(s) placed in notebook(s) " + ', '.join(file_paths) + '.'
-        else: 
-            msg = "You have got {} new problems. Please check again later.".format(len(resp['data']))
+        msg = ""
+        print(file_paths)
+        if file_paths['new_download']:
+            msg = "New Problem(s) downloaded and placed in notebook(s) " + ', '.join(file_paths['new_download']) + '.'
+
+        if file_paths['already_downloaded']:
+            msg += " Problem(s) already downloaded and placed in notebook(s) " + ', '.join(file_paths['already_downloaded']) + '.'
+
+        if len(resp['data']) == 0: 
+            msg = "You have got 0 new problems. Please check again later."
     
         self.finish(json.dumps({'msg': msg}))
 
     def question_file(self, data):
-        file_paths = []
+        file_paths = {}
+        file_paths['new_download'] = []
+        file_paths['already_downloaded'] = []
         for res in data:
             file_path = os.path.join(os.getcwd(),"Carpo","p{:03d}".format( res['id']) + ".ipynb")
 
-            file_paths.append("p{:03d}".format( res['id']) + ".ipynb")
-
             if not os.path.exists(file_path):
+                file_paths['new_download'].append("p{:03d}".format( res['id']) + ".ipynb")
                 content = {
                         "cells": [],
                         "metadata": {
@@ -206,6 +213,10 @@ class QuestionRouteHandler(APIHandler):
 
                 with open(file_path, "w") as file:
                     file.write(json_object)
+            else:
+                file_paths['already_downloaded'].append("p{:03d}".format( res['id']) + ".ipynb")
+
+
         return file_paths
 
 class FeedbackRouteHandler(APIHandler):
