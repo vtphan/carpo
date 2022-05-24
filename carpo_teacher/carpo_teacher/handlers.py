@@ -233,7 +233,7 @@ class SubmissionHandler(APIHandler):
 
                 code_block = ["#{} {} {}\n".format(res['student_id'], res['problem_id'], res['id'])]
                 content["cells"].append({
-                        "cell_type": "code",
+                        "cell_type": res['format'],
                         "execution_count": 0,
                         "id": str(uuid.uuid4()),
                         "metadata": {},
