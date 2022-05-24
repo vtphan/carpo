@@ -115,7 +115,7 @@ const CodeCellButtonComponent = ({
         
         var status : string = val ? "Correct.": "Incorrect." 
 
-        console.log("Grade: ", postBody)
+        // console.log("Grade: ", postBody)
      
         requestAPI<any>('submissions/grade',{
             method: 'POST',
@@ -236,24 +236,32 @@ export class CellCheckButton extends ReactWidget {
       }
       render (): JSX.Element {
 
-        switch(this.cell.model.type) {
-            case 'code':
-                return <CodeCellButtonComponent
+        return <CodeCellButtonComponent
                     cell={this.cell as CodeCell}
                     info = {this.info as CellInfo}
                 />
-            
-            case 'markdown':
-            return <MarkdownCellButtonComponent
-                cell={this.cell as CodeCell}
-                info = {this.info as CellInfo}
-            />
-
-            default:
-                break;
-        }
 
     }
 
 }
   
+
+export class FeedbackButton extends ReactWidget {
+    cell: Cell = null;
+    info: CellInfo = null;
+  constructor(cell: Cell, info: CellInfo) {
+      super();
+      this.cell = cell;
+      this.info = info;
+      this.addClass('jp-CellButton');
+  }
+  render (): JSX.Element {
+
+    return <MarkdownCellButtonComponent
+            cell={this.cell as CodeCell}
+            info = {this.info as CellInfo}
+        />
+
+    }
+
+}

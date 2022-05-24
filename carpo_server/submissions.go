@@ -158,7 +158,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			log.Printf("Fetching submissions of students LIMIT 1...\n")
 
 			s := Submission{}
-			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by created_at asc limit 1")
+			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 inner join problem on submission.problem_id = problem.id order by submission.created_at asc limit 1")
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)
@@ -166,7 +166,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			}
 
 			for rows.Next() {
-				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.CreatedAt, &s.UpdatedAt)
+				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.Format, &s.CreatedAt, &s.UpdatedAt)
 
 				// Add Previous grading of the student's submissions.
 				grades, _ := Database.Query("select submission.id, submission.created_at, problem.lifetime, grade.score, grade.created_at, grade.teacher_id from submission INNER join problem on submission.problem_id = problem.id left join grade on grade.submission_id = submission.id where submission.student_id = ? and problem.id = ? order by submission.created_at desc", s.StudentID, s.ProblemID)

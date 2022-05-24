@@ -14,6 +14,7 @@ type Configuration struct {
 type Submission struct {
 	ID        int       `json:"id" db:"id"`
 	ProblemID int       `json:"problem_id" db:"problem_id"`
+	Format    string    `json:"format"`
 	Info      string    `json:"info"`
 	Message   string    `json:"message" db:"message"`
 	Code      string    `json:"code" db:"code"`
