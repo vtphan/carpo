@@ -134,8 +134,10 @@ class SubmissionHandler(APIHandler):
             self.set_status(500)
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
-        
-        url = config_data['server'] + "/teachers/submissions"
+            
+        id = config_data['id']
+        name = config_data['name']
+        url = config_data['server'] + "/teachers/submissions" + "?id=" + str(id) + "&name=" + name
         
         try:
             response = requests.get(url,timeout=5).json()

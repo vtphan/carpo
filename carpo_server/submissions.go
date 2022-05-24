@@ -119,6 +119,38 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			query := r.URL.Query()
+			teacher_id, ok := query["id"]
+			if !ok || len(teacher_id) < 1 {
+				log.Printf("Url Param 'id' is missing.\n")
+				http.Error(w, fmt.Sprintf("You are not authorized to access this status."), http.StatusUnauthorized)
+				return
+			}
+
+			teacher_name, ok := query["name"]
+			if !ok || len(teacher_name) < 1 {
+				log.Printf("Url Param 'name' is missing.\n")
+				http.Error(w, fmt.Sprintf("You are not authorized to access this status."), http.StatusUnauthorized)
+				return
+			}
+
+			// Get name
+			var name string
+			rows, err := Database.Query("select name from teacher where id=?", teacher_id[0])
+			defer rows.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for rows.Next() {
+				rows.Scan(&name)
+			}
+
+			if name != teacher_name[0] {
+				http.Error(w, fmt.Sprintf("You are not authorized to access this status."), http.StatusUnauthorized)
+				return
+			}
+
 			newSub := 0
 			sqlSmt := `select count(*) from submission where status = 0`
 			_ = Database.QueryRow(sqlSmt).Scan(&newSub)
@@ -126,15 +158,15 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			log.Printf("Fetching submissions of students LIMIT 1...\n")
 
 			s := Submission{}
-			rows, err := Database.Query("select submission.id, message, code, student_id, name, problem_id, created_at, updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 order by created_at asc limit 1")
+			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 inner join problem on submission.problem_id = problem.id order by submission.created_at asc limit 1")
 			defer rows.Close()
 			if err != nil {
-				log.Printf("Error quering db teacherSubmissionHandler. Err: %v", err)
+				log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)
 				return
 			}
 
 			for rows.Next() {
-				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.CreatedAt, &s.UpdatedAt)
+				rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.Format, &s.CreatedAt, &s.UpdatedAt)
 
 				// Add Previous grading of the student's submissions.
 				grades, _ := Database.Query("select submission.id, submission.created_at, problem.lifetime, grade.score, grade.created_at, grade.teacher_id from submission INNER join problem on submission.problem_id = problem.id left join grade on grade.submission_id = submission.id where submission.student_id = ? and problem.id = ? order by submission.created_at desc", s.StudentID, s.ProblemID)
@@ -151,9 +183,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 					if score != 0 {
 						gTime, _ := time.Parse(time.RFC3339, scoreTime)
-						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], time.Now().Sub(gTime).Minutes(), timeLeft)
+						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1fm ] \n", sub_id, subMin, GradingMessage[score], time.Now().Sub(gTime).Minutes(), timeLeft)
 					} else {
-						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1f ] \n", sub_id, subMin, GradingMessage[score], 0.0, timeLeft)
+						s.Info += fmt.Sprintf("[ SubID %v | Submitted: %.1f minutes ago | Status: %v | Graded: %.1f minutes ago |  Time Left: %.1fm ] \n", sub_id, subMin, GradingMessage[score], 0.0, timeLeft)
 					}
 
 					s.Info += "\n\n"

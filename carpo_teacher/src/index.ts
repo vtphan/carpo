@@ -20,7 +20,7 @@ import { Cell } from '@jupyterlab/cells';
 import { PanelLayout } from '@lumino/widgets';
 
 import {
-  CellCheckButton
+  CellCheckButton, FeedbackButton
 } from './widget'
 
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
@@ -109,6 +109,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
             student_id: student_id(cell.model.value.text),
             code: cell.model.value.text.split("\n")[1],
           };
+          var header:string;
 
           // For feedback case: cell is markdown so loop over the notebook widgets to get code cell before the active cell index
           if (cell.model.type == 'markdown' ){
@@ -123,15 +124,33 @@ const plugin: JupyterFrontEndPlugin<void> = {
             })
           }
 
-          const newCheckButton: CellCheckButton = new CellCheckButton(
-            cell,info);
+          header = cell.model.value.text.split("\n")[0]
+          if(header.match(/^#[0-9]+ [0-9]+ [0-9]+$/)) {
+            console.log("Submission Grading block.........")
+            const newCheckButton: CellCheckButton = new CellCheckButton(
+              cell,info);
+  
+            (cell.layout as PanelLayout).addWidget(newCheckButton);
+            currentCell = cell;
+            currentCellCheckButton = newCheckButton;
 
-          (cell.layout as PanelLayout).addWidget(newCheckButton);
+          } else {
+            
+            const newFeedbackButton: FeedbackButton = new FeedbackButton(
+              cell,info);
+            (cell.layout as PanelLayout).addWidget(newFeedbackButton);
+            currentCell = cell;
+            currentCellCheckButton = newFeedbackButton;
+
+          }
+
+          // if (question.includes("## PID ")){
+          //   (cell.layout as PanelLayout).addWidget(newCheckButton);
+          //   currentCellCheckButton = newCheckButton;
+          // }
 
           // Set the current cell and button for future
           // reference
-          currentCell = cell;
-          currentCellCheckButton = newCheckButton;
 
         });
 
@@ -339,10 +358,14 @@ export class PublishProblemButtonExtension
       const notebook = panel.content;
       const activeIndex = notebook.activeCellIndex
       var problem:string
+      var format:string
+      var header:string
+      var time_limit:string
 
-      notebook.widgets.map((c:Cell,index:number) => {
+      notebook.widgets.map((c:Cell, index:number) => {
         if (index === activeIndex ) {
           problem = c.model.value.text
+          format = c.model.type
         }
       });
 
@@ -356,8 +379,17 @@ export class PublishProblemButtonExtension
         return
       }
 
+
+      header = problem.split('\n')[0]
+      if(header.match(/[0-9]+[a-zA-Z]/)) {
+        time_limit = header.match(/[0-9]+[a-zA-Z]/)[0]
+      }
+
+
       let postBody = {
-        "question": problem
+        "question": problem,
+        "format": format,
+        "time_limit": time_limit
       }
 
       requestAPI<any>('problem',{

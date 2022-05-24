@@ -91,13 +91,12 @@ func main() {
 	log.Println("serving at port: 8081")
 
 	// Archive expire problems in DB
-	ticker := time.NewTicker(1 * time.Hour)
+	ticker := time.NewTicker(5 * time.Minute)
 	quit := make(chan struct{})
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				log.Printf("Running Problem Expiry Checks:\n")
 				expireProblems()
 			case <-quit:
 				ticker.Stop()

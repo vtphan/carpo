@@ -29,23 +29,24 @@ func problemHandler() http.HandlerFunc {
 
 			activeQuestions := make([]map[string]interface{}, 0)
 			expiredID := make([]int, 0)
-			rows, err := Database.Query("select id, teacher_id, question, lifetime from problem where status = 1 order by created_at asc")
+			rows, err := Database.Query("select id, teacher_id, question, format, lifetime from problem where status = 1 order by created_at asc")
 			defer rows.Close()
 			if err != nil {
 				fmt.Errorf("Error quering db. Err: %v", err)
 			}
 
 			var (
-				id, teacher_id     int
-				question, lifeTime string
+				id, teacher_id             int
+				question, format, lifeTime string
 			)
 
 			for rows.Next() {
-				rows.Scan(&id, &teacher_id, &question, &lifeTime)
+				rows.Scan(&id, &teacher_id, &question, &format, &lifeTime)
 				question := map[string]interface{}{
 					"id":         id,
 					"teacher_id": teacher_id,
 					"question":   question,
+					"format":     format,
 					"lifetime":   lifeTime,
 				}
 
@@ -88,9 +89,26 @@ func problemHandler() http.HandlerFunc {
 			fmt.Fprint(w, string(data))
 
 		case http.MethodPost:
-			// QuestionLife defaults to 90 minutes and status is Active (1)
-			questionLife := time.Now().Add((time.Minute * time.Duration(90)))
-			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], questionLife, 1, time.Now(), time.Now())
+			var questionLife time.Time
+
+			if body["time_limit"] == nil {
+				// if no limit is provided,
+				// QuestionLife defaults to 90 minutes and status is Active (1)
+				questionLife = time.Now().Add((time.Minute * time.Duration(90)))
+			} else {
+				limit, err := getTimeLimit(fmt.Sprintf("%v", body["time_limit"]))
+				if err != nil {
+					log.Printf("Failed to parse time_limit of the problem. Err. %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, fmt.Sprintf("Failed to parse time_limit of the problem. %v", err),
+						http.StatusInternalServerError)
+					return
+
+				}
+				questionLife = time.Now().Add((time.Minute * time.Duration(limit)))
+			}
+
+			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], body["format"], questionLife, 1, time.Now(), time.Now())
 			if err != nil {
 
 				log.Printf("Failed to add question to DB. Err. %v\n", err)
@@ -145,12 +163,12 @@ func problemHandler() http.HandlerFunc {
 }
 
 func archiveProblem(id int) error {
-	stmt, err := Database.Prepare("update problem set status=?, updated_at=?  where id=?")
+	stmt, err := Database.Prepare("update problem set status=?, lifetime=?, updated_at=?  where id=?")
 	if err != nil {
 		log.Printf("SQL Error on archiveProblem. Err: %v", err)
 	}
 	log.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
-	_, err = stmt.Exec(0, time.Now(), id)
+	_, err = stmt.Exec(0, time.Now(), time.Now(), id)
 
 	return err
 
@@ -161,7 +179,7 @@ func expireProblems() error {
 	rows, err := Database.Query("select id from problem where status = 1  and datetime(lifetime) <= CURRENT_TIMESTAMP order by created_at desc")
 	defer rows.Close()
 	if err != nil {
-		return fmt.Errorf("Error quering db. Err: %v", err)
+		return fmt.Errorf("Error querying db. Err: %v", err)
 	}
 
 	var (
@@ -175,7 +193,6 @@ func expireProblems() error {
 	}
 
 	if len(expiredIDs) == 0 {
-		log.Printf("No expired problems in DB.\n")
 		return nil
 	}
 

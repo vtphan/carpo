@@ -116,17 +116,10 @@ export class CellCheckButton extends ReactWidget {
           this.addClass('jp-CellButton');
       }
       render (): JSX.Element {
-
-        switch(this.cell.model.type) {
-            case 'code':
-                return <CodeCellButtonComponent
-                    cell={this.cell as CodeCell}
-                    info = {this.info as CellInfo}
-                />
-
-            default:
-                break;
-        }
+        return <CodeCellButtonComponent
+            cell={this.cell as CodeCell}
+            info = {this.info as CellInfo}
+        />
 
     }
 

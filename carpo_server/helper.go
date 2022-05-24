@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -37,4 +39,25 @@ func fmtDuration(d time.Duration) string {
 		return fmt.Sprintf("%dm", m)
 	}
 	return fmt.Sprintf("%dh:%dm", h, m)
+}
+
+// 15m 2d 45m
+func getTimeLimit(timeLimit string) (val int, err error) {
+	if strings.Contains(timeLimit, "m") || strings.Contains(timeLimit, "M") {
+		tLimit := strings.Replace(timeLimit, "m", "", 1)
+		tLimit = strings.Replace(tLimit, "M", "", 1)
+		return strconv.Atoi(tLimit)
+
+	} else if strings.Contains(timeLimit, "d") || strings.Contains(timeLimit, "D") {
+		tLimit := strings.Replace(timeLimit, "d", "", 1)
+		tLimit = strings.Replace(tLimit, "D", "", 1)
+		tDay, err := strconv.Atoi(tLimit)
+		if err != nil {
+			return 0, err
+		}
+		return tDay * 1440, nil
+
+	} else {
+		return 0, fmt.Errorf("Error: Invalid value %v for time_limit.", timeLimit)
+	}
 }
