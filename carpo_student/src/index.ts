@@ -94,7 +94,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
           // Get the message block referencing the active cell.
           notebook.widgets.map((c,index) =>{
-            if(index == activeIndex-1) {
+            if (c.model.value.text.startsWith("## Message to instructor:")){
               info.message = c.model.value.text
             }
             if (index == activeIndex) {

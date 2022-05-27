@@ -193,7 +193,7 @@ const MarkdownCellButtonComponent = ({
             "comment": cell.model.value.text
         }
 
-        console.log("Feedback: ", postBody)
+        // console.log("Feedback: ", postBody)
     
         requestAPI<any>('submissions/feedbacks',{
             method: 'POST',
@@ -202,7 +202,7 @@ const MarkdownCellButtonComponent = ({
 
             showDialog({
                 title:'Feedback Status',
-                body: "Feedback is sent to the student",
+                body: "Feedback is sent to the student.",
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
 
