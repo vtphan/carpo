@@ -159,7 +159,7 @@ const CodeCellButtonComponent = ({
     };
   
     return (
-        <div>
+        <div className='grp'>
             <GradeButton
                 icon={checkIcon}
                 onClick={() => (submitGrade)(true)}
@@ -232,7 +232,7 @@ export class CellCheckButton extends ReactWidget {
           super();
           this.cell = cell;
           this.info = info;
-          this.addClass('jp-CellButton');
+          this.addClass('jp-grpCellButton');
       }
       render (): JSX.Element {
 

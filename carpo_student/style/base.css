@@ -4,6 +4,7 @@
 	bottom: 0;
 	top: 0;
 	height: 100%;
+	width: 34px;
 	padding: 9px 10px 0 0;
 	display: block;
 	z-index: 600;
@@ -11,13 +12,15 @@
 }
 
 .cellButton {
-    position: sticky;
-	top: 0;
+    position: absolute;
+    bottom: 0;
+    padding-right: 2px;
 	background: none;
 	border: none;
 	padding: 0;
 	cursor: pointer;
 	padding-left: 2px;
+	margin-bottom: 7px;
 }
 
 .cellButton-icon {
