@@ -173,7 +173,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Setup Carpo',
+      label: 'Register Carpo',
       onClick: register,
       tooltip: 'Register as a Student',
     });

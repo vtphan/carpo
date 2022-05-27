@@ -37,7 +37,7 @@ def create_initial_files():
         config_data['server'] = "http://localhost:8081"
         # Write dummy config
         with open(config_path, "w") as config_file:
-            config_file.write(json.dumps(config_data))
+            config_file.write(json.dumps(config_data, indent=4))
     
     # Create blank notebook
     notebook_path = os.path.join(current_dir,"Carpo","Workspace.ipynb")
@@ -195,10 +195,10 @@ class QuestionRouteHandler(APIHandler):
                                 "cell_type": "markdown",
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
-                                "source": [ "## Message: \n" ],
+                                "source": [ "## Message to instructor: \n" ],
                                 "outputs": []
                                 })
-                problem_block = ["## PID {}\n## Expires At {}\n".format(res['id'], res['lifetime'])]
+                problem_block = ["## PID {}\n## Expires at {}\n".format(res['id'], res['lifetime'])]
                 content["cells"].append({
                                 "cell_type": res['format'],
                                 "execution_count": 0,

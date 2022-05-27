@@ -208,7 +208,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Setup Carpo',
+      label: 'Register Carpo',
       onClick: register,
       tooltip: 'Register as a Teacher',
     });
@@ -325,7 +325,7 @@ export class AllSubmissionButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'All Submission',
+      label: 'Graded Subs',
       onClick: getGradedSubmissions,
       tooltip: 'Get all graded submissions.',
     });
@@ -424,7 +424,7 @@ export class PublishProblemButtonExtension
 
     const button = new ToolbarButton({
       className: 'publish-problem-button',
-      label: 'Publish Problem',
+      label: 'Publish',
       onClick: publishProblem,
       tooltip: 'Publish New Problem.',
     });
@@ -500,9 +500,9 @@ export class ArchiveProblemButtonExtension
 
     const button = new ToolbarButton({
       className: 'archive-problem-button',
-      label: 'Unpublish Problem',
+      label: 'Unpublish',
       onClick: archiveProblem,
-      tooltip: 'Archive Problem.',
+      tooltip: 'Unpublish the problem.',
     });
 
     panel.toolbar.insertItem(14, 'archivesProblem', button);
@@ -547,7 +547,7 @@ export class viewProblemStatusExtension
 
     const button = new ToolbarButton({
       className: 'get-status-button',
-      label: 'Problem List',
+      label: 'Problems',
       onClick: viewProblemStatus,
       tooltip: 'View all problem status',
     });

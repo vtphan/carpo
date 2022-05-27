@@ -78,6 +78,8 @@ type ProblemGradeStatus struct {
 	ProblemStatus    int
 	PublishedDate    time.Time
 	UnpublishedDated time.Time
+	LifeTime         time.Time
+	ExpiresAt        string
 }
 type Response struct {
 	Data      []map[string]interface{} `json:"data"`

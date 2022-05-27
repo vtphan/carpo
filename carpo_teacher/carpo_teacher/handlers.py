@@ -41,7 +41,7 @@ def create_initial_files():
         config_data['server'] = "http://localhost:8081"
         # Write dummy config
         with open(config_path, "w") as config_file:
-            config_file.write(json.dumps(config_data))
+            config_file.write(json.dumps(config_data, indent=4))
     
     # Create blank notebook
     notebook_path = os.path.join(current_dir,"Carpo","Workspace.ipynb")
@@ -328,9 +328,9 @@ class GradedSubmissionHandler(APIHandler):
                     }
 
                 msg_block = ["## Submission {}\n".format( res['id'])]
-                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message:", "")+"\n" for x in res['message'].split("\n") ]
+                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message to instructor:", "")+"\n" for x in res['message'].split("\n") ]
 
-                if res['message'].strip(' \t\n\r') != "## Message:":
+                if res['message'].strip(' \t\n\r') != "## Message to instructor:":
                     msg_block = msg_block + student_msg
 
                 content["cells"].append({

@@ -42,16 +42,18 @@ func problemHandler() http.HandlerFunc {
 
 			for rows.Next() {
 				rows.Scan(&id, &teacher_id, &question, &format, &lifeTime)
+
+				// Format Expires at:
+				ExpiredAt, _ := time.Parse(time.RFC3339, lifeTime)
 				question := map[string]interface{}{
 					"id":         id,
 					"teacher_id": teacher_id,
 					"question":   question,
 					"format":     format,
-					"lifetime":   lifeTime,
+					"lifetime":   ExpiredAt.Format("2006-01-02 15:04"),
 				}
 
 				// Skip Expired Problem
-				ExpiredAt, _ := time.Parse(time.RFC3339, lifeTime)
 				if time.Now().After(ExpiredAt) {
 					expiredID = append(expiredID, id)
 

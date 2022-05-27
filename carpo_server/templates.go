@@ -26,6 +26,9 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 			font-size: 18px;
 			text-align: center;
 		}
+		th {
+			text-align: left;
+		}
 	</style>
 	</head>
 	<body>
@@ -115,7 +118,7 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 				<td>{{ .Correct }} </td>
 				<td>{{ .Incorrect }} </td>
 				<td>{{ .PublishedDate.Format "Jan 02, 2006 3:04:05 PM" }} </td>
-				<td>{{ if eq .ProblemStatus 0 }} {{ .UnpublishedDated.Format "Jan 02, 2006 3:04:05 PM" }} {{ end }} </td>
+				<td>{{ if eq .ProblemStatus 0 }} {{ .UnpublishedDated.Format "Jan 02, 2006 3:04:05 PM" }} {{ else if eq .ProblemStatus 1 }} <em>  {{ .ExpiresAt  }} </em> {{ end }} </td>
 			</tr>
 			{{ end }}
 			</tbody>
@@ -209,7 +212,7 @@ var PROBLEM_DETAIL_TEMPLATE = `
 							</tr>
 							<tr> 
 								<td> Unpublished At: </td> 
-								<td>{{ if eq .Stats.ProblemStatus 0 }} {{ .Stats.UnpublishedDated.Format "Jan 02, 2006 3:04:05 PM" }} {{ end }}  </td>
+								<td>{{ if eq .Stats.ProblemStatus 0 }} {{ .Stats.UnpublishedDated.Format "Jan 02, 2006 3:04:05 PM" }} {{ else if eq .Stats.ProblemStatus 1 }} <em>  {{ .Stats.ExpiresAt  }} </em> {{ end }} </td>
 							</tr>
 						</tbody>
 					</table>
