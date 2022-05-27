@@ -10,7 +10,7 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" integrity="sha512-IgmDkwzs96t4SrChW29No3NXBIBv8baW490zk5aXvhCD8vuZM3yUSkbyTBcXohkySecyzIrUwiF/qV0cuPcL3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<style>
 		#modal {
-			width: 60%;
+			width: 70%;
 			border: 1px solid #CCC;
 			box-shadow: 0 1px 5px #CCC;
 			margin: 25px auto;
@@ -77,7 +77,7 @@ var PROBLEM_GRADE_STATUS_TEMPLATE = `
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" integrity="sha512-IgmDkwzs96t4SrChW29No3NXBIBv8baW490zk5aXvhCD8vuZM3yUSkbyTBcXohkySecyzIrUwiF/qV0cuPcL3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<style>
 		#modal {
-			width: 60%;
+			width: 70%;
 			border: 1px solid #CCC;
 			box-shadow: 0 1px 5px #CCC;
 			margin: 25px auto;
@@ -151,7 +151,7 @@ var PROBLEM_DETAIL_TEMPLATE = `
 				padding: 0 10px;
 			}
 			#modal {
-				width: 60%;
+				width: 70%;
 				border: 1px solid #CCC;
 				box-shadow: 0 1px 5px #CCC;
 				margin: 25px auto;

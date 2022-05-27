@@ -386,6 +386,27 @@ class ViewStatusRouteHandler(APIHandler):
 
         self.finish({"url":student_status_url })
 
+class ViewProblemStatusRouteHandler(APIHandler):
+    # The following decorator should be present on all verb methods (head, get, post,
+    # patch, put, delete, options) to ensure only authorized user can request the
+    # Jupyter server
+
+    @tornado.web.authenticated
+    def get(self):
+        # input_data is a dictionary with a key "name"
+        input_data = self.get_json_body()
+
+        config_data = read_config_file()
+
+        if not {'id', 'name', 'server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        problems_status_url = config_data['server'] + "/problems/status"
+
+        self.finish({"url":problems_status_url })
+ 
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
@@ -407,6 +428,9 @@ def setup_handlers(web_app):
 
     route_pattern_view_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "view_student_status")
     web_app.add_handlers(host_pattern, [(route_pattern_view_status, ViewStatusRouteHandler)])
+
+    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "view_problem_list")
+    web_app.add_handlers(host_pattern, [(route_pattern_problems_status, ViewProblemStatusRouteHandler)])
 
 
 

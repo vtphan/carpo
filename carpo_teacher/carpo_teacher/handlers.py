@@ -490,8 +490,6 @@ class ViewProblemStatusRouteHandler(APIHandler):
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
 
-        id = config_data['id']
-        name = config_data['name']
         problems_status_url = config_data['server'] + "/problems/status"
 
         self.finish({"url":problems_status_url })
