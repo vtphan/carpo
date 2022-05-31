@@ -159,7 +159,7 @@ const CodeCellButtonComponent = ({
     };
   
     return (
-        <div>
+        <div className='grp'>
             <GradeButton
                 icon={checkIcon}
                 onClick={() => (submitGrade)(true)}
@@ -193,7 +193,7 @@ const MarkdownCellButtonComponent = ({
             "comment": cell.model.value.text
         }
 
-        console.log("Feedback: ", postBody)
+        // console.log("Feedback: ", postBody)
     
         requestAPI<any>('submissions/feedbacks',{
             method: 'POST',
@@ -202,7 +202,7 @@ const MarkdownCellButtonComponent = ({
 
             showDialog({
                 title:'Feedback Status',
-                body: "Feedback is sent to the student",
+                body: "Feedback is sent to the student.",
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
 
@@ -232,7 +232,7 @@ export class CellCheckButton extends ReactWidget {
           super();
           this.cell = cell;
           this.info = info;
-          this.addClass('jp-CellButton');
+          this.addClass('jp-grpCellButton');
       }
       render (): JSX.Element {
 

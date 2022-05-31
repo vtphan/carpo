@@ -39,12 +39,13 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "Dummy User"
         config_data['server'] = "http://localhost:8081"
+        config_data['carpo_version'] = "0.1.0"
         # Write dummy config
         with open(config_path, "w") as config_file:
-            config_file.write(json.dumps(config_data))
+            config_file.write(json.dumps(config_data, indent=4))
     
     # Create blank notebook
-    notebook_path = os.path.join(current_dir,"Carpo","Workspace.ipynb")
+    notebook_path = os.path.join(current_dir,"Carpo","Readme.ipynb")
     if not os.path.isfile(notebook_path):
         content = {
                         "cells": [],
@@ -70,6 +71,16 @@ def create_initial_files():
                         "nbformat": 4,
                         "nbformat_minor": 5
                     }
+        
+        content["cells"].append({
+                                "cell_type": "markdown",
+                                "id": str(uuid.uuid4()),
+                                "metadata": {},
+                                "source": [ "#### To complete carpo installation, do these steps: \n \
+1. Edit *config.json* to add your name, and the server address. \n \
+2. Click the button **Register Carpo**, to register your account. \n" ],
+                                "outputs": []
+                                })
 
         with open(notebook_path, "w") as file:
             file.write(json.dumps(content, indent = 4))
@@ -117,7 +128,7 @@ class RegistrationHandler(APIHandler):
         config_data['id'] = response['id']
         # Write id to the json file.
         with open(os.path.join(os.getcwd(),"Carpo",'config.json'), "w") as config_file:
-            config_file.write(json.dumps(config_data))
+            config_file.write(json.dumps(config_data, indent=4))
         print(response)
         self.finish(response)
         
@@ -328,9 +339,9 @@ class GradedSubmissionHandler(APIHandler):
                     }
 
                 msg_block = ["## Submission {}\n".format( res['id'])]
-                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message:", "")+"\n" for x in res['message'].split("\n") ]
+                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message to instructor:", "")+"\n" for x in res['message'].split("\n") ]
 
-                if res['message'].strip(' \t\n\r') != "## Message:":
+                if res['message'].strip(' \t\n\r') != "## Message to instructor:":
                     msg_block = msg_block + student_msg
 
                 content["cells"].append({
@@ -479,8 +490,6 @@ class ViewProblemStatusRouteHandler(APIHandler):
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
 
-        id = config_data['id']
-        name = config_data['name']
         problems_status_url = config_data['server'] + "/problems/status"
 
         self.finish({"url":problems_status_url })

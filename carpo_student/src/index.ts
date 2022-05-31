@@ -94,7 +94,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
           // Get the message block referencing the active cell.
           notebook.widgets.map((c,index) =>{
-            if(index == activeIndex-1) {
+            if (c.model.value.text.startsWith("## Message to instructor:")){
               info.message = c.model.value.text
             }
             if (index == activeIndex) {
@@ -126,6 +126,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
+    app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
 
 
   }
@@ -173,7 +174,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Setup Carpo',
+      label: 'Register Carpo',
       onClick: register,
       tooltip: 'Register as a Student',
     });
@@ -330,6 +331,53 @@ export class ViewSubmissionStatusButton
     });
 
     panel.toolbar.insertItem(13, 'viewStatus', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
+
+export class viewProblemStatusExtension
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const viewProblemStatus = () => {
+
+      requestAPI<any>('view_problem_list',{
+        method: 'GET'
+      })
+        .then(data => {
+          console.log(data);
+          window.open(
+            data.url, "_blank");
+        })
+        .catch(reason => {
+          showErrorMessage('View Problem Status Error', reason);
+          console.error(
+            `Failed to view problem status.\n${reason}`
+          );
+        });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'get-status-button',
+      label: 'Problems',
+      onClick: viewProblemStatus,
+      tooltip: 'View all problem status',
+    });
+
+    panel.toolbar.insertItem(13, 'viewProblemStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

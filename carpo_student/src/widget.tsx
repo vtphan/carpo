@@ -64,16 +64,19 @@ const CodeCellButtonComponent = ({
             "code": cell.model.value.text,
             "problem_id":info.problem_id
         }
-        
-        console.log("From widget: ", postBody)
-
+        // console.log("From widget: ", postBody)
         requestAPI<any>('submissions',{
             method: 'POST',
             body: JSON.stringify(postBody)
         })
         .then(data => {
             if (data.msg === "Submission saved successfully." ){
-                data.msg = 'Code in this block has been shared with the instructor.'
+                if (info.message.length > 27) {
+                    data.msg = 'Code & message is sent to the instructor.'
+                } else {
+                    data.msg = 'Code is sent to the instructor.'
+                }
+                
             }
             showDialog({
                 title:'',

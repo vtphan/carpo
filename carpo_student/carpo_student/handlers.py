@@ -35,12 +35,13 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "Dummy User"
         config_data['server'] = "http://localhost:8081"
+        config_data['carpo_version'] = "0.1.0"
         # Write dummy config
         with open(config_path, "w") as config_file:
-            config_file.write(json.dumps(config_data))
+            config_file.write(json.dumps(config_data, indent=4))
     
     # Create blank notebook
-    notebook_path = os.path.join(current_dir,"Carpo","Workspace.ipynb")
+    notebook_path = os.path.join(current_dir,"Carpo","Readme.ipynb")
     if not os.path.isfile(notebook_path):
         content = {
                         "cells": [],
@@ -66,6 +67,16 @@ def create_initial_files():
                         "nbformat": 4,
                         "nbformat_minor": 5
                     }
+
+        content["cells"].append({
+                                "cell_type": "markdown",
+                                "id": str(uuid.uuid4()),
+                                "metadata": {},
+                                "source": [ "#### To complete carpo installation, do these steps: \n \
+1. Edit *config.json* to add your name, and the server address. \n \
+2. Click the button **Register Carpo**, to register your account. \n" ],
+                                "outputs": []
+                                })
 
         with open(notebook_path, "w") as file:
             file.write(json.dumps(content, indent = 4))
@@ -119,7 +130,7 @@ class RegistrationHandler(APIHandler):
         config_data['id'] = response['id']
         # Write id to the json file.
         with open(os.path.join(os.getcwd(),"Carpo",'config.json'), "w") as config_file:
-            config_file.write(json.dumps(config_data))
+            config_file.write(json.dumps(config_data, indent=4))
 
         self.finish(response)
 
@@ -195,10 +206,10 @@ class QuestionRouteHandler(APIHandler):
                                 "cell_type": "markdown",
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
-                                "source": [ "## Message: \n" ],
+                                "source": [ "## Message to instructor: \n" ],
                                 "outputs": []
                                 })
-                problem_block = ["## PID {}\n## Expires At {}\n".format(res['id'], res['lifetime'])]
+                problem_block = ["## PID {}\n## Expires at {}\n".format(res['id'], res['lifetime'])]
                 content["cells"].append({
                                 "cell_type": res['format'],
                                 "execution_count": 0,
@@ -375,6 +386,27 @@ class ViewStatusRouteHandler(APIHandler):
 
         self.finish({"url":student_status_url })
 
+class ViewProblemStatusRouteHandler(APIHandler):
+    # The following decorator should be present on all verb methods (head, get, post,
+    # patch, put, delete, options) to ensure only authorized user can request the
+    # Jupyter server
+
+    @tornado.web.authenticated
+    def get(self):
+        # input_data is a dictionary with a key "name"
+        input_data = self.get_json_body()
+
+        config_data = read_config_file()
+
+        if not {'id', 'name', 'server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        problems_status_url = config_data['server'] + "/problems/status"
+
+        self.finish({"url":problems_status_url })
+ 
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
@@ -396,6 +428,9 @@ def setup_handlers(web_app):
 
     route_pattern_view_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "view_student_status")
     web_app.add_handlers(host_pattern, [(route_pattern_view_status, ViewStatusRouteHandler)])
+
+    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "view_problem_list")
+    web_app.add_handlers(host_pattern, [(route_pattern_problems_status, ViewProblemStatusRouteHandler)])
 
 
 
