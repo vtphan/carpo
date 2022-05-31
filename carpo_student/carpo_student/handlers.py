@@ -33,10 +33,10 @@ def create_initial_files():
     config_path = os.path.join(current_dir,"Carpo","config.json")
     if not os.path.isfile(config_path):
         config_data = {}
-        config_data['name'] = "Dummy User"
-        config_data['server'] = "http://localhost:8081"
-        config_data['carpo_version'] = "0.1.0"
-        # Write dummy config
+        config_data['name'] = "John Smith"
+        config_data['server'] = "http://delphinus.cs.memphis.edu:XXXX"
+        config_data['carpo_version'] = "0.0.1"
+        # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
     
@@ -103,7 +103,7 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
             return
         
-        if config_data['name'] == "Dummy User":
+        if config_data['name'] == "John Smith":
             self.set_status(500)
             self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and register again."}))
             return
