@@ -230,9 +230,9 @@ class SubmissionHandler(APIHandler):
                     }
 
                 msg_block = ["## Submission {}\n".format( res['id'])]
-                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message:", "")+"\n" for x in res['message'].split("\n") ]
+                student_msg = ["Student wrote (at {}):  ".format(res['time'])] + [ x.replace("## Message to instructor:", "")+"\n" for x in res['message'].split("\n") ]
 
-                if res['message'].strip(' \t\n\r') != "## Message:":
+                if res['message'].strip(' \t\n\r') != "## Message to instructor:":
                     msg_block = msg_block + student_msg
 
                 content["cells"].append({
@@ -242,13 +242,13 @@ class SubmissionHandler(APIHandler):
                         "source": msg_block
                         })
 
-                code_block = ["#{} {} {}\n".format(res['student_id'], res['problem_id'], res['id'])]
+                code_block = ["#{} {} {}".format(res['student_id'], res['problem_id'], res['id'])]
                 content["cells"].append({
                         "cell_type": res['format'],
                         "execution_count": 0,
                         "id": str(uuid.uuid4()),
                         "metadata": {},
-                        "source": code_block + [ x+"\n" for x in res['code'].split("\n") ],
+                        "source": "\n".join(code_block + res['code'].split("\n") ),
                         "outputs": []
                         })
 
@@ -415,7 +415,6 @@ class ProblemHandler(APIHandler):
         input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/problem"
 
-        print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         try:
             response = requests.delete(url, data=json.dumps(input_data),headers=headers, timeout=5)
@@ -440,7 +439,6 @@ class GradeHandler(APIHandler):
         input_data['teacher_id'] = config_data['id']
         url = config_data['server'] + "/submissions/grade"
 
-        print("Input Data: ", input_data)
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         response = requests.post(url, data=json.dumps(input_data),headers=headers,timeout=5)
 

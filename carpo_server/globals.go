@@ -27,6 +27,7 @@ var UpdateScoreSQL *sql.Stmt
 var AddScoreSQL *sql.Stmt
 var AddFeedbackSQL *sql.Stmt
 var UpdateFeedbackSQL *sql.Stmt
+var UpdateScoreFeedbackSQL *sql.Stmt
 var UpdateSubmissionFeedbackGivenSQL *sql.Stmt
 var AddStudentProblemStatus *sql.Stmt
 var UpdateStudentProblemStatus *sql.Stmt

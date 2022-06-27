@@ -94,7 +94,6 @@ const CodeCellButtonComponent = ({
   
     const submitGrade = async (val: Boolean) => {
 
-        console.log("From widget: ", info)
         if (info.id == NaN) {
 
             showDialog({
@@ -110,13 +109,13 @@ const CodeCellButtonComponent = ({
             "student_id": info.student_id,
             "submission_id": info.id,
             "problem_id": info.problem_id,
-            "score": val ? 1 : 2
+            "score": val ? 1 : 2,
+            "code": cell.model.value.text
         }
         
         var status : string = val ? "Correct.": "Incorrect." 
 
         // console.log("Grade: ", postBody)
-     
         requestAPI<any>('submissions/grade',{
             method: 'POST',
             body: JSON.stringify(postBody)

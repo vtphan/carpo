@@ -30,7 +30,6 @@ import {
 } from '@jupyterlab/docmanager';
 
 
-
 // import { Cell } from '@jupyterlab/cells';
 
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
@@ -107,14 +106,15 @@ const plugin: JupyterFrontEndPlugin<void> = {
             id:  submission_id(cell.model.value.text),
             problem_id: problem_id(cell.model.value.text),
             student_id: student_id(cell.model.value.text),
-            code: cell.model.value.text.split("\n")[1],
+            code: cell.model.value.text
           };
           var header:string;
 
           // For feedback case: cell is markdown so loop over the notebook widgets to get code cell before the active cell index
           if (cell.model.type == 'markdown' ){
             notebook.widgets.map((c,index) =>{
-              if(index == activeIndex-1) {
+              // activeIndex-1 could be the top cell (when the question type is markdown)
+              if(index == activeIndex-1 && !c.model.value.text.startsWith("## Submission")) {
                 const code = c.model.value.text
                 info.code = code  
                 info.id = submission_id(code)
@@ -127,8 +127,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           header = cell.model.value.text.split("\n")[0]
           if(header.match(/^#[0-9]+ [0-9]+ [0-9]+$/)) {
             console.log("Submission Grading block.........")
-            const newCheckButton: CellCheckButton = new CellCheckButton(
-              cell,info);
+            const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
   
             (cell.layout as PanelLayout).addWidget(newCheckButton);
             currentCell = cell;
@@ -136,8 +135,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
           } else {
             
-            const newFeedbackButton: FeedbackButton = new FeedbackButton(
-              cell,info);
+            const newFeedbackButton: FeedbackButton = new FeedbackButton(cell,info);
             (cell.layout as PanelLayout).addWidget(newFeedbackButton);
             currentCell = cell;
             currentCellCheckButton = newFeedbackButton;

@@ -278,16 +278,40 @@ func submissionGradeHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 1, time.Now(), time.Now())
+			// Check the code block. if different that the submission, Update Feedback attributes in DB else add score only.
+			var studentCode string
+			rows, err := Database.Query("select code from submission where id = ?", s.SubmissionID)
+			defer rows.Close()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				log.Printf("Error querying db submissionGrade. Err: %v", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			for rows.Next() {
+				rows.Scan(&studentCode)
+			}
+
+			if hasFeedbackOnCode(s.Code, studentCode) {
+				_, err = AddFeedbackSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, s.Code, s.Comment, 0, 1, time.Now(), time.Now(), time.Now())
+			} else {
+				_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 0, time.Now(), time.Now())
+			}
 
 			if err != nil {
 				var sqliteErr sqlite3.Error
 				if errors.As(err, &sqliteErr) {
 					log.Printf("Submission already graded for %v. Updating...\n", s.SubmissionID)
 					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-						_, err := UpdateScoreSQL.Exec(s.Score, time.Now(), s.SubmissionID)
+						if hasFeedbackOnCode(s.Code, studentCode) {
+							_, err = UpdateScoreFeedbackSQL.Exec(s.Score, s.Code, s.Comment, time.Now(), s.TeacherID, s.SubmissionID)
+						} else {
+							_, err = UpdateScoreSQL.Exec(s.Score, time.Now(), s.SubmissionID)
+						}
+
 						if err != nil {
-							log.Printf("Failed to update row %+v. Err: %v", s, err)
+							log.Printf("Failed to update score %+v. Err: %v", s, err)
 						}
 						log.Printf("Score successfully updated.")
 					}
@@ -296,7 +320,6 @@ func submissionGradeHandler() http.HandlerFunc {
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to save Score.",
 						http.StatusInternalServerError)
-
 				}
 
 			}
@@ -304,7 +327,7 @@ func submissionGradeHandler() http.HandlerFunc {
 			sub := Submission{
 				ID: s.SubmissionID,
 			}
-			err := sub.SetSubmissionStatus(SubGradedByTeacher)
+			err = sub.SetSubmissionStatus(SubGradedByTeacher)
 			if err != nil {
 				log.Printf("Failed to update Submission after grading submission. %v Err: %v\n", s, err)
 			}

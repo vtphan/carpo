@@ -61,3 +61,12 @@ func getTimeLimit(timeLimit string) (val int, err error) {
 		return 0, fmt.Errorf("Error: Invalid value %v for time_limit.", timeLimit)
 	}
 }
+
+func hasFeedbackOnCode(codeFromT, codeFromS string) bool {
+	// Skip first line from TeacherCode.
+	teacherCode := strings.Join(strings.Split(codeFromT, "\n")[1:], "\n")
+	if strings.EqualFold(strings.Replace(teacherCode, " ", "", -1), strings.Replace(codeFromS, " ", "", -1)) {
+		return false
+	}
+	return true
+}

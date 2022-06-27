@@ -251,19 +251,21 @@ class FeedbackRouteHandler(APIHandler):
 
         if len(response['data']) == 0:
             self.finish(json.dumps({
-                "msg": "No Feedback available at the moment. Please check again later."
+                "msg": "No Feedback available at the moment. Please check again later.",
+                "hard-reload": -1
             }))
             return
         
         # Write feedbacks to individual Notebook
-        file_paths = self.feedback_file(response['data'])
+        file_paths,reload = self.feedback_file(response['data'])
         if file_paths:
             msg = "Feedback(s) placed in " + ','.join(file_paths) + '.'
         
-        self.finish(json.dumps({'msg':msg}))
+        self.finish(json.dumps({'msg':msg, 'hard-reload': reload}))
 
     def feedback_file(self, data):
         file_paths = []
+        reload = 0
         for res in data:
             dir_path = os.path.join("Carpo","Feedback")
             file_path = "p{:03d}_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
@@ -275,6 +277,7 @@ class FeedbackRouteHandler(APIHandler):
             feedback_file = os.path.join(dir_path, file_path)
             if os.path.exists(feedback_file):
                 os.remove(feedback_file)
+                reload = 1
 
             if not os.path.exists(feedback_file):
                 content = {
@@ -331,7 +334,7 @@ class FeedbackRouteHandler(APIHandler):
 
                 with open(feedback_file, "w") as file:
                     file.write(json_object)
-        return file_paths
+        return file_paths, reload
 class SubmissionRouteHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
     # patch, put, delete, options) to ensure only authorized user can request the
