@@ -115,7 +115,7 @@ const CodeCellButtonComponent = ({
                     );
                 });
         
-            }, 10000);
+            }, 60000);
 
         })
         .catch(reason => {
