@@ -47,37 +47,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
     ) => {
     console.log('JupyterLab extension carpo-student is activated!');
 
-    // Keep checking for new feedback.
-    setInterval(function(){
-      console.log("Checking for feedback...")
-      requestAPI<any>('feedback',{
-        method: 'GET'
-      })
-        .then(data => {
-          // console.log(data);
-          if (data['hard-reload'] != -1) {
-            showDialog({
-              title:'',
-              body: data.msg,
-              buttons: [Dialog.okButton({ label: 'Ok' })]
-            }).then( result => {
-              if (result.button.accept && data['hard-reload'] == 1 ) {
-                  window.location.reload();
-              }
-            })
-
-          }
-          
-        })
-        .catch(reason => {
-          showErrorMessage('Get Feedback Error', reason);
-          console.error(
-            `Failed to fetch recent feedbacks.\n${reason}`
-          );
-        });
-
-    }, 60000);
-
     nbTrack.currentChanged.connect(() => {
 
       const notebookPanel = nbTrack.currentWidget;

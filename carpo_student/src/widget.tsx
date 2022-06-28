@@ -51,6 +51,7 @@ const CodeCellButtonComponent = ({
     cell,
     info,
   }: ICodeCellButtonComponent): JSX.Element => {
+
   
     const shareCode = async () => {
 
@@ -83,6 +84,38 @@ const CodeCellButtonComponent = ({
                 body: data.msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
+
+            // Keep checking for new feedback.
+            // This setInterval will be cleared once the feedback is downloaded (after reload())
+            setInterval(function(){
+                console.log("Checking for feedback...")
+                requestAPI<any>('feedback',{
+                method: 'GET'
+                })
+                .then(data => {
+                    // console.log(data);
+                    if (data['hard-reload'] != -1) {
+                    showDialog({
+                        title:'',
+                        body: data.msg,
+                        buttons: [Dialog.okButton({ label: 'Ok' })]
+                    }).then( result => {
+                        if (result.button.accept ) {
+                            window.location.reload();
+                        }
+                    })
+        
+                    }
+                    
+                })
+                .catch(reason => {
+                    showErrorMessage('Get Feedback Error', reason);
+                    console.error(
+                    `Failed to fetch recent feedbacks.\n${reason}`
+                    );
+                });
+        
+            }, 10000);
 
         })
         .catch(reason => {
