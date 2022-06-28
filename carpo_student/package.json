@@ -1,6 +1,6 @@
 {
   "name": "carpo-student",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "JupyterLab extension with backend and frontend parts for carpo student.",
   "keywords": [
     "jupyter",

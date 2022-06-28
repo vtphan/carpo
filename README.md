@@ -14,7 +14,7 @@ Replace the name and server address provided by your instructor.*
 
 To install specific version use:
 
->*pip install carpo_student==0.0.1*
+>*pip install carpo_student==0.0.4*
 
 ### Installation with Virtual Environment
 It is recommended that you install the carpo-student extension in a separate python virtual environment. This way, you can isolate the carpo modules from your global jupyterlab server.
