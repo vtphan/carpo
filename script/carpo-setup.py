@@ -21,9 +21,6 @@ def get_users_in_system():
 def register_student(name: str, server: str):
     endpoint = server + "/add_student"
 
-    # TLJH user name: jupyter-amanda
-    name = name.replace("jupyter-","")
-
     # request body
     data = {
         'name': name
@@ -35,32 +32,38 @@ def register_student(name: str, server: str):
     resp = requests.post(url=endpoint, data=json.dumps(data), headers=headers, timeout=5)
     if resp.status_code >= 200 or resp.status_code <= 299:
         return resp.json()
+    else:
+        print(f"Failed to register user {name}...")
+        return {}
 
-    return {}
-
-def write_config(resp: dict, server: str):
+def write_config(resp: dict, name: str, server: str):
     config = {}
-    config['id'] = resp['id']
-    config['name'] = resp['name']
+
+    if 'id' in resp:
+        config['id'] = resp['id']
+    else:
+        print(f"Manual registration required for user {name}...")
+    
+    config['name'] = name
     config['server'] = server
     config['carp_version'] = carpo_version
 
-    config_path = os.path.join("/home/jupyter-" + resp['name'], config_file)
+    config_path = os.path.join("/home/jupyter-" + name, config_file)
 
     if os.path.exists(config_path):
         os.remove(config_path)
 
-    user_dir = "/home/jupyter-" + resp['name']
+    user_dir = "/home/jupyter-" + name
     if "Carpo" not in os.listdir(os.chdir(user_dir)):
         os.makedirs(os.path.join(user_dir, "Carpo"))
 
-    print(f"Writing config for student {resp['name']} with id {resp['id']}...")
+    print(f"Writing config for student {name} with id {resp['id']}...")
     with open(config_path, "w") as file:
         file.write(json.dumps(config, indent=4))
 
     # Change ownership of the file
-    uid = pwd.getpwnam("jupyter-"+resp['name']).pw_uid
-    gid = grp.getgrnam("jupyter-"+resp['name']).gr_gid
+    uid = pwd.getpwnam("jupyter-" + name).pw_uid
+    gid = grp.getgrnam("jupyter-" + name).gr_gid
     os.chown(config_path, uid, gid)
 
 
@@ -69,7 +72,8 @@ def main():
     # for each user
     # cd to user's home directory
     # check config_path
-    # write config 
+    # register user to carpo
+    # write config to file
     server = args.server
     if not server.startswith("http://"):
         print(f"{server} - server address should start with http://")
@@ -81,8 +85,10 @@ def main():
         return
 
     for user in user_list:
-        student_config = register_student(user, server)
-        write_config(student_config, server )
+        # TLJH user: jupyter-amanda
+        name = user.replace("jupyter-","")
+        student_config = register_student(name, server)
+        write_config(student_config, name, server )
 
 if __name__ == '__main__':
     if os.geteuid() == 0:
