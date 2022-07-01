@@ -6,7 +6,7 @@
 ### Installing **carpo_student** extension
 
 ```bash
-pip install --upgrade jupyterlab carpo_student
+pip install --upgrade carpo_student
 ```
 
 *Update the config.json file inside Carpo directory in the working directory of your Jupyter Lab.
@@ -14,7 +14,7 @@ Replace the name and server address provided by your instructor.*
 
 To install specific version use:
 
->*pip install carpo_student==0.0.5*
+>*pip install carpo_student==X.X.X*
 
 ### Installation with Virtual Environment
 It is recommended that you install the carpo-student extension in a separate python virtual environment. This way, you can isolate the carpo modules from your global jupyterlab server.
@@ -41,8 +41,9 @@ source carpo-mode/bin/activate
 
 5. Install jupyterlab and carpo extension in your environment
 ```bash
-pip install --upgrade jupyterlab carpo-student
+pip install --upgrade carpo-student
 ```
+
 6. Now launch  jupterlab
 ```bash
 jupyter lab

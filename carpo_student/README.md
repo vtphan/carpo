@@ -21,6 +21,11 @@ To install the extension, execute:
 ```bash
 pip install carpo_student
 ```
+## Update
+To update the extension to latest version, run:
+```bash
+pip install --upgrade carpo_student
+```
 
 ## Uninstall
 

@@ -22,6 +22,12 @@ To install the extension, execute:
 pip install carpo_teacher
 ```
 
+## Update
+To update the extension to latest version, run:
+```bash
+pip install --upgrade carpo_teacher
+```
+
 ## Uninstall
 
 To remove the extension, execute:
