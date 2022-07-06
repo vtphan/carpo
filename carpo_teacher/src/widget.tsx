@@ -137,21 +137,41 @@ const CodeCellButtonComponent = ({
 
     };
   
-    const resetSubmission = async() => {
-        requestAPI<any>('submissions',{
-            method: 'POST',
-            body: JSON.stringify({ "submission_id": info.id, "problem_id": info.problem_id})
-        }).then(data => {
+    const sendFeedback = async() => {
+
+        if (info.id == NaN) {
             showDialog({
-                title:'Grading Status Reset',
+                title:'Feedback Error',
+                body: "Invalid Cell for feedback.",
+                buttons: [Dialog.okButton({ label: 'Ok' })]
+              });
+
+            return
+        }
+
+        let postBody = {
+            "student_id": info.student_id,
+            "submission_id": info.id,
+            "problem_id": info.problem_id,
+            "code": cell.model.value.text
+        }
+
+        requestAPI<any>('submissions/feedbacks',{
+            method: 'POST',
+            body: JSON.stringify(postBody)
+        }).then(data => {
+
+            showDialog({
+                title:'Feedback Status',
                 body: data.msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
+
             })
             .catch(reason => {
-            showErrorMessage('Submission Reset Error', reason);
+            showErrorMessage('Feedback Send Error', reason);
             console.error(
-                `Failed to put back the submission. \n${reason}`
+                `Failed to save feedback. \n${reason}`
             );
         });
 
@@ -169,7 +189,7 @@ const CodeCellButtonComponent = ({
             />
             <ResetButton
                 icon={redoIcon}
-                onClick={() => (resetSubmission)()}
+                onClick={() => (sendFeedback)()}
             />
 
         </div>

@@ -216,6 +216,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			resp.Data = d
 			data, _ := json.Marshal(resp)
 			fmt.Fprint(w, string(data))
+
 		case http.MethodPost:
 			body, err := readRequestBody(r)
 			if err != nil {
