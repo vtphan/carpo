@@ -31,6 +31,8 @@ import { ToolbarButton,Dialog, showDialog,showErrorMessage } from '@jupyterlab/a
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
+import { ShareCodeButton } from './share-code'
+
 
 /**
  * Initialization data for the carpo-student extension.
@@ -123,9 +125,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
     //  tell the document registry about your widget extension:
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
+    app.docRegistry.addWidgetExtension('Notebook', new ShareCodeButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
-    app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
+    // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
 
 
   }
@@ -173,7 +176,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Register Carpo',
+      label: 'Register',
       onClick: register,
       tooltip: 'Register as a Student',
     });
@@ -228,7 +231,7 @@ export class GetQuestionButton
 
     const button = new ToolbarButton({
       className: 'get-question-button',
-      label: 'Get Problem',
+      label: 'GetProblem',
       onClick: getQuestion,
       tooltip: 'Get Latest Problem From Server',
     });
@@ -281,12 +284,12 @@ export class GetFeedbackButton
 
     const button = new ToolbarButton({
       className: 'get-feedback-button',
-      label: 'Get Feedback',
+      label: 'GetFeedback',
       onClick: getFeedback,
       tooltip: 'Get Feedback to your Submission',
     });
 
-    panel.toolbar.insertItem(12, 'getFeedback', button);
+    panel.toolbar.insertItem(13, 'getFeedback', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -328,18 +331,19 @@ export class ViewSubmissionStatusButton
 
     const button = new ToolbarButton({
       className: 'get-status-button',
-      label: 'Submission Status',
+      label: 'Status',
       onClick: viewStatus,
       tooltip: 'View your submissions status',
     });
 
-    panel.toolbar.insertItem(13, 'viewStatus', button);
+    panel.toolbar.insertItem(14, 'viewStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
   }
 }
 
+// Currently disabled
 export class viewProblemStatusExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
@@ -380,7 +384,7 @@ export class viewProblemStatusExtension
       tooltip: 'View all problem status',
     });
 
-    panel.toolbar.insertItem(13, 'viewProblemStatus', button);
+    panel.toolbar.insertItem(15, 'viewProblemStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

@@ -88,7 +88,7 @@ const CodeCellButtonComponent = ({
             // Keep checking for new feedback.
             // This setInterval will be cleared once the feedback is downloaded (after reload())
             setInterval(function(){
-                console.log("Checking for feedback...")
+                // console.log("Checking for feedback...")
                 requestAPI<any>('feedback',{
                 method: 'GET'
                 })

@@ -206,7 +206,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Register Carpo',
+      label: 'Register',
       onClick: register,
       tooltip: 'Register as a Teacher',
     });
@@ -268,7 +268,7 @@ export class NewSubmissionButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'New Submission',
+      label: 'NewSub',
       onClick: getSubmissions,
       tooltip: 'Get new submissions from students.',
     });
@@ -323,7 +323,7 @@ export class AllSubmissionButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'Graded Subs',
+      label: 'Graded',
       onClick: getGradedSubmissions,
       tooltip: 'Get all graded submissions.',
     });
