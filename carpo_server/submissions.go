@@ -217,43 +217,6 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			data, _ := json.Marshal(resp)
 			fmt.Fprint(w, string(data))
 
-		case http.MethodPost:
-			body, err := readRequestBody(r)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				http.Error(w, "Error reading request body",
-					http.StatusInternalServerError)
-				return
-			}
-
-			subID, _ := strconv.Atoi(fmt.Sprintf("%v", body["submission_id"]))
-
-			sub := Submission{
-				ID: subID,
-			}
-			graded, err := sub.IsGraded()
-			if graded {
-				log.Printf("Failed to requeue Submission %v. Submission already graded. Err. %v\n", sub.ID, err)
-				w.WriteHeader(http.StatusOK)
-				resp := []byte(`{"msg": "This submission is already graded. It cannot go back into the submission queue."}`)
-				fmt.Fprint(w, string(resp))
-				return
-			}
-
-			err = sub.SetSubmissionStatus(NewSub)
-			if err != nil {
-				log.Printf("Failed to requeue Submission . %v Err. %v\n", sub, err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to requeue submission.",
-					http.StatusInternalServerError)
-				return
-
-			}
-
-			w.WriteHeader(http.StatusOK)
-			resp := []byte(`{"msg": "Submission put back into the queue successfully."}`)
-			fmt.Fprint(w, string(resp))
-
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

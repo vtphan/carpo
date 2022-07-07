@@ -163,34 +163,6 @@ class SubmissionHandler(APIHandler):
             self.finish(json.dumps({'remaining': response['Remaining'], 'sub_file': file_paths[0]['Notebook'], 'question': file_paths[0]['Question']}))
         else: 
             self.finish(response)
-
-    def post(self):
-        input_data = self.get_json_body()
-        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        
-        config_data = read_config_file()
-        if not {'id','server'}.issubset(config_data):
-            self.set_status(500)
-            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
-            return
-        
-        url = config_data['server'] + "/teachers/submissions"
-
-        try:
-            response = requests.post(url, data=json.dumps(input_data),headers=headers,timeout=5).json()
-        except requests.exceptions.RequestException as e:
-            self.set_status(500)
-            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
-            return
-
-        if response['msg'] == "Submission put back into the queue successfully.":
-            # Delete the local submission notebook
-            notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "sub_{:03d}".format(input_data['submission_id']) + ".ipynb" )
-            if os.path.exists(notebook_path):
-                os.remove(notebook_path)
-
-        self.finish(response)
-
     
     def submission_file(self, data):
         file_paths = []
@@ -252,12 +224,12 @@ class SubmissionHandler(APIHandler):
                         "outputs": []
                         })
 
-                content["cells"].append({
-                        "cell_type": "markdown",
-                        "id": str(uuid.uuid4()),
-                        "metadata": {},
-                        "source": "Instructor feedback for the student:\n"
-                        })
+                # content["cells"].append({
+                #         "cell_type": "markdown",
+                #         "id": str(uuid.uuid4()),
+                #         "metadata": {},
+                #         "source": "Instructor feedback for the student:\n"
+                #         })
                 
                 sub_history = ["## Submission History\n"]
                 content["cells"].append({
@@ -468,6 +440,12 @@ class FeedbackHandler(APIHandler):
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
             return
+
+        if response['msg'] == "Submission put back into the queue successfully.":
+            # Delete the local submission notebook
+            notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "sub_{:03d}".format(input_data['submission_id']) + ".ipynb" )
+            if os.path.exists(notebook_path):
+                os.remove(notebook_path)
 
 
         self.finish(response)
