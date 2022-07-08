@@ -449,6 +449,31 @@ class FeedbackHandler(APIHandler):
 
 
         self.finish(response)
+
+class SolutionHandler(APIHandler):
+
+    @tornado.web.authenticated
+    def post(self):
+        input_data = self.get_json_body()
+
+        config_data = read_config_file()
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+        
+        url = config_data['server'] + "/solution" + "?problem_id="+str(input_data['problem_id'])
+
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        try:
+            response = requests.post(url, data=json.dumps(input_data),headers=headers, timeout=5).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
+
+        self.finish(response)
+
 class ViewProblemStatusRouteHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,
     # patch, put, delete, options) to ensure only authorized user can request the
@@ -496,7 +521,5 @@ def setup_handlers(web_app):
     route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "view_problem_list")
     web_app.add_handlers(host_pattern, [(route_pattern_problems_status, ViewProblemStatusRouteHandler)])
 
-
-
-
-
+    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "solution")
+    web_app.add_handlers(host_pattern, [(route_pattern_problems_status, SolutionHandler)])

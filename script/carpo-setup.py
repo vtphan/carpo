@@ -6,7 +6,7 @@ import os, pwd, grp, sys, subprocess
 skip_list = ["kritish", "jupyter-admin", "lost+found"]
 
 config_file = "Carpo/config.json"
-carpo_version = "0.0.6"
+carpo_version = "0.0.7"
 
 parser = argparse.ArgumentParser(description='input to the script')
 

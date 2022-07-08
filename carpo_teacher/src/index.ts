@@ -38,6 +38,7 @@ import { ToolbarButton, Dialog, showDialog,showErrorMessage } from '@jupyterlab/
 // , InputDialog
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
+import { GetSolutionButton } from './upload-solution'
 
 /**
  * Initialization data for the carpo-teacher extension.
@@ -161,6 +162,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new AllSubmissionButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
+    app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
     app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
     
   }
@@ -550,7 +552,7 @@ export class viewProblemStatusExtension
       tooltip: 'View all problem status',
     });
 
-    panel.toolbar.insertItem(15, 'viewProblemStatus', button);
+    panel.toolbar.insertItem(16, 'viewProblemStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

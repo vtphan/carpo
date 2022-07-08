@@ -84,6 +84,8 @@ func main() {
 
 	http.HandleFunc("/students/get_submission_feedbacks", getSubmissionFeedbacks())
 
+	http.HandleFunc("/solution", solutionHandler())
+
 	http.HandleFunc("/students/status", viewStudentSubmissionStatus())
 	http.HandleFunc("/problems/status", viewProblemStatus())
 	http.HandleFunc("/problem_detail", problemDetail())

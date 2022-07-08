@@ -35,3 +35,5 @@ var GetStudentFeedback *sql.Stmt
 var UpdateSubmissionStatusSQL *sql.Stmt
 var AddProblemSQL *sql.Stmt
 var AddStudentProblemStatusSQL *sql.Stmt
+var AddSolutionSQL *sql.Stmt
+var UpdateSolutionSQL *sql.Stmt

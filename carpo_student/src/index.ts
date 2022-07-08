@@ -32,6 +32,7 @@ import { ToolbarButton,Dialog, showDialog,showErrorMessage } from '@jupyterlab/a
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 import { ShareCodeButton } from './share-code'
+import { GetSolutionButton } from './get-solutions'
 
 
 /**
@@ -127,6 +128,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
     app.docRegistry.addWidgetExtension('Notebook', new ShareCodeButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
+    app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
     // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
 
@@ -336,7 +338,7 @@ export class ViewSubmissionStatusButton
       tooltip: 'View your submissions status',
     });
 
-    panel.toolbar.insertItem(14, 'viewStatus', button);
+    panel.toolbar.insertItem(15, 'viewStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
