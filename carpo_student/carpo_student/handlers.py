@@ -158,10 +158,10 @@ class QuestionRouteHandler(APIHandler):
         msg = ""
         print(file_paths)
         if file_paths['new_download']:
-            msg = "New Problem(s) downloaded and placed in notebook(s) " + ', '.join(file_paths['new_download']) + '.'
+            msg = "New Problem downloaded and placed in notebook " + ', '.join(file_paths['new_download']) + '.'
 
         if file_paths['already_downloaded']:
-            msg += "\nProblem(s) already downloaded and placed in notebook(s) " + ', '.join(file_paths['already_downloaded']) + '.'
+            msg += "\nProblem already downloaded and placed in notebook " + ', '.join(file_paths['already_downloaded']) + '.'
 
         if len(resp['data']) == 0: 
             msg = "You have got 0 new problems. Please check again later."
@@ -346,7 +346,7 @@ class FeedbackRouteHandler(APIHandler):
         # Write feedbacks to individual Notebook
         file_paths,reload = self.feedback_file(response['data'])
         if file_paths:
-            msg = "Feedback(s) placed in " + ','.join(file_paths) + '.'
+            msg = "Feedback placed in " + ','.join(file_paths) + '.'
         
         self.finish(json.dumps({'msg':msg, 'hard-reload': reload}))
 

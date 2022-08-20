@@ -143,7 +143,7 @@ func getSubmissionFeedbacks() http.HandlerFunc {
 			log.Printf("Fetching Feedbacks for student_id %v... \n", student_id[0])
 
 			f := Feedback{}
-			rows, err := Database.Query("select grade.id, submission.problem_id, submission.message, code_feedback, comment, grade.updated_at from grade INNER JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and grade.status = 0 order by grade.created_at desc", student_id[0])
+			rows, err := Database.Query("select grade.id, submission.problem_id, submission.message, code_feedback, comment, grade.updated_at from grade INNER JOIN submission on grade.submission_id = submission.id where grade.student_id = ? and grade.status = 0 and grade.has_feedback=1 order by grade.created_at desc", student_id[0])
 
 			defer rows.Close()
 			if err != nil {

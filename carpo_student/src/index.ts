@@ -338,7 +338,7 @@ export class ViewSubmissionStatusButton
       tooltip: 'View your submissions status',
     });
 
-    panel.toolbar.insertItem(15, 'viewStatus', button);
+    panel.toolbar.insertItem(14, 'viewStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
