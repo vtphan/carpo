@@ -61,7 +61,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
-      // If current Notebook is not inside Carpo/problem_ directory, disable all functionality.
+      // If current Notebook is not inside Exercises/problem_ directory, disable all functionality.
       if (!nbTrack.currentWidget.context.path.includes("problem_")) {
         return
       }

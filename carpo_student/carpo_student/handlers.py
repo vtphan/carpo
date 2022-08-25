@@ -14,7 +14,7 @@ def read_config_file():
     reads config.json file
     :return: dict
     """
-    config_file = os.path.join(os.getcwd() ,"Carpo",'config.json')
+    config_file = os.path.join(os.getcwd() ,"Exercises",'config.json')
     if os.path.exists(config_file):
         f=open(config_file)
         return json.load(f)
@@ -26,11 +26,11 @@ def create_initial_files():
     print('======================================')
     current_dir = os.getcwd()
     print(current_dir)
-    if "Carpo" not in os.listdir():
-        os.makedirs(os.path.join(current_dir,"Carpo"))
+    if "Exercises" not in os.listdir():
+        os.makedirs(os.path.join(current_dir,"Exercises"))
    
     # Create config.json file
-    config_path = os.path.join(current_dir,"Carpo","config.json")
+    config_path = os.path.join(current_dir,"Exercises","config.json")
     if not os.path.isfile(config_path):
         config_data = {}
         config_data['name'] = "John Smith"
@@ -41,7 +41,7 @@ def create_initial_files():
             config_file.write(json.dumps(config_data, indent=4))
     
     # Create blank notebook
-    notebook_path = os.path.join(current_dir,"Carpo","Readme.ipynb")
+    notebook_path = os.path.join(current_dir,"Exercises","Readme.ipynb")
     if not os.path.isfile(notebook_path):
         content = {
                         "cells": [],
@@ -74,7 +74,7 @@ def create_initial_files():
                                 "metadata": {},
                                 "source": [ "#### To complete carpo installation, do these steps: \n \
 1. Edit *config.json* to add your name, and the server address. \n \
-2. Click the button **Register Carpo**, to register your account. \n" ],
+2. Click the button **Register**, to register your account. \n" ],
                                 "outputs": []
                                 })
 
@@ -95,7 +95,7 @@ class RegistrationHandler(APIHandler):
 
             create_initial_files()
             self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and register again."}))
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
             return 
             
         if not {'name','server'}.issubset(config_data):
@@ -105,7 +105,7 @@ class RegistrationHandler(APIHandler):
         
         if config_data['name'] == "John Smith":
             self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and register again."}))
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
             return
 
         if not {'name','server'}.issubset(config_data):
@@ -129,7 +129,7 @@ class RegistrationHandler(APIHandler):
 
         config_data['id'] = response['id']
         # Write id to the json file.
-        with open(os.path.join(os.getcwd(),"Carpo",'config.json'), "w") as config_file:
+        with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
 
         self.finish(response)
@@ -173,10 +173,10 @@ class QuestionRouteHandler(APIHandler):
         file_paths['new_download'] = []
         file_paths['already_downloaded'] = []
         for res in data:
-            file_path = os.path.join(os.getcwd(),"Carpo","p{:03d}".format( res['id']) + ".ipynb")
+            file_path = os.path.join(os.getcwd(),"Exercises","ex{:03d}".format( res['id']) + ".ipynb")
 
             if not os.path.exists(file_path):
-                file_paths['new_download'].append("p{:03d}".format( res['id']) + ".ipynb")
+                file_paths['new_download'].append("ex{:03d}".format( res['id']) + ".ipynb")
                 content = {
                         "cells": [],
                         "metadata": {
@@ -225,7 +225,7 @@ class QuestionRouteHandler(APIHandler):
                 with open(file_path, "w") as file:
                     file.write(json_object)
             else:
-                file_paths['already_downloaded'].append("p{:03d}".format( res['id']) + ".ipynb")
+                file_paths['already_downloaded'].append("ex{:03d}".format( res['id']) + ".ipynb")
 
 
         return file_paths
@@ -269,10 +269,10 @@ class SolutionRouteHandler(APIHandler):
         file_paths['new_download'] = []
         file_paths['already_downloaded'] = []
         for res in data:
-            file_path = os.path.join(os.getcwd(),"Carpo","p{:03d}".format( res['problem_id']) + "_solution.ipynb")
+            file_path = os.path.join(os.getcwd(),"Exercises","ex{:03d}".format( res['problem_id']) + "_sol.ipynb")
 
             if not os.path.exists(file_path):
-                file_paths['new_download'].append("p{:03d}".format( res['problem_id']) + "_solution.ipynb")
+                file_paths['new_download'].append("ex{:03d}".format( res['problem_id']) + "_sol.ipynb")
                 content = {
                         "cells": [],
                         "metadata": {
@@ -313,7 +313,7 @@ class SolutionRouteHandler(APIHandler):
                 with open(file_path, "w") as file:
                     file.write(json_object)
             else:
-                file_paths['already_downloaded'].append("p{:03d}".format( res['problem_id']) + "_solution.ipynb")
+                file_paths['already_downloaded'].append("ex{:03d}".format( res['problem_id']) + "_sol.ipynb")
 
         return file_paths
 
@@ -354,8 +354,8 @@ class FeedbackRouteHandler(APIHandler):
         file_paths = []
         reload = 0
         for res in data:
-            dir_path = os.path.join("Carpo","Feedback")
-            file_path = "p{:03d}_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
+            dir_path = os.path.join("Exercises","Feedback")
+            file_path = "ex{:03d}_{:03d}".format(res['problem_id'],res['id']) + ".ipynb"
             file_paths.append("Feedback/" + file_path)
 
             if not os.path.exists(dir_path):

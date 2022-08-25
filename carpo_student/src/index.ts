@@ -61,8 +61,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         return 
       }
 
-      // Disable if not inside Carpo directory
-      if (!filename.includes("Carpo")) {
+      // Disable if not inside Exercises directory
+      if (!filename.includes("Exercises")) {
         return
       }
 
@@ -92,7 +92,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const activeIndex = notebook.activeCellIndex
 
           var info : CellInfo = {
-            problem_id: parseInt((filename.split("/").pop()).replace("p","").replace(".ipynb",""))
+            problem_id: parseInt((filename.split("/").pop()).replace("ex","").replace(".ipynb",""))
           };
 
           // Get the message block referencing the active cell.

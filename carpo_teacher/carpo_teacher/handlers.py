@@ -18,7 +18,7 @@ def read_config_file():
     reads config.json file
     :return: dict
     """
-    config_file = os.path.join(os.getcwd() ,"Carpo",'config.json')
+    config_file = os.path.join(os.getcwd() ,"Exercises",'config.json')
     if os.path.exists(config_file):
         f=open(config_file)
         return json.load(f)
@@ -30,11 +30,11 @@ def create_initial_files():
     print('======================================')
     current_dir = os.getcwd()
     print(current_dir)
-    if "Carpo" not in os.listdir():
-        os.makedirs(os.path.join(current_dir,"Carpo"))
+    if "Exercises" not in os.listdir():
+        os.makedirs(os.path.join(current_dir,"Exercises"))
    
     # Create config.json file
-    config_path = os.path.join(current_dir,"Carpo","config.json")
+    config_path = os.path.join(current_dir,"Exercises","config.json")
     if not os.path.isfile(config_path):
         config_data = {}
         config_data['name'] = "John Smith"
@@ -45,7 +45,7 @@ def create_initial_files():
             config_file.write(json.dumps(config_data, indent=4))
     
     # Create blank notebook
-    notebook_path = os.path.join(current_dir,"Carpo","Readme.ipynb")
+    notebook_path = os.path.join(current_dir,"Exercises","Readme.ipynb")
     if not os.path.isfile(notebook_path):
         content = {
                         "cells": [],
@@ -78,7 +78,7 @@ def create_initial_files():
                                 "metadata": {},
                                 "source": [ "#### To complete carpo installation, do these steps: \n \
 1. Edit *config.json* to add your name, and the server address. \n \
-2. Click the button **Register Carpo**, to register your account. \n" ],
+2. Click the button **Register**, to register your account. \n" ],
                                 "outputs": []
                                 })
 
@@ -97,7 +97,7 @@ class RegistrationHandler(APIHandler):
             create_initial_files()
             
             self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and register again."}))
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
             return
             
         if not {'name','server'}.issubset(config_data):
@@ -107,7 +107,7 @@ class RegistrationHandler(APIHandler):
         
         if config_data['name'] == "John Smith":
             self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Carpo/config.json file and register again."}))
+            self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
             return
         
         url = config_data['server'] + "/add_teacher"
@@ -127,7 +127,7 @@ class RegistrationHandler(APIHandler):
 
         config_data['id'] = response['id']
         # Write id to the json file.
-        with open(os.path.join(os.getcwd(),"Carpo",'config.json'), "w") as config_file:
+        with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
         print(response)
         self.finish(response)
@@ -167,7 +167,7 @@ class SubmissionHandler(APIHandler):
     def submission_file(self, data):
         file_paths = []
         for res in data:
-            dir_path = os.path.join("Carpo", "problem_{}".format(res['problem_id']))
+            dir_path = os.path.join("Exercises", "problem_{}".format(res['problem_id']))
             file_path = "sub_{:03d}".format(res['id']) + ".ipynb"
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
@@ -276,7 +276,7 @@ class GradedSubmissionHandler(APIHandler):
     def submission_file(self, data):
         file_paths = []
         for res in data:
-            dir_path = os.path.join("Carpo", "problem_{}".format(res['problem_id']),"Graded")
+            dir_path = os.path.join("Exercises", "problem_{}".format(res['problem_id']),"Graded")
             status = 'c' if res['score'] == 1 else 'i'
             file_path = "{:03d}_{:03d}_{}".format(res['student_id'],res['id'],status) + ".ipynb"
             if not os.path.exists(dir_path):
@@ -284,7 +284,7 @@ class GradedSubmissionHandler(APIHandler):
             
             submission_file = os.path.join(dir_path, file_path)
             if not os.path.exists(submission_file):
-                file_paths.append(submission_file.replace("Carpo/",""))
+                file_paths.append(submission_file.replace("Exercises/",""))
                 content = {
                         "cells": [],
                         "metadata": {
@@ -443,7 +443,7 @@ class FeedbackHandler(APIHandler):
 
         if response['msg'] == "Submission put back into the queue successfully.":
             # Delete the local submission notebook
-            notebook_path = os.path.join("Carpo", "problem_{}".format(input_data['problem_id']), "sub_{:03d}".format(input_data['submission_id']) + ".ipynb" )
+            notebook_path = os.path.join("Exercises", "problem_{}".format(input_data['problem_id']), "sub_{:03d}".format(input_data['submission_id']) + ".ipynb" )
             if os.path.exists(notebook_path):
                 os.remove(notebook_path)
 
