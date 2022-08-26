@@ -84,11 +84,13 @@ const SendButton = ({
 
 interface ICodeCellButtonComponent {
     cell: CodeCell;
+    statusCell: CodeCell;
     info: CellInfo;
 }
 
 const CodeCellButtonComponent = ({
     cell,
+    statusCell,
     info,
   }: ICodeCellButtonComponent): JSX.Element => {
   
@@ -126,6 +128,7 @@ const CodeCellButtonComponent = ({
                 body: msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
+            statusCell.model.value.text = "### Status: " + status;
             })
             .catch(reason => {
             showErrorMessage('Submission Grade Error', reason);
@@ -166,7 +169,8 @@ const CodeCellButtonComponent = ({
                 body: data.msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
-
+            statusCell.model.value.text = "### Status: Try Again" ;
+            
             })
             .catch(reason => {
             showErrorMessage('Feedback Send Error', reason);
@@ -199,6 +203,7 @@ const CodeCellButtonComponent = ({
 
 const MarkdownCellButtonComponent = ({
     cell,
+    statusCell,
     info,
 }: ICodeCellButtonComponent): JSX.Element => {
 
@@ -246,10 +251,12 @@ const MarkdownCellButtonComponent = ({
 
 export class CellCheckButton extends ReactWidget {
         cell: Cell = null;
+        statusCell: Cell = null;
         info: CellInfo = null;
-      constructor(cell: Cell, info: CellInfo) {
+      constructor(cell: Cell, statusCell: Cell, info: CellInfo) {
           super();
           this.cell = cell;
+          this.statusCell = statusCell;
           this.info = info;
           this.addClass('jp-grpCellButton');
       }
@@ -257,6 +264,7 @@ export class CellCheckButton extends ReactWidget {
 
         return <CodeCellButtonComponent
                     cell={this.cell as CodeCell}
+                    statusCell={this.statusCell as CodeCell}
                     info = {this.info as CellInfo}
                 />
 
@@ -267,6 +275,7 @@ export class CellCheckButton extends ReactWidget {
 
 export class FeedbackButton extends ReactWidget {
     cell: Cell = null;
+    statusCell: Cell = null;
     info: CellInfo = null;
   constructor(cell: Cell, info: CellInfo) {
       super();
@@ -278,6 +287,7 @@ export class FeedbackButton extends ReactWidget {
 
     return <MarkdownCellButtonComponent
             cell={this.cell as CodeCell}
+            statusCell={this.cell as CodeCell}
             info = {this.info as CellInfo}
         />
 

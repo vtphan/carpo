@@ -88,6 +88,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           }
 
           const cell: Cell = notebook.activeCell;
+          var sCell: Cell;
           const activeIndex = notebook.activeCellIndex
 
           // const heading = cell.model.value.text.split("\n")[0].split(" ")
@@ -111,24 +112,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
           };
           var header:string;
 
-          // For feedback case: cell is markdown so loop over the notebook widgets to get code cell before the active cell index
-          if (cell.model.type == 'markdown' ){
-            notebook.widgets.map((c,index) =>{
-              // activeIndex-1 could be the top cell (when the question type is markdown)
-              if(index == activeIndex-1 && !c.model.value.text.startsWith("## Submission")) {
-                const code = c.model.value.text
-                info.code = code  
-                info.id = submission_id(code)
-                info.student_id = student_id(code)
-                info.problem_id = problem_id(code)
-              }
-            })
-          }
+          // Get the status cell:
+          notebook.widgets.map((c, index ) => {
+            if (index == activeIndex+1) {
+              sCell = c;
+            }
+          })
 
           header = cell.model.value.text.split("\n")[0]
           if(header.match(/^#[0-9]+ [0-9]+ [0-9]+$/)) {
             console.log("Submission Grading block.........")
-            const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
+            const newCheckButton: CellCheckButton = new CellCheckButton(cell,sCell,info);
   
             (cell.layout as PanelLayout).addWidget(newCheckButton);
             currentCell = cell;
@@ -142,14 +136,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
             currentCellCheckButton = newFeedbackButton;
 
           }
-
-          // if (question.includes("## PID ")){
-          //   (cell.layout as PanelLayout).addWidget(newCheckButton);
-          //   currentCellCheckButton = newCheckButton;
-          // }
-
-          // Set the current cell and button for future
-          // reference
 
         });
 
@@ -270,9 +256,9 @@ export class NewSubmissionButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'NewSub',
+      label: 'GetSubs',
       onClick: getSubmissions,
-      tooltip: 'Get new submissions from students.',
+      tooltip: 'Download new submissions from students.',
     });
 
     panel.toolbar.insertItem(11, 'getStudentsCode', button);
