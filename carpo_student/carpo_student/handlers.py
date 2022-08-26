@@ -256,8 +256,8 @@ class SolutionRouteHandler(APIHandler):
         if file_paths['new_download']:
             msg = "New Solution(s) downloaded and placed in notebook(s) " + ', '.join(file_paths['new_download']) + '. '
 
-        if file_paths['already_downloaded']:
-            msg += "Solution(s) already downloaded and placed in notebook(s) " + ', '.join(file_paths['already_downloaded']) + '.'
+        # if file_paths['already_downloaded']:
+        #     msg += "Solution(s) already downloaded and placed in notebook(s) " + ', '.join(file_paths['already_downloaded']) + '.'
 
         if len(file_paths['new_download'] + file_paths['already_downloaded'] )  == 0: 
             msg = "There are no new solutions. Please check again later."
