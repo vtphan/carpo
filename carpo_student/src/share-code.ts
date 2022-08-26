@@ -35,7 +35,7 @@ export class ShareCodeButton
         var codeBlock:string
 
         var info : CellInfo = {
-            problem_id: parseInt((filename.split("/").pop()).replace("p","").replace(".ipynb",""))
+            problem_id: parseInt((filename.split("/").pop()).replace("ex","").replace(".ipynb",""))
           };
 
         notebook.widgets.map((c,index) =>{

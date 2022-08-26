@@ -160,7 +160,9 @@ class SubmissionHandler(APIHandler):
         # Write response to individual Notebook
         file_paths = self.submission_file(response['data'])
         if file_paths:
-            self.finish(json.dumps({'remaining': response['Remaining'], 'sub_file': file_paths[0]['Notebook'], 'question': file_paths[0]['Question']}))
+            p_list = []
+            [ p_list.append(i['Question'] ) for i in file_paths if i['Question'] not in p_list ]
+            self.finish(json.dumps({'remaining': response['Remaining'], 'sub_file': ", ".join([ i['Notebook'] for i in file_paths]), 'question': ", ".join(p_list)}))
         else: 
             self.finish(response)
     
@@ -224,12 +226,12 @@ class SubmissionHandler(APIHandler):
                         "outputs": []
                         })
 
-                # content["cells"].append({
-                #         "cell_type": "markdown",
-                #         "id": str(uuid.uuid4()),
-                #         "metadata": {},
-                #         "source": "Instructor feedback for the student:\n"
-                #         })
+                content["cells"].append({
+                        "cell_type": "markdown",
+                        "id": str(uuid.uuid4()),
+                        "metadata": {},
+                        "source": "### Status: New"
+                        })
                 
                 sub_history = ["## Submission History\n"]
                 content["cells"].append({
