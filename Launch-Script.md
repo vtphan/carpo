@@ -18,7 +18,7 @@ set CONDAPATH=C:\Users\thomas\anaconda3
 set PATH=%PATH%;%CONDAPATH%\Scripts;%CONDAPATH%\Library\bin
 
 call %CONDAPATH%\Scripts\activate.bat
-call pip install carpo-student==0.0.7
+call pip install carpo-student==0.0.8
 
 rem Launch JupyterLab from the current directory
 set current_dir=%cd%
@@ -35,6 +35,6 @@ call %CONDAPATH%\Scripts\jupyter-lab.exe  %current_dir%
 2. Create a New File and save it is `launch-jupyter.sh`
 ```bash
 cd `pwd`;
-pip install carpo-student==0.0.7
+pip install carpo-student==0.0.8
 jupyter lab
 ```

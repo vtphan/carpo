@@ -35,7 +35,7 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "John Smith"
         config_data['server'] = "http://delphinus.cs.memphis.edu:XXXX"
-        config_data['carpo_version'] = "0.0.5"
+        config_data['carpo_version'] = "0.0.8"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
