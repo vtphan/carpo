@@ -25,14 +25,14 @@ set current_dir=%cd%
 
 call %CONDAPATH%\Scripts\jupyter-lab.exe  %current_dir%
 ```
-4. Use `Save As` to save the file inside the directory created in `Step 1`. Give it a name: `launch-jupyter.bat`. This file should be executable when saved as .bat
-5. Double click on the `launch-jupyter.bat`. It should launch Jupyter Lab from your directory. The `carpo-student` extension should also be available.
+4. Use `Save As` to save the file inside the directory created in `Step 1`. Give it a name: `launch-jupyter-lab.bat`. This file should be executable when saved as `.bat`. Make sure the file is executable when saved.
+5. Go to your directory created in step-1. Double click on the `launch-jupyter-lab.bat`. It should launch Jupyter Lab from your directory. The `carpo-student` extension should also be available.
 
 ## MacOS Launch Script
 #### Make sure jupyter lab is installed.
 1. Create a new directory anywhere you want and give it a name: COMPXXX. It is better if your put all notebooks for the course in single directory in Desktop or Documents or any drive.
 
-2. Create a New File and save it is `launch-jupyter.sh`
+2. Create a New File and save it is `launch-jupyter-lab.sh`
 ```bash
 cd `pwd`;
 pip install carpo-student==0.0.8
