@@ -9,23 +9,23 @@ The following `pip` command(s) can be run from your terminal or from JupyterLab 
 To install the extension, execute:
 
 ```bash
-pip install carpo_teacher
+pip install carpo_student
 ```
 ## Update
 To update the extension to latest version, run:
 ```bash
-pip install --upgrade carpo_teacher
+pip install --upgrade carpo_student
 ```
 ## Install specific version
 ```bash
-pip install carpo_teacher==X.X.X
+pip install carpo_student==X.X.X
 ```
 
 ## Uninstall
 To remove the extension, execute:
 
 ```bash
-pip uninstall carpo_teacher
+pip uninstall carpo_student
 ```
 
 ## Configure to use with carpo server
@@ -34,7 +34,7 @@ pip uninstall carpo_teacher
 Replace the name and server address.*
 
 ## Install the extension with Virtual environment [Optional]
-It is recommended that you install the carpo-teacher extension in a separate python virtual environment. This way, you can isolate the carpo modules from your global jupyterlab server.
+It is recommended that you install the carpo-student extension in a separate python virtual environment. This way, you can isolate the carpo modules from your global jupyterlab server.
 
 1. Install python virtual environment
 ```bash
@@ -45,20 +45,20 @@ pip install virtualenv
 mkdir ~/my-venvs
 cd ~/my-venvs
 ```
-3. Create virtual environment for teacher extension
+3. Create virtual environment for student extension
 ```bash
-virtualenv carpo-teacher-mode
+virtualenv carpo-student-mode
 ```
-This will create new python virtual environment named `carpo-teacher-mode`
+This will create new python virtual environment named `carpo-student-mode`
 
 4. Activate the above created virtual environment
 ```bash
-source carpo-teacher-mode/bin/activate
+source carpo-student-mode/bin/activate
 ```
 
 5. Install jupyterlab and carpo extension in your environment
 ```bash
-pip install --upgrade carpo-teacher
+pip install --upgrade carpo-student
 ```
 
 6. Now launch  jupterlab
