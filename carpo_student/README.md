@@ -17,3 +17,5 @@
 	+ For Windows: **python install_carpo_win.py** 
 8. Close Jupyter Lab and Anaconda.
 9. Open the folder that has the script and double click on `RUN_JUPYTER_LAB.command`.
+# Configuration of the extension 
+Your instructor will walk you through the configuration process.
