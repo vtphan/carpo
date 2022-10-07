@@ -84,17 +84,18 @@ const SendButton = ({
 
 interface ICodeCellButtonComponent {
     cell: CodeCell;
+    statusCell: CodeCell;
     info: CellInfo;
 }
 
 const CodeCellButtonComponent = ({
     cell,
+    statusCell,
     info,
   }: ICodeCellButtonComponent): JSX.Element => {
   
     const submitGrade = async (val: Boolean) => {
 
-        console.log("From widget: ", info)
         if (info.id == NaN) {
 
             showDialog({
@@ -110,13 +111,13 @@ const CodeCellButtonComponent = ({
             "student_id": info.student_id,
             "submission_id": info.id,
             "problem_id": info.problem_id,
-            "score": val ? 1 : 2
+            "score": val ? 1 : 2,
+            "code": cell.model.value.text
         }
         
         var status : string = val ? "Correct.": "Incorrect." 
 
         // console.log("Grade: ", postBody)
-     
         requestAPI<any>('submissions/grade',{
             method: 'POST',
             body: JSON.stringify(postBody)
@@ -127,6 +128,7 @@ const CodeCellButtonComponent = ({
                 body: msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
+            statusCell.model.value.text = "### Status: " + status;
             })
             .catch(reason => {
             showErrorMessage('Submission Grade Error', reason);
@@ -138,21 +140,42 @@ const CodeCellButtonComponent = ({
 
     };
   
-    const resetSubmission = async() => {
-        requestAPI<any>('submissions',{
-            method: 'POST',
-            body: JSON.stringify({ "submission_id": info.id, "problem_id": info.problem_id})
-        }).then(data => {
+    const sendFeedback = async() => {
+
+        if (info.id == NaN) {
             showDialog({
-                title:'Grading Status Reset',
+                title:'Feedback Error',
+                body: "Invalid Cell for feedback.",
+                buttons: [Dialog.okButton({ label: 'Ok' })]
+              });
+
+            return
+        }
+
+        let postBody = {
+            "student_id": info.student_id,
+            "submission_id": info.id,
+            "problem_id": info.problem_id,
+            "code": cell.model.value.text
+        }
+
+        requestAPI<any>('submissions/feedbacks',{
+            method: 'POST',
+            body: JSON.stringify(postBody)
+        }).then(data => {
+
+            showDialog({
+                title:'Feedback Status',
                 body: data.msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
+            statusCell.model.value.text = "### Status: Try Again" ;
+            
             })
             .catch(reason => {
-            showErrorMessage('Submission Reset Error', reason);
+            showErrorMessage('Feedback Send Error', reason);
             console.error(
-                `Failed to put back the submission. \n${reason}`
+                `Failed to save feedback. \n${reason}`
             );
         });
 
@@ -170,7 +193,7 @@ const CodeCellButtonComponent = ({
             />
             <ResetButton
                 icon={redoIcon}
-                onClick={() => (resetSubmission)()}
+                onClick={() => (sendFeedback)()}
             />
 
         </div>
@@ -180,6 +203,7 @@ const CodeCellButtonComponent = ({
 
 const MarkdownCellButtonComponent = ({
     cell,
+    statusCell,
     info,
 }: ICodeCellButtonComponent): JSX.Element => {
 
@@ -227,10 +251,12 @@ const MarkdownCellButtonComponent = ({
 
 export class CellCheckButton extends ReactWidget {
         cell: Cell = null;
+        statusCell: Cell = null;
         info: CellInfo = null;
-      constructor(cell: Cell, info: CellInfo) {
+      constructor(cell: Cell, statusCell: Cell, info: CellInfo) {
           super();
           this.cell = cell;
+          this.statusCell = statusCell;
           this.info = info;
           this.addClass('jp-grpCellButton');
       }
@@ -238,6 +264,7 @@ export class CellCheckButton extends ReactWidget {
 
         return <CodeCellButtonComponent
                     cell={this.cell as CodeCell}
+                    statusCell={this.statusCell as CodeCell}
                     info = {this.info as CellInfo}
                 />
 
@@ -248,6 +275,7 @@ export class CellCheckButton extends ReactWidget {
 
 export class FeedbackButton extends ReactWidget {
     cell: Cell = null;
+    statusCell: Cell = null;
     info: CellInfo = null;
   constructor(cell: Cell, info: CellInfo) {
       super();
@@ -259,6 +287,7 @@ export class FeedbackButton extends ReactWidget {
 
     return <MarkdownCellButtonComponent
             cell={this.cell as CodeCell}
+            statusCell={this.cell as CodeCell}
             info = {this.info as CellInfo}
         />
 

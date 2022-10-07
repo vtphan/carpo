@@ -155,10 +155,10 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			sqlSmt := `select count(*) from submission where status = 0`
 			_ = Database.QueryRow(sqlSmt).Scan(&newSub)
 
-			log.Printf("Fetching submissions of students LIMIT 1...\n")
+			log.Printf("Fetching all submissions of students...\n")
 
 			s := Submission{}
-			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 inner join problem on submission.problem_id = problem.id order by submission.created_at asc limit 1")
+			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 inner join problem on submission.problem_id = problem.id order by submission.created_at asc")
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)
@@ -204,11 +204,8 @@ func teacherSubmissionHandler() http.HandlerFunc {
 				log.Printf("No new submissions found.\n")
 			}
 
-			// fmt.Printf("%v", submissions)
 			resp := Response{}
-			if newSub >= 1 {
-				resp.Remaining = newSub - 1
-			}
+			resp.Remaining = newSub - len(submissions)
 			sub, _ := json.Marshal(submissions)
 
 			d := []map[string]interface{}{}
@@ -216,42 +213,6 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			resp.Data = d
 			data, _ := json.Marshal(resp)
 			fmt.Fprint(w, string(data))
-		case http.MethodPost:
-			body, err := readRequestBody(r)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				http.Error(w, "Error reading request body",
-					http.StatusInternalServerError)
-				return
-			}
-
-			subID, _ := strconv.Atoi(fmt.Sprintf("%v", body["submission_id"]))
-
-			sub := Submission{
-				ID: subID,
-			}
-			graded, err := sub.IsGraded()
-			if graded {
-				log.Printf("Failed to requeue Submission %v. Submission already graded. Err. %v\n", sub.ID, err)
-				w.WriteHeader(http.StatusOK)
-				resp := []byte(`{"msg": "This submission is already graded. It cannot go back into the submission queue."}`)
-				fmt.Fprint(w, string(resp))
-				return
-			}
-
-			err = sub.SetSubmissionStatus(NewSub)
-			if err != nil {
-				log.Printf("Failed to requeue Submission . %v Err. %v\n", sub, err)
-				w.WriteHeader(http.StatusInternalServerError)
-				http.Error(w, "Failed to requeue submission.",
-					http.StatusInternalServerError)
-				return
-
-			}
-
-			w.WriteHeader(http.StatusOK)
-			resp := []byte(`{"msg": "Submission put back into the queue successfully."}`)
-			fmt.Fprint(w, string(resp))
 
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -278,16 +239,40 @@ func submissionGradeHandler() http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodPost:
-			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 1, time.Now(), time.Now())
+			// Check the code block. if different that the submission, Update Feedback attributes in DB else add score only.
+			var studentCode string
+			rows, err := Database.Query("select code from submission where id = ?", s.SubmissionID)
+			defer rows.Close()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				log.Printf("Error querying db submissionGrade. Err: %v", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			for rows.Next() {
+				rows.Scan(&studentCode)
+			}
+
+			if hasFeedbackOnCode(s.Code, studentCode) {
+				_, err = AddFeedbackSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, s.Code, s.Comment, 0, 1, time.Now(), time.Now(), time.Now())
+			} else {
+				_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 0, time.Now(), time.Now())
+			}
 
 			if err != nil {
 				var sqliteErr sqlite3.Error
 				if errors.As(err, &sqliteErr) {
 					log.Printf("Submission already graded for %v. Updating...\n", s.SubmissionID)
 					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-						_, err := UpdateScoreSQL.Exec(s.Score, time.Now(), s.SubmissionID)
+						if hasFeedbackOnCode(s.Code, studentCode) {
+							_, err = UpdateScoreFeedbackSQL.Exec(s.Score, s.Code, s.Comment, time.Now(), s.TeacherID, s.SubmissionID)
+						} else {
+							_, err = UpdateScoreSQL.Exec(s.Score, time.Now(), s.SubmissionID)
+						}
+
 						if err != nil {
-							log.Printf("Failed to update row %+v. Err: %v", s, err)
+							log.Printf("Failed to update score %+v. Err: %v", s, err)
 						}
 						log.Printf("Score successfully updated.")
 					}
@@ -296,7 +281,6 @@ func submissionGradeHandler() http.HandlerFunc {
 					w.WriteHeader(http.StatusInternalServerError)
 					http.Error(w, "Failed to save Score.",
 						http.StatusInternalServerError)
-
 				}
 
 			}
@@ -304,7 +288,7 @@ func submissionGradeHandler() http.HandlerFunc {
 			sub := Submission{
 				ID: s.SubmissionID,
 			}
-			err := sub.SetSubmissionStatus(SubGradedByTeacher)
+			err = sub.SetSubmissionStatus(SubGradedByTeacher)
 			if err != nil {
 				log.Printf("Failed to update Submission after grading submission. %v Err: %v\n", s, err)
 			}

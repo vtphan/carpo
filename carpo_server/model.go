@@ -85,3 +85,9 @@ type Response struct {
 	Data      []map[string]interface{} `json:"data"`
 	Remaining int
 }
+
+type Solutions struct {
+	ProblemID int    `json:"problem_id"`
+	Solution  string `json:"solution"`
+	Format    string `json:"format"`
+}

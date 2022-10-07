@@ -63,8 +63,8 @@ func main() {
 	Config = init_config(config_file)
 	init_database(Config.Database)
 
-	file, _ := os.OpenFile("server.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	log.SetOutput(file)
+	// file, _ := os.OpenFile("server.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	// log.SetOutput(file)
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "pong") })
 
@@ -83,6 +83,8 @@ func main() {
 	http.HandleFunc("/teachers/feedbacks", teacherFeedbackHandler())
 
 	http.HandleFunc("/students/get_submission_feedbacks", getSubmissionFeedbacks())
+
+	http.HandleFunc("/solution", solutionHandler())
 
 	http.HandleFunc("/students/status", viewStudentSubmissionStatus())
 	http.HandleFunc("/problems/status", viewProblemStatus())

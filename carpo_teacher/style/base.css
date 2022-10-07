@@ -1,7 +1,7 @@
 .jp-CellButton {
     position: absolute;
-	right: 0;
-	bottom: 0;
+	right: 188px;
+	/* bottom: 0; */
 	top: 0;
 	height: 100%;
 	width: 34px;
@@ -14,14 +14,14 @@
 .jp-grpCellButton
 {
     position: absolute;
-	right: 0;
-	bottom: 0;
-	height: 90%;
-	width: 80px;
-	padding: 9px 10px 0 0;
-	display: block;
-	z-index: 600;
-	overflow: unset;
+    right: 180px;
+    top: 1px;
+    height: 90%;
+    width: 80px;
+    padding: 9px 10px 0 0;
+    display: block;
+    z-index: 600;
+    overflow: unset;
 }
 
 .jp-grpCellButton .cellButton {
@@ -36,14 +36,13 @@
 
 .grp {
 	position: absolute;
-    bottom: 0;
     right: 0;
     margin-right: 10px;
 }
 
 .cellButton {
     position: absolute;
-    bottom: 0;
+    /* bottom: 0; */
     padding-right: 2px;
     background: none;
     border: none;

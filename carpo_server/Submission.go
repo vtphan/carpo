@@ -33,11 +33,11 @@ func (sub *Submission) IsGraded() (graded bool, err error) {
 	sqlSmt := `select score from grade where submission_id=?`
 	err = Database.QueryRow(sqlSmt, sub.ID).Scan(&score)
 	if err != nil {
-		if err != sql.ErrNoRows {
-			log.Printf("SQL Error %v. Err: %v", sqlSmt, err)
+		if err == sql.ErrNoRows {
+			return false, nil
 		}
 
-		return
+		return false, err
 	}
 	if score == 1 || score == 2 {
 		return true, nil

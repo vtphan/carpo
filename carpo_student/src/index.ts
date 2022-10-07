@@ -31,6 +31,9 @@ import { ToolbarButton,Dialog, showDialog,showErrorMessage } from '@jupyterlab/a
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
+import { ShareCodeButton } from './share-code'
+import { GetSolutionButton } from './get-solutions'
+
 
 /**
  * Initialization data for the carpo-student extension.
@@ -58,8 +61,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         return 
       }
 
-      // Disable if not inside Carpo directory
-      if (!filename.includes("Carpo")) {
+      // Disable if not inside Exercises directory
+      if (!filename.includes("Exercises")) {
         return
       }
 
@@ -89,7 +92,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           const activeIndex = notebook.activeCellIndex
 
           var info : CellInfo = {
-            problem_id: parseInt((filename.split("/").pop()).replace("p","").replace(".ipynb",""))
+            problem_id: parseInt((filename.split("/").pop()).replace("ex","").replace(".ipynb",""))
           };
 
           // Get the message block referencing the active cell.
@@ -103,8 +106,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           })
        
 
-          const newCheckButton: CellCheckButton = new CellCheckButton(
-            cell,info);
+          const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
           
           if (question.includes("## PID ")){
             (cell.layout as PanelLayout).addWidget(newCheckButton);
@@ -124,9 +126,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
     //  tell the document registry about your widget extension:
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
+    app.docRegistry.addWidgetExtension('Notebook', new ShareCodeButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
+    app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
-    app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
+    // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
 
 
   }
@@ -174,7 +178,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Register Carpo',
+      label: 'Register',
       onClick: register,
       tooltip: 'Register as a Student',
     });
@@ -229,7 +233,7 @@ export class GetQuestionButton
 
     const button = new ToolbarButton({
       className: 'get-question-button',
-      label: 'Get Problem',
+      label: 'GetProblem',
       onClick: getQuestion,
       tooltip: 'Get Latest Problem From Server',
     });
@@ -265,7 +269,11 @@ export class GetFeedbackButton
             title:'',
             body: data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
-          });
+          }).then( result => {
+            if (result.button.accept && data['hard-reload'] == 1 ) {
+                window.location.reload();
+            }
+          })
         })
         .catch(reason => {
           showErrorMessage('Get Feedback Error', reason);
@@ -278,12 +286,12 @@ export class GetFeedbackButton
 
     const button = new ToolbarButton({
       className: 'get-feedback-button',
-      label: 'Get Feedback',
+      label: 'GetFeedback',
       onClick: getFeedback,
       tooltip: 'Get Feedback to your Submission',
     });
 
-    panel.toolbar.insertItem(12, 'getFeedback', button);
+    panel.toolbar.insertItem(13, 'getFeedback', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -325,18 +333,19 @@ export class ViewSubmissionStatusButton
 
     const button = new ToolbarButton({
       className: 'get-status-button',
-      label: 'Submission Status',
+      label: 'Status',
       onClick: viewStatus,
       tooltip: 'View your submissions status',
     });
 
-    panel.toolbar.insertItem(13, 'viewStatus', button);
+    panel.toolbar.insertItem(14, 'viewStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
   }
 }
 
+// Currently disabled
 export class viewProblemStatusExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
@@ -377,7 +386,7 @@ export class viewProblemStatusExtension
       tooltip: 'View all problem status',
     });
 
-    panel.toolbar.insertItem(13, 'viewProblemStatus', button);
+    panel.toolbar.insertItem(15, 'viewProblemStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

@@ -30,7 +30,6 @@ import {
 } from '@jupyterlab/docmanager';
 
 
-
 // import { Cell } from '@jupyterlab/cells';
 
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
@@ -39,6 +38,7 @@ import { ToolbarButton, Dialog, showDialog,showErrorMessage } from '@jupyterlab/
 // , InputDialog
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
+import { GetSolutionButton } from './upload-solution'
 
 /**
  * Initialization data for the carpo-teacher extension.
@@ -61,7 +61,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
 
-      // If current Notebook is not inside Carpo/problem_ directory, disable all functionality.
+      // If current Notebook is not inside Exercises/problem_ directory, disable all functionality.
       if (!nbTrack.currentWidget.context.path.includes("problem_")) {
         return
       }
@@ -88,6 +88,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           }
 
           const cell: Cell = notebook.activeCell;
+          var sCell: Cell;
           const activeIndex = notebook.activeCellIndex
 
           // const heading = cell.model.value.text.split("\n")[0].split(" ")
@@ -107,28 +108,21 @@ const plugin: JupyterFrontEndPlugin<void> = {
             id:  submission_id(cell.model.value.text),
             problem_id: problem_id(cell.model.value.text),
             student_id: student_id(cell.model.value.text),
-            code: cell.model.value.text.split("\n")[1],
+            code: cell.model.value.text
           };
           var header:string;
 
-          // For feedback case: cell is markdown so loop over the notebook widgets to get code cell before the active cell index
-          if (cell.model.type == 'markdown' ){
-            notebook.widgets.map((c,index) =>{
-              if(index == activeIndex-1) {
-                const code = c.model.value.text
-                info.code = code  
-                info.id = submission_id(code)
-                info.student_id = student_id(code)
-                info.problem_id = problem_id(code)
-              }
-            })
-          }
+          // Get the status cell:
+          notebook.widgets.map((c, index ) => {
+            if (index == activeIndex+1) {
+              sCell = c;
+            }
+          })
 
           header = cell.model.value.text.split("\n")[0]
           if(header.match(/^#[0-9]+ [0-9]+ [0-9]+$/)) {
             console.log("Submission Grading block.........")
-            const newCheckButton: CellCheckButton = new CellCheckButton(
-              cell,info);
+            const newCheckButton: CellCheckButton = new CellCheckButton(cell,sCell,info);
   
             (cell.layout as PanelLayout).addWidget(newCheckButton);
             currentCell = cell;
@@ -136,21 +130,12 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
           } else {
             
-            const newFeedbackButton: FeedbackButton = new FeedbackButton(
-              cell,info);
+            const newFeedbackButton: FeedbackButton = new FeedbackButton(cell,info);
             (cell.layout as PanelLayout).addWidget(newFeedbackButton);
             currentCell = cell;
             currentCellCheckButton = newFeedbackButton;
 
           }
-
-          // if (question.includes("## PID ")){
-          //   (cell.layout as PanelLayout).addWidget(newCheckButton);
-          //   currentCellCheckButton = newCheckButton;
-          // }
-
-          // Set the current cell and button for future
-          // reference
 
         });
 
@@ -163,6 +148,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new AllSubmissionButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
+    app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
     app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
     
   }
@@ -208,7 +194,7 @@ export class RegisterButton
 
     const button = new ToolbarButton({
       className: 'register-button',
-      label: 'Register Carpo',
+      label: 'Register',
       onClick: register,
       tooltip: 'Register as a Teacher',
     });
@@ -270,9 +256,9 @@ export class NewSubmissionButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'New Submission',
+      label: 'GetSubs',
       onClick: getSubmissions,
-      tooltip: 'Get new submissions from students.',
+      tooltip: 'Download new submissions from students.',
     });
 
     panel.toolbar.insertItem(11, 'getStudentsCode', button);
@@ -325,7 +311,7 @@ export class AllSubmissionButtonExtension
 
     const button = new ToolbarButton({
       className: 'sync-code-button',
-      label: 'Graded Subs',
+      label: 'Graded',
       onClick: getGradedSubmissions,
       tooltip: 'Get all graded submissions.',
     });
@@ -552,7 +538,7 @@ export class viewProblemStatusExtension
       tooltip: 'View all problem status',
     });
 
-    panel.toolbar.insertItem(15, 'viewProblemStatus', button);
+    panel.toolbar.insertItem(16, 'viewProblemStatus', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
