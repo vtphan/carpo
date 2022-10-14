@@ -9,7 +9,7 @@ There are two ways of using carpo for in-class coding.
 
 2. Run carpo_server on a dedicated server. Students can log into a coding hub to do in-class exercises. Teachers and TA install appropriate Jupyter extensions on their computers.
 
-Installing JupyterLab extensions can be technically complicated.  We expect instructors and TAs to be able to go through this. However, it might be desirable for some students to use a coding hub without having to install the student extension.
+Installing JupyterLab extensions can be technically complicated.  We expect instructors and TAs to be able to go through this. However, it might be desirable for some students to use a coding hub without having to install the student extension.  Note that a student might both use a coding hub and separately install the extension on their own computer.  Setting up a coding hub, however, requires additional resources. Here's a [guideline](CodingHub).
 
 ## Setting up carpo_server
 
