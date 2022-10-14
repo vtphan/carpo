@@ -24,7 +24,7 @@ Installation instructions can be found [here](carpo_server).
 ### For students
 Students can use the CodingHub without having to install the JupyterLab extension on their computers.  See [COMP4151](CodingHub/COMP4151.md), for example, on how to login to the CodingHub.
 
-Alternately, students can install the extension on the own computer.
+Alternately, students can install the extension on the own computers.
 * [Student installation instructions](carpo_student/INSTALL.md)
 
 ### For teachers and TAs
