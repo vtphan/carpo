@@ -21,6 +21,7 @@ Students need to edit the **config.json** file in the **Exercises** folder and u
 * Student name
 * IP address of the server. The instructor should provide this information.
 
+Here's an example of the config.json file for a course: [COMP4151](../CodingHub/COMP4151.md)
 
 
 ## Additional installation information
