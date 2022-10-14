@@ -16,7 +16,7 @@ Installing JupyterLab extensions can be technically complicated.  We expect inst
 The server is written in Go.  You can either download the source and compile it on your Linux 
 server.  Or you can download the binary executable.
 
-Installation instructions can be found [here](carpo_server/README.md).
+Installation instructions can be found [here](carpo_server).
 
 
 ## Installation of Jupyter Lab extensions
