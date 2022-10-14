@@ -1,10 +1,6 @@
 Carpo is a Jupyter-lab extension that supports in-class coding. It's designed to facilitate active learning in Data Science and Machine Learning courses.
 
-
-## Requirements 
-* JupyterLab >= 3.0
-
-Instructors, teaching assistants and students must have JupyterLab installed on their computers.
+To use carpo, instructors, teaching assistants and students must first install JupyterLab (version 3.0 or later) on their computers.
 
 
 ## For students
