@@ -1,37 +1,41 @@
-
 ## Requirements
 
 * JupyterLab >= 3.0
 
-The following `pip` command(s) can be run from your terminal or from JupyterLab terminal.
-## Install
+## Installation
 
-To install the extension, execute:
-
-```bash
-pip install carpo_teacher
-```
-## Update
-To update the extension to latest version, run:
+1. Open Jupyter Lab
+2. Open Terminal
+3. Execute this command
 ```bash
 pip install --upgrade carpo_teacher
 ```
-## Install specific version
+4. Close and restart Jupyter Lab
+
+
+## Configure to use with carpo server
+
+Teachers/TAs need to edit the **config.json** file in the **Exercises** folder and update the following information:
+
+* Student name
+* IP address of the server. The instructor should provide this information.
+
+
+
+## Additional installation information
+
+To install specific version (e.g. 0.0.8), execute this command in Jupyter Lab's terminal:
+
 ```bash
-pip install carpo_teacher==X.X.X
+pip install carpo_teacher==0.0.8
 ```
 
-## Uninstall
-To remove the extension, execute:
+To uninstall the exension, execute this command in Jupyter Lab's terminal:
 
 ```bash
 pip uninstall carpo_teacher
 ```
 
-## Configure to use with carpo server
-
-*Update the config.json file inside Carpo directory in the working directory of your Jupyter Lab.
-Replace the name and server address.*
 
 ## Install the extension with Virtual environment [Optional]
 It is recommended that you install the carpo-teacher extension in a separate python virtual environment. This way, you can isolate the carpo modules from your global jupyterlab server.

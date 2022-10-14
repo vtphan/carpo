@@ -11,6 +11,7 @@
 ```bash
 pip install --upgrade carpo_student
 ```
+4. Close and restart Jupyter Lab
 
 
 ## Configure to use with carpo server
