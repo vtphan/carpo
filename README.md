@@ -4,9 +4,13 @@
 
 Both instructor and student should have JupyterLab installed into their machines.
 
-## Student Extension Installation
-[Carpo Student Installation](carpo_student/README.md)
-## Student Self Installtion 
-[Student Self Installtion](carpo_student/INSTALL.md)
-## Teacher Extension Installation
-[Carpo Teacher Installation](carpo_teacher/README.md)
+
+## Student Installation
+Students can use the CodingHub without having to install the JupyterLab extension on their computer.  See [COMP4151](CodingHub/COMP4151.md), for example, on how to login to the CodingHub.
+
+Alternately, students can install the extension on the own computer.
+* [Student Self Installtion](carpo_student/INSTALL.md)
+
+## Teacher/TA Extension Installation
+Teachers and teaching assistant should install the following extension on their computers.
+* [Carpo Teacher Installation](carpo_teacher/README.md)
