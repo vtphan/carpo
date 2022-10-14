@@ -3,7 +3,6 @@
 
 * JupyterLab >= 3.0
 
-The following `pip` command(s) can be run from your terminal or from JupyterLab terminal.
 ## Installation
 
 1. Open Jupyter Lab
