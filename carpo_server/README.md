@@ -10,7 +10,7 @@ There are two ways to get the server code to run on a server:
 
 ## Precompiled server code
 
-* Windows: tab
+* Windows: tba
 * MacOS: tba
 
 ## Compiling the source code
