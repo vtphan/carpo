@@ -3,7 +3,7 @@ Carpo is a Jupyter-lab extension. It's designed to facilitate active learning in
 
 In a nutshell, using carpo within Jupyter notebooks, students can share the code and teachers can look at students' shared code and provide feedback.
 
-<img src="./architecture.png" width="50%"/>
+<p style="text-align:center;"><img src="./architecture.png" width="50%"/></p>
 
 To use carpo, instructors, teaching assistants and students must first install JupyterLab (version 3.0 or later) on their computers.
 
