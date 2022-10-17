@@ -1,3 +1,4 @@
+## Carpo
 Carpo is a Jupyter-lab extension that supports in-class coding. It's designed to facilitate active learning in Data Science and Machine Learning courses.
 
 To use carpo, instructors, teaching assistants and students must first install JupyterLab (version 3.0 or later) on their computers.
@@ -5,11 +6,11 @@ To use carpo, instructors, teaching assistants and students must first install J
 ## Overview 
 There are two ways of using carpo for in-class coding.
 
-1. Run carpo_server on a dedicated server. Teachers, TAs, students install appropriate Jupyter extensions on their computers.
+1. Run carpo_server on a dedicated server. Teachers, TAs, students install appropriate JupyterLab extensions on their computers.
 
-2. Run carpo_server on a dedicated server. Students can log into a coding hub to do in-class exercises. Teachers and TA install appropriate Jupyter extensions on their computers.
+2. Run carpo_server on a dedicated server. Students can log into a coding hub to do in-class exercises. Teachers and TA install appropriate JupyterLab extension on their computers.
 
-Installing JupyterLab extensions can be technically complicated.  We expect instructors and TAs to be able to go through this. However, it might be desirable for some students to use a coding hub without having to install the student extension.  Note that a student might both use a coding hub and separately install the extension on their own computer.  Setting up a coding hub, however, requires additional resources. Here's a [guideline](CodingHub).
+Installing JupyterLab extensions can be technically complicated.  We expect instructors and TAs to be able to go through this. However, it might be desirable for some students to use a coding hub without having to install the student extension.  Note that a student might both use a coding hub and separately install the extension on their own computer.  Setting up a coding hub, however, requires additional resources. Here's a [guideline](CodingHub/README.md).
 
 ## Setting up carpo_server
 
@@ -17,7 +18,6 @@ The server is written in Go.  You can either download the source and compile it 
 server.  Or you can download the binary executable.
 
 Installation instructions can be found [here](carpo_server).
-
 
 ## Installation of Jupyter Lab extensions
 
