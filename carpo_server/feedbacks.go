@@ -14,6 +14,9 @@ import (
 func teacherFeedbackHandler() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Max-Age", "15")
 
 		body, err := readRequestBody(r)
 		if err != nil {
@@ -116,6 +119,14 @@ func teacherFeedbackHandler() http.HandlerFunc {
 				resp := []byte(`{"msg": "Feedback is sent to the student."}`)
 				fmt.Fprint(w, string(resp))
 			}
+
+		case http.MethodOptions:
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Max-Age", "3600")
+			w.WriteHeader(http.StatusNoContent)
+			return
 
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

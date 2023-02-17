@@ -71,3 +71,19 @@ func (st *Studnet) GetIDFromName() (id int, err error) {
 	st.ID = id
 	return
 }
+
+func (st *Studnet) GetNameFromID() (name string, err error) {
+
+	rows, err := Database.Query("select name from student where id = ?", st.ID)
+	defer rows.Close()
+	if err != nil {
+		return "", err
+	}
+
+	for rows.Next() {
+		rows.Scan(&name)
+	}
+
+	st.Name = name
+	return
+}

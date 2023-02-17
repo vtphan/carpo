@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -164,6 +165,43 @@ func problemHandler() http.HandlerFunc {
 
 }
 
+func listProblemsHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Max-Age", "15")
+
+		switch r.Method {
+		case http.MethodGet:
+			rows, err := Database.Query("select id, question, format, lifetime, status from problem")
+			if err != nil {
+				log.Printf("Failed to list problems. Err. %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to list problems.",
+					http.StatusInternalServerError)
+				return
+			}
+
+			var problems []Problem
+
+			for rows.Next() {
+				var prob Problem
+				if err := rows.Scan(&prob.ID, &prob.Question, &prob.Format, &prob.Lifetime, &prob.Status); err != nil {
+					log.Printf("Failed to list problems. Err. %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, "Failed to list problems.",
+						http.StatusInternalServerError)
+					return
+				}
+				problems = append(problems, prob)
+
+			}
+			data, _ := json.Marshal(problems)
+			fmt.Fprint(w, string(data))
+		}
+	}
+}
+
 func archiveProblem(id int) error {
 	stmt, err := Database.Prepare("update problem set status=?, lifetime=?, updated_at=?  where id=?")
 	if err != nil {
@@ -206,6 +244,14 @@ func expireProblems() error {
 
 		log.Printf("Successfully archived expired Problem ID: %v.\n", pid)
 
+		// Remove snapshots from the global map if the problem is expired
+		for k := range studentWorkSnapshot {
+			expiredProblem := fmt.Sprintf("-%d", pid)
+			if strings.Contains(k, expiredProblem) {
+				fmt.Printf("Deleting student Work Snapshot from map with key: %s.", k)
+				delete(studentWorkSnapshot, k)
+			}
+		}
 	}
 
 	return nil

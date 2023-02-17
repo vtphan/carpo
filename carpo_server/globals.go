@@ -18,6 +18,8 @@ var GradingMessage = map[int]string{
 	2: "Incorrect",
 }
 
+var studentWorkSnapshot = map[string]interface{}{}
+
 var Config *Configuration
 
 var Database *sql.DB

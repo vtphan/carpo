@@ -73,8 +73,11 @@ func main() {
 
 	http.HandleFunc("/problem", problemHandler())
 
+	http.HandleFunc("/problems/list", listProblemsHandler())
+
 	http.HandleFunc("/students/submissions", studentSubmissionHandler())
 	http.HandleFunc("/teachers/submissions", teacherSubmissionHandler())
+	http.HandleFunc("/teachers/snapshots", teacherSnapshotHandler())
 
 	http.HandleFunc("/teachers/graded_submissions", gradedSubmissionHandler())
 

@@ -8,7 +8,7 @@ import (
 
 func (sub *Submission) SaveSubmission(studentID int) (id int, err error) {
 	var result sql.Result
-	result, err = AddSubmissionSQL.Exec(sub.ProblemID, sub.Message, sub.Code, studentID, sub.Status, sub.CreatedAt, sub.UpdatedAt)
+	result, err = AddSubmissionSQL.Exec(sub.ProblemID, sub.Message, sub.Code, sub.Snapshot, studentID, sub.Status, sub.CreatedAt, sub.UpdatedAt)
 	sid, _ := result.LastInsertId()
 	return int(sid), nil
 }

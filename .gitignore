@@ -4,3 +4,4 @@
 
 **/*.log
 **/carpo
+**node_modules/

@@ -18,12 +18,22 @@ type Submission struct {
 	Info      string    `json:"info"`
 	Message   string    `json:"message" db:"message"`
 	Code      string    `json:"code" db:"code"`
+	Snapshot  int       `json:"snapshot" db:"snapshot"`
 	StudentID int       `json:"student_id" db:"student_id"`
 	Name      string    `json:"student_name" db:"name"`
 	Status    int       `json:"status" db:"status"`
 	Time      string    `json:"time"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type Snapshot struct {
+	ID        int    `json:"id" db:"id"`
+	ProblemID int    `json:"problem_id" db:"problem_id"`
+	Code      string `json:"code" db:"code"`
+	StudentID int    `json:"student_id" db:"student_id"`
+	Name      string `json:"student_name" db:"name"`
+	Time      string `json:"time"`
 }
 
 type GradedSubmission struct {
@@ -90,4 +100,12 @@ type Solutions struct {
 	ProblemID int    `json:"problem_id"`
 	Solution  string `json:"solution"`
 	Format    string `json:"format"`
+}
+
+type Problem struct {
+	ID       int       `json:"id"`
+	Question string    `json:"question"`
+	Format   string    `json:"format"`
+	Lifetime time.Time `json:"lifetime"`
+	Status   int       `json:"status"`
 }

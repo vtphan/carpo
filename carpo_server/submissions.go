@@ -15,7 +15,7 @@ import (
 func isAllowedSubmission(sID int) bool {
 
 	var prevSubAt string
-	rows, err := Database.Query("select created_at from submission where student_id=? order by created_at desc limit 1", sID)
+	rows, err := Database.Query("select created_at from submission where student_id=? and snapshot=2 order by created_at desc limit 1", sID)
 	defer rows.Close()
 	if err != nil {
 		log.Printf("Error SQL isAllowedSubmission. Error %v", err)
@@ -55,17 +55,20 @@ func studentSubmissionHandler() http.HandlerFunc {
 		}
 
 		pid, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
+		sub_type, _ := strconv.Atoi(fmt.Sprintf("%v", body["snapshot"])) // 1: codesnapshot, 2: submission
 
 		sub := Submission{
 			ProblemID: pid,
 			Message:   fmt.Sprintf("%v", body["message"]),
 			Code:      fmt.Sprintf("%v", body["code"]),
+			Snapshot:  sub_type,
 			StudentID: studnet.ID,
 			Status:    NewSub,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
 
+		key := fmt.Sprintf("%v-%v", studnet.ID, body["problem_id"])
 		switch r.Method {
 		case http.MethodPost:
 			if !isAllowedSubmission(studnet.ID) {
@@ -73,24 +76,31 @@ func studentSubmissionHandler() http.HandlerFunc {
 				resp := []byte(`{"msg": "Please wait for 30 seconds before you make another submission on this problem."}`)
 				fmt.Fprint(w, string(resp))
 				return
-
 			}
-			_, err := studnet.SaveSubmission(sub)
-			if err != nil {
-				var sqliteErr sqlite3.Error
-				if errors.As(err, &sqliteErr) {
-					log.Printf("Submission already found. Updating...")
-					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-						studnet.UpdateSubmission(sub)
-					}
-				} else {
 
-					log.Printf("Failed to Save Submission. %v Err. %v\n", sub, err)
-					w.WriteHeader(http.StatusInternalServerError)
-					http.Error(w, "Failed to save submission.",
-						http.StatusInternalServerError)
+			if val, ok := studentWorkSnapshot[key]; ok {
+				// Check for codesnapshot
+				if val == sub.Code && sub_type == 1 {
+					log.Printf("No change for key: %s.", key)
+					resp := []byte(`{"msg": "No new change found."}`)
+					fmt.Fprint(w, string(resp))
 					return
 				}
+			}
+
+			// Update the global map
+			studentWorkSnapshot[key] = map[string]interface{}{
+				"code": sub.Code,
+				"at":   time.Now().String(),
+			}
+
+			_, err := studnet.SaveSubmission(sub)
+			if err != nil {
+				log.Printf("Failed to Save Submission. %v Err. %v\n", sub, err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to save submission.",
+					http.StatusInternalServerError)
+				return
 			}
 			_, err = AddStudentProblemStatusSQL.Exec(studnet.ID, pid, 1, time.Now(), time.Now())
 			if err != nil {
@@ -114,6 +124,9 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 func teacherSubmissionHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Max-Age", "15")
 		// role := "teacher"
 		submissions := make([]Submission, 0)
 
@@ -158,7 +171,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			log.Printf("Fetching all submissions of students...\n")
 
 			s := Submission{}
-			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 inner join problem on submission.problem_id = problem.id order by submission.created_at asc")
+			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 and submission.snapshot = 1 inner join problem on submission.problem_id = problem.id order by submission.created_at asc")
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)
@@ -196,9 +209,10 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			}
 
 			// Set submission status to 1 which are sent to client
-			for _, subs := range submissions {
-				subs.SetSubmissionStatus(SubBeingLookedAt)
-			}
+			// TODO: Uncomment this.
+			// for _, subs := range submissions {
+			// 	subs.SetSubmissionStatus(SubBeingLookedAt)
+			// }
 
 			if len(submissions) == 0 {
 				log.Printf("No new submissions found.\n")
@@ -223,6 +237,9 @@ func teacherSubmissionHandler() http.HandlerFunc {
 
 func submissionGradeHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Max-Age", "15")
 
 		body, err := readRequestBody(r)
 		if err != nil {
@@ -233,9 +250,11 @@ func submissionGradeHandler() http.HandlerFunc {
 		}
 
 		jsonString, _ := json.Marshal(body)
+		fmt.Printf("Req body : %s", jsonString)
 
 		s := Grade{}
 		json.Unmarshal(jsonString, &s)
+		// fmt.Printf("S : %+v", s)
 
 		switch r.Method {
 		case http.MethodPost:
@@ -305,6 +324,14 @@ func submissionGradeHandler() http.HandlerFunc {
 			w.WriteHeader(http.StatusCreated)
 			resp := []byte(`{"msg": "Submission graded successfully."}`)
 			fmt.Fprint(w, string(resp))
+
+		case http.MethodOptions:
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Max-Age", "3600")
+			w.WriteHeader(http.StatusNoContent)
+			return
 
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
