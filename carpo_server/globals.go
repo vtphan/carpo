@@ -18,7 +18,7 @@ var GradingMessage = map[int]string{
 	2: "Incorrect",
 }
 
-var studentWorkSnapshot = map[string]interface{}{}
+var studentWorkSnapshot = map[string]Submission{}
 
 var Config *Configuration
 

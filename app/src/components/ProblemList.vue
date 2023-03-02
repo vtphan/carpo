@@ -1,17 +1,16 @@
 <template>
-    <div>
-        <h2> Problem Lists </h2>
-        <b-button v-b-toggle="'collapse'" class="m-1" v-for="items in message" :key="items.id" @click="selectProblem(items)" >Problem-{{ items.id }}</b-button>
+  <div>
+      <h2> Problem Lists </h2>
+      <b-button v-b-toggle="'collapse'" class="m-1" v-for="items in message" :key="items.id" @click="selectProblem(items)" >Problem-{{ items.id }}</b-button>
 
-        <b-collapse id="collapse">
-          <b-card>
-            <pre>
-              {{ selectedProb.question }}
-            </pre>
-          </b-card>
-        </b-collapse>
-
-    </div>
+      <b-collapse id="collapse">
+        <b-card>
+          <pre>
+            {{ selectedProb.question }}
+          </pre>
+        </b-card>
+      </b-collapse>
+  </div>
 </template>
 
 <script>

@@ -1,62 +1,77 @@
 <template>
- <!-- eslint-disable-next-line vue/max-attributes-per-line -->
-    <div>
-        <h3> Submissions </h3>
-        <!-- {{message}} -->
-        <div >
-            <div class="items" >
-                <b-card
-                  class="item"
-                  v-b-modal = "'myModal'"
-                  v-bind:img-src="getImagePath()"
-                  img-alt="Card image"
-                  img-top
-                  style="max-width: 20rem;"
-                  v-for="items in message.data" :key="items.id"
-                  @click="sendInfo(items)">
-                  <!-- <img :src=getImagePath()> -->
-                    <b-card-text >
-                        {{ items.student_name }}
-                        {{ items.id }}
-                    </b-card-text>
-                    <!-- <img :src=getImagePath()> -->
-                    <template #footer>
-                        <small class="text-muted">{{ items.created_at }}</small>
-                    </template>
-                </b-card>
+  <div>
+    <b-card no-body>
+      <b-tabs card>
+        <b-tab title="Submissions" active>
+          <b-card-text>
+            <div>
+              <div class="items" >
+                  <b-card
+                    class="item"
+                    v-b-modal = "'myModal'"
+                    v-bind:img-src="getImagePath()"
+                    img-alt="Card image"
+                    img-top
+                    style="max-width: 20rem;"
+                    v-for="items in message.data" :key="items.id"
+                    @click="sendInfo(items)">
+                      <b-card-text >
+                          From: {{ items.student_name }}
+                      </b-card-text>
+                      <template #footer>
+                          <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
+                      </template>
+                  </b-card>
+              </div>
             </div>
-        </div>
 
-        <b-modal id="myModal" title="Submission Grading" ok-only ok-variant="secondary" ok-title="Cancel">
-            <code-mirror v-model="selectedSub.code" />
-            <div style="text-align: center">
-              <b-button-group>
-                <b-button class="btn-success" @click="sendGrade(selectedSub,1)">Correct</b-button>
-                <b-button class="btn-danger" @click="sendGrade(selectedSub,2)">Incorrect</b-button>
-                <b-button class="btn-secondary" @click="sendFeedback(selectedSub)">Try Again</b-button>
-              </b-button-group>
-            </div>
-        </b-modal>
-    </div>
+            <b-modal id="myModal" title="Submission Grading" ok-only ok-variant="secondary" ok-title="Cancel">
+                <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
+                <div style="text-align: center">
+                  <b-button-group>
+                    <b-button class="btn-success" @click="sendGrade(selectedSub,1)">Correct</b-button>
+                    <b-button class="btn-danger" @click="sendGrade(selectedSub,2)">Incorrect</b-button>
+                    <b-button class="btn-secondary" @click="sendFeedback(selectedSub)">Try Again</b-button>
+                  </b-button-group>
+                </div>
+            </b-modal>
+          </b-card-text>
+        </b-tab>
+      </b-tabs>
+    </b-card>
+  </div>
 </template>
 
 <script>
-// import axios from 'axios'
-import { ref } from 'vue'
-import { python } from '@codemirror/lang-python'
-import CodeMirror from 'vue-codemirror6'
+import { codemirror } from 'vue-codemirror'
+import 'codemirror/lib/codemirror.css'
+// language
+import 'codemirror/mode/python/python.js'
+
+// theme css
+import 'codemirror/theme/duotone-light.css'
 
 import * as Config from '../config'
+import moment from 'moment'
 
 export default {
   name: 'SubmissionList',
   components: {
-    CodeMirror
+    codemirror
   },
   data: () => ({
     message: '',
     selectedSub: '',
-    lang: ref(python())
+    cmOptions: {
+      autoRefresh: true,
+      tabSize: 4,
+      styleActiveLine: true,
+      lineNumbers: true,
+      line: true,
+      mode: 'application/x-httpd-python',
+      lineWrapping: true,
+      theme: 'duotone-light'
+    }
   }),
   methods: {
     sendInfo (item) {
@@ -66,13 +81,21 @@ export default {
     getImagePath () {
       return require('../assets/code-block-1.png')
     },
+    focusMyElement () {
+      this.$refs.focusThis.focus()
+    },
+    timeDiff (dbTimestamp) {
+      return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
+      // https://stackoverflow.com/questions/18623783/get-the-time-difference-between-two-datetimes
+    },
     sendGrade (submission, score) {
       let postBody = {
         'student_id': submission.student_id,
         'submission_id': submission.id,
         'problem_id': submission.problem_id,
+        'teacher_id': 1, // TODO: get the id from session.
         'score': score,
-        'code': submission.code // This doesn't have edited code
+        'code': submission.code 
       }
 
       var status = score === 1 ? 'Correct.' : 'Incorrect.'
@@ -87,6 +110,7 @@ export default {
         'student_id': submission.student_id,
         'submission_id': submission.id,
         'problem_id': submission.problem_id,
+        'teacher_id': 1,
         'code': submission.code
       }
 
@@ -121,18 +145,20 @@ export default {
 
 /* https://stackoverflow.com/questions/59445065/stack-v-cards-within-n-columns */
 .items {
-  column-count: 4;
-  column-gap: 10px;
-  padding: 0 5px;
-  /* font-size: 2em; */
-  background-color: rgb(32, 84, 143);
+  padding: 5px;
+  text-align: left;
+  background-color: rgb(206, 209, 212);
 }
 
 .item {
   background-color: lightgrey;
   display: inline-block;
   width: 100%;
-  margin: 5px 0;
+  margin: 10px;
+}
+
+.tab-content .active {
+    padding: 0px;
 }
 
 button {

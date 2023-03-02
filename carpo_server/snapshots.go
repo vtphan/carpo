@@ -13,7 +13,7 @@ func teacherSnapshotHandler() http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Max-Age", "15")
 		// role := "teacher"
-		snapshots := make([]Snapshot, 0)
+		snapshots := make([]Submission, 0)
 
 		switch r.Method {
 		case http.MethodGet:
@@ -49,25 +49,20 @@ func teacherSnapshotHandler() http.HandlerFunc {
 				return
 			}
 
-			//
-			// for key, value := range studentWorkSnapshot {
-			// 	s := Snapshot{}
-			// 	combinedKeys := strings.Split(key, "-")
-			// 	s.StudentID, _ = strconv.Atoi(combinedKeys[0])
-			// 	s.ProblemID, _ = strconv.Atoi(combinedKeys[1])
+			for _, value := range studentWorkSnapshot {
+				s := Submission{}
+				student := Studnet{
+					ID: value.StudentID,
+				}
+				s.ID = value.ID
+				s.Code = value.Code
+				s.StudentID = value.StudentID
+				s.Name, _ = student.GetNameFromID()
+				s.ProblemID = value.ProblemID
+				s.CreatedAt = value.CreatedAt
 
-			// 	student := Studnet{
-			// 		ID: s.StudentID,
-			// 	}
-			// 	s.Name, err = student.GetNameFromID()
-			// 	if err != nil {
-			// 		log.Printf("Error getting student name from id. Err: %v", err)
-			// 		return
-			// 	}
-			// 	// s.Code = value["code"].(string)
-			// 	// s.Time =
-
-			// }
+				snapshots = append(snapshots, s)
+			}
 
 			if len(snapshots) == 0 {
 				log.Printf("No new snapshots found.\n")

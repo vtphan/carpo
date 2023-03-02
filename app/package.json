@@ -19,9 +19,10 @@
     "bootstrap": "^4.6.0",
     "bootstrap-vue": "^2.23.1",
     "jquery": "^3.6.3",
+    "moment": "^2.29.4",
     "vue": "^2.7.14",
     "vue-axios": "^3.5.2",
-    "vue-codemirror6": "^0.1.0",
+    "vue-codemirror": "^4.0.0",
     "vue-router": "^3.0.1"
   },
   "devDependencies": {

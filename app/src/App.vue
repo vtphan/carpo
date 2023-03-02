@@ -1,8 +1,6 @@
 <template>
-
   <div id="app">
-      <!-- navbar -->
-      <navbar class="navbar navbar-expand-lg fixed-top navbar-light bg-light">
+      <nav class="navbar navbar-expand-lg fixed-top navbar-light bg-light">
         <div class="container">
         <div class="collapse navbar-collapse" id="navbarResponsive">
           <ul class="navbar-nav">
@@ -21,7 +19,7 @@
           </ul>
         </div>
         </div>
-      </navbar>
+      </nav>
       <div class="myContainer">
          <router-view/>
       </div>
@@ -30,6 +28,7 @@
 </template>
 
 <script>
+
 export default {
   name: 'App'
 }

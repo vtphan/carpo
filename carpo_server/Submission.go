@@ -45,3 +45,8 @@ func (sub *Submission) IsGraded() (graded bool, err error) {
 	return
 
 }
+
+func (sub *Submission) SetID(id int) {
+	sub.ID = id
+
+}

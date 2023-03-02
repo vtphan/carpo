@@ -80,21 +80,15 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 			if val, ok := studentWorkSnapshot[key]; ok {
 				// Check for codesnapshot
-				if val == sub.Code && sub_type == 1 {
-					log.Printf("No change for key: %s.", key)
+				if val.Code == sub.Code && sub_type == 1 {
+					// log.Printf("No change for key: %s.", key)
 					resp := []byte(`{"msg": "No new change found."}`)
 					fmt.Fprint(w, string(resp))
 					return
 				}
 			}
 
-			// Update the global map
-			studentWorkSnapshot[key] = map[string]interface{}{
-				"code": sub.Code,
-				"at":   time.Now().String(),
-			}
-
-			_, err := studnet.SaveSubmission(sub)
+			dbID, err := studnet.SaveSubmission(sub)
 			if err != nil {
 				log.Printf("Failed to Save Submission. %v Err. %v\n", sub, err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -102,6 +96,11 @@ func studentSubmissionHandler() http.HandlerFunc {
 					http.StatusInternalServerError)
 				return
 			}
+
+			// Put SnapshotID for the studentWorkSnapshot that is saved to DB.
+			sub.ID = dbID
+			studentWorkSnapshot[key] = sub
+
 			_, err = AddStudentProblemStatusSQL.Exec(studnet.ID, pid, 1, time.Now(), time.Now())
 			if err != nil {
 				log.Printf("Failed to update student problem status (1) to DB. Err. %v\n", err)
@@ -171,7 +170,7 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			log.Printf("Fetching all submissions of students...\n")
 
 			s := Submission{}
-			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 and submission.snapshot = 1 inner join problem on submission.problem_id = problem.id order by submission.created_at asc")
+			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 and submission.snapshot = 2 inner join problem on submission.problem_id = problem.id order by submission.created_at asc")
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)
