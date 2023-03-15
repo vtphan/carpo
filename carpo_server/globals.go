@@ -20,6 +20,8 @@ var GradingMessage = map[int]string{
 
 var studentWorkSnapshot = map[string]Submission{}
 
+var sortOption = [...]string{"name", "creation_time"}
+
 var Config *Configuration
 
 var Database *sql.DB

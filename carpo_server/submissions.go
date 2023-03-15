@@ -145,6 +145,17 @@ func teacherSubmissionHandler() http.HandlerFunc {
 				http.Error(w, fmt.Sprintf("You are not authorized to access this status."), http.StatusUnauthorized)
 				return
 			}
+			sorting := "submission.created_at"
+			if sort_by, ok := query["sort_by"]; ok {
+				switch sort_by[0] {
+				case "name":
+					sorting = "student.name"
+				case "creation_time":
+					sorting = "submission.created_at"
+				default:
+					log.Printf("sort_by parameter is missing. Using default sort by created_at.\n")
+				}
+			}
 
 			// Get name
 			var name string
@@ -168,9 +179,14 @@ func teacherSubmissionHandler() http.HandlerFunc {
 			_ = Database.QueryRow(sqlSmt).Scan(&newSub)
 
 			log.Printf("Fetching all submissions of students...\n")
+			sql := "select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 and submission.snapshot = 2 inner join problem on submission.problem_id = problem.id"
+			// order by submission.created_at asc
+
+			// combine the sorting option:
+			sql = fmt.Sprintf("%s ORDER BY %s ASC", sql, sorting)
 
 			s := Submission{}
-			rows, err = Database.Query("select submission.id, message, code, student_id, name, problem_id, problem.format, submission.created_at, submission.updated_at from submission inner join student on submission.student_id = student.id and submission.status = 0 and submission.snapshot = 2 inner join problem on submission.problem_id = problem.id order by submission.created_at asc")
+			rows, err = Database.Query(sql)
 			defer rows.Close()
 			if err != nil {
 				log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)

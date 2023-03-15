@@ -1,8 +1,27 @@
 <template>
   <div>
     <b-card no-body>
-      <b-tabs card>
-        <b-tab title="Submissions" active>
+      <b-tabs justified card>
+        <!-- <b-tab title="Submissions" active> -->
+        <b-tab active>
+          <template #title>
+            <div>
+              <b-row>
+                <b-col cols="6" ><div style="float:left;">Submission</div></b-col>
+                <b-col cols="6" >
+                  <div style="float:right;">
+                    <b-dropdown no-caret>
+                      <template #button-content>
+                        <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Filter By
+                      </template>
+                      <b-dropdown-item href="#" @click="setSorting('creation_time')">Creation Time</b-dropdown-item>
+                      <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
+                    </b-dropdown>
+                  </div>
+                </b-col>
+              </b-row>
+            </div>
+          </template>
           <b-card-text>
             <div>
               <div class="items" >
@@ -12,7 +31,7 @@
                     v-bind:img-src="getImagePath()"
                     img-alt="Card image"
                     img-top
-                    style="max-width: 20rem;"
+                    style="max-width: 14rem;"
                     v-for="items in message.data" :key="items.id"
                     @click="sendInfo(items)">
                       <b-card-text >
@@ -61,6 +80,7 @@ export default {
   },
   data: () => ({
     message: '',
+    sorting: 'creation_time',
     selectedSub: '',
     cmOptions: {
       autoRefresh: true,
@@ -93,9 +113,9 @@ export default {
         'student_id': submission.student_id,
         'submission_id': submission.id,
         'problem_id': submission.problem_id,
-        'teacher_id': 1, // TODO: get the id from session.
+        'teacher_id': this.$route.query.id,
         'score': score,
-        'code': submission.code 
+        'code': submission.code
       }
 
       var status = score === 1 ? 'Correct.' : 'Incorrect.'
@@ -110,7 +130,7 @@ export default {
         'student_id': submission.student_id,
         'submission_id': submission.id,
         'problem_id': submission.problem_id,
-        'teacher_id': 1,
+        'teacher_id': this.$route.query.id,
         'code': submission.code
       }
 
@@ -122,8 +142,9 @@ export default {
     getSubmissionList: function () {
       this.$http.get(Config.apiUrl + '/teachers/submissions', {
         params: {
-          'name': 'Instructor-1',
-          'id': 1
+          'name': this.$route.query.name,
+          'id': this.$route.query.id,
+          'sort_by': this.sorting
         }
       })
         .then((response) => {
@@ -133,10 +154,15 @@ export default {
         .catch(function (error) {
           console.log(error)
         })
+    },
+    setSorting (params) {
+      this.sorting = params
+      this.getSubmissionList()
     }
   },
   created: function () {
     this.getSubmissionList()
+    setInterval(() => this.getSubmissionList(), 10000)
   }
 }
 </script>
@@ -168,13 +194,13 @@ button {
 /* Make it responsive */
 @media only screen and (max-width: 1000px) {
   .items {
-    column-count: 4;
+    column-count: 6;
   }
 }
 
 @media only screen and (max-width: 600px) {
   .items {
-    column-count: 3;
+    column-count: 6;
   }
 }
 

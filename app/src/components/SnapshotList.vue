@@ -1,8 +1,26 @@
 <template>
     <div>
       <b-card no-body>
-        <b-tabs card>
-          <b-tab title="Snapshots" active>
+        <b-tabs justified card>
+          <b-tab active>
+            <template #title>
+              <div>
+                <b-row>
+                  <b-col cols="6" ><div style="float:left;">Snapshot</div></b-col>
+                  <b-col cols="6" >
+                    <div style="float:right;">
+                      <b-dropdown no-caret>
+                        <template #button-content>
+                          <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Filter By
+                        </template>
+                        <b-dropdown-item href="#" @click="setSorting('creation_time')">LastActive At</b-dropdown-item>
+                        <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
+                      </b-dropdown>
+                    </div>
+                  </b-col>
+                </b-row>
+              </div>
+            </template>
             <b-card-text>
               <div >
                 <div class="items" >
@@ -24,7 +42,7 @@
                   </div>
               </div>
 
-              <b-modal id="myModal2" title="Snapshot View">
+              <b-modal id="myModal2" title="Snapshot View" ok-only ok-variant="secondary" ok-title="Send Feedback">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
                 <div style="text-align: right">
                   <b-button-group>
@@ -59,6 +77,7 @@ export default {
   data: () => ({
     message: '',
     selectedSub: '',
+    sorting: 'creation_time',
     cmOptions: {
       autoRefresh: true,
       tabSize: 4,
@@ -87,7 +106,7 @@ export default {
         'student_id': submission.student_id,
         'submission_id': submission.id,
         'problem_id': submission.problem_id,
-        'teacher_id': 1,
+        'teacher_id': this.$route.query.id,
         'code': submission.code
       }
 
@@ -96,11 +115,12 @@ export default {
           alert('Feedback sent to student.')
         })
     },
-    getSubmissionList: function () {
+    getSnapshotList: function () {
       this.$http.get(Config.apiUrl + '/teachers/snapshots', {
         params: {
-          'name': 'Instructor-1',
-          'id': 1
+          'name': this.$route.query.name,
+          'id': this.$route.query.id,
+          'sort_by': this.sorting
         }
       })
         .then((response) => {
@@ -110,10 +130,15 @@ export default {
         .catch(function (error) {
           console.log(error)
         })
+    },
+    setSorting (params) {
+      this.sorting = params
+      this.getSnapshotList()
     }
   },
   created: function () {
-    this.getSubmissionList()
+    this.getSnapshotList()
+    setInterval(() => this.getSnapshotList(), 10000)
   }
 }
 </script>
