@@ -1,26 +1,20 @@
 <template>
     <div>
       <b-card no-body>
-        <b-tabs justified card>
+        <b-tabs card>
           <b-tab active>
             <template #title>
-              <div>
-                <b-row>
-                  <b-col cols="6" ><div style="float:left;">Snapshot</div></b-col>
-                  <b-col cols="6" >
-                    <div style="float:right;">
-                      <b-dropdown no-caret>
-                        <template #button-content>
-                          <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Filter By
-                        </template>
-                        <b-dropdown-item href="#" @click="setSorting('creation_time')">LastActive At</b-dropdown-item>
-                        <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
-                      </b-dropdown>
-                    </div>
-                  </b-col>
-                </b-row>
-              </div>
+              <div> Snapshot </div>
             </template>
+              <div style="float:right; position: absolute; top: 2px; left: calc(100% - 165px);">
+                <b-dropdown no-caret>
+                  <template #button-content>
+                    <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Order By
+                  </template>
+                  <b-dropdown-item href="#" @click="setSorting('creation_time')">LastActive At</b-dropdown-item>
+                  <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
+                </b-dropdown>
+              </div>
             <b-card-text>
               <div >
                 <div class="items" >
@@ -29,7 +23,7 @@
                       v-b-modal = "'myModal2'"
                       v-bind:img-src="getImagePath()"
                       img-alt="Card image"
-                      style="max-width: 20rem;"
+                      style="max-width: 14rem;"
                       img-top v-for="items in message.data" :key="items.id"
                       @click="sendInfo(items)">
                         <b-card-text >
@@ -41,14 +35,42 @@
                       </b-card>
                   </div>
               </div>
-
-              <b-modal id="myModal2" title="Snapshot View" ok-only ok-variant="secondary" ok-title="Send Feedback">
+              <b-modal id="myModal2" title="Snapshot View" size="lg" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub)">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
-                <div style="text-align: right">
-                  <b-button-group>
-                    <b-button class="btn-secondary" @click="sendFeedback(selectedSub)">Send Feedback</b-button>
-                  </b-button-group>
+                  <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 85px);">
+                    <b-button class="btn-secondary" @click="watchSubmission(selectedSub)">Watch</b-button>
+                  </div>
+              </b-modal>
+            </b-card-text>
+          </b-tab>
+          <b-tab >
+            <template #title>
+              <div> Watched <a v-if="watchSubs.data">({{ watchSubs.data.length}})</a>
+              </div>
+            </template>
+            <b-card-text>
+              <div>
+                <div class="items" >
+                    <b-card
+                      class="item"
+                      v-b-modal = "'watchModal'"
+                      v-bind:img-src="getImagePath()"
+                      img-alt="Card image"
+                      img-top
+                      style="max-width: 14rem;"
+                      v-for="items in watchSubs.data" :key="items.id"
+                      @click="sendInfo(items)">
+                        <b-card-text >
+                            From: {{ items.student_name }}
+                        </b-card-text>
+                        <template #footer>
+                            <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
+                        </template>
+                    </b-card>
                 </div>
+              </div>
+              <b-modal id="watchModal" title="On Watch Snapshot" size="lg" ok-only ok-variant="secondary" ok-title="Unwatch" @ok="unwatchSub(selectedSub)">
+                  <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
               </b-modal>
             </b-card-text>
           </b-tab>
@@ -77,7 +99,9 @@ export default {
   data: () => ({
     message: '',
     selectedSub: '',
+    watchSubs: '',
     sorting: 'creation_time',
+    watchedSub: '',
     cmOptions: {
       autoRefresh: true,
       tabSize: 4,
@@ -101,7 +125,44 @@ export default {
       return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
       // https://stackoverflow.com/questions/18623783/get-the-time-difference-between-two-datetimes
     },
+    watchSubmission (sub) {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      let postBody = {
+        'student_id': sub.student_id,
+        'submission_id': sub.id,
+        'problem_id': sub.problem_id
+        // 'teacher_id': Number(this.$route.query.id)
+      }
+
+      this.$http.post(Config.apiUrl + '/snapshots/watch', postBody, config)
+        .then(() => {
+          alert('Snapshot  with id ' + sub.student_id + ' is on watch list.')
+        })
+        .catch(function (error) {
+          console.log(error)
+          // alert(error)
+        })
+    },
+    unwatchSub (sub) {
+      console.log('unwatch: ', sub)
+      this.$http.delete(Config.apiUrl + '/snapshots/watch', {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token },
+        data: {watch_id: sub.id}
+      })
+        .then(() => {
+          alert('Snapshot  with id ' + sub.student_id + ' is removed from the watch list.')
+        })
+        .catch(function (error) {
+          console.log(error)
+          // alert(error)
+        })
+    },
     sendFeedback (submission) {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
       let postBody = {
         'student_id': submission.student_id,
         'submission_id': submission.id,
@@ -110,16 +171,17 @@ export default {
         'code': submission.code
       }
 
-      this.$http.post(Config.apiUrl + '/teachers/feedbacks', postBody)
+      this.$http.post(Config.apiUrl + '/teachers/feedbacks', postBody, config)
         .then(data => {
           alert('Feedback sent to student.')
         })
     },
     getSnapshotList: function () {
-      this.$http.get(Config.apiUrl + '/teachers/snapshots', {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      this.$http.get(Config.apiUrl + '/teachers/snapshots', config, {
         params: {
-          'name': this.$route.query.name,
-          'id': this.$route.query.id,
           'sort_by': this.sorting
         }
       })
@@ -129,16 +191,33 @@ export default {
         })
         .catch(function (error) {
           console.log(error)
+          // alert(error)
+        })
+    },
+    getWatchedSubsList: function () {
+      const config = {
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) }
+      }
+      console.log(config)
+      this.$http.get(Config.apiUrl + '/snapshots/watch', config)
+        .then((response) => {
+          this.watchSubs = response.data
+          console.log('watched' + JSON.stringify(this.watchSubs))
+        })
+        .catch(function (error) {
+          console.log(error)
         })
     },
     setSorting (params) {
       this.sorting = params
       this.getSnapshotList()
+      this.getWatchedSubsList()
     }
   },
   created: function () {
     this.getSnapshotList()
-    setInterval(() => this.getSnapshotList(), 10000)
+    this.getWatchedSubsList()
+    // setInterval(() => this.getSnapshotList(), 10000)
   }
 }
 </script>

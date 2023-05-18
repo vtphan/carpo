@@ -40,6 +40,8 @@ export default {
   },
   created: function () {
     this.getProblemList()
+    console.log('Params: ' + this.$route.query.page)
+    localStorage.setItem('token', this.$route.query.page)
   }
 }
 </script>
