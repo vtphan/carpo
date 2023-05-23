@@ -2,38 +2,51 @@ package main
 
 import (
 	"log"
+
+	"github.com/google/uuid"
 )
 
 type Studnet struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+	UUID string `json:"uuid"`
 }
 
-func (st *Studnet) Add() (id int, alreadyExists bool, err error) {
+func (st *Studnet) Add() (id int, uid string, alreadyExists bool, err error) {
 
-	rows, err := Database.Query("select id from student where name=?", st.Name)
+	rows, err := Database.Query("select id, uid from student where name=?", st.Name)
 	defer rows.Close()
 	if err != nil {
-		return 0, false, err
+		return 0, "", false, err
 	}
 
 	for rows.Next() {
-		rows.Scan(&id)
+		rows.Scan(&id, &uid)
 		log.Printf("User %v already exists as student with ID %v. \n", st.Name, id)
-		return id, true, nil
+		// return id, uid, true, nil
 	}
 
-	sqlStatement := `
-	insert into student (name) values ($1) returning id`
+	// Update already created uid
+	if id != 0 {
+		uid = uuid.New().String()
+		log.Printf("Updating the UID for the student")
+		Database.Exec("UPDATE student SET uuid = ? WHERE id = ?", uid, id)
+		return id, uid, true, nil
+	}
 
-	err = Database.QueryRow(sqlStatement, st.Name).Scan(&id)
+	uid = uuid.New().String()
+
+	sqlStatement := `
+	insert into student (name, uuid) values ($1, $2) returning id`
+
+	err = Database.QueryRow(sqlStatement, st.Name, uid).Scan(&id)
 	if err != nil {
-		return 0, false, err
+		return 0, uid, false, err
 	}
 
 	log.Printf("User %v created as student with ID %v.\n", st.Name, id)
 
-	return id, false, nil
+	return id, uid, false, nil
 
 }
 

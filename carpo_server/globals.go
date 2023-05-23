@@ -41,3 +41,5 @@ var AddProblemSQL *sql.Stmt
 var AddStudentProblemStatusSQL *sql.Stmt
 var AddSolutionSQL *sql.Stmt
 var UpdateSolutionSQL *sql.Stmt
+var AddFlaggedSubmissionSQL *sql.Stmt
+var AddWatchSnapshot *sql.Stmt

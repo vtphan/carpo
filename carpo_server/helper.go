@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -69,4 +70,77 @@ func hasFeedbackOnCode(codeFromT, codeFromS string) bool {
 		return false
 	}
 	return true
+}
+
+// CORS Middleware
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// Set headers
+		w.Header().Set("Access-Control-Allow-Headers:", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		fmt.Println("ok")
+
+		// Next
+		next.ServeHTTP(w, r)
+		return
+	})
+}
+
+func AuthorizeTeacher(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
+		fmt.Printf("Auth HEADER: %v\n", authHeader)
+		w.Header().Add("Connection", "keep-alive")
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Access-Control-Allow-Methods", "POST, OPTIONS, GET, DELETE, PUT")
+		w.Header().Add("Access-Control-Allow-Headers", "Authorization, content-type")
+		w.Header().Add("Access-Control-Max-Age", "86400")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		if len(authHeader) != 2 {
+			fmt.Println("Malformed token")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Malformed Token"))
+			return
+		} else {
+			token := authHeader[1]
+			id := 0
+			name := ""
+			rows, err := Database.Query("select id, name from teacher where uuid = ?", token)
+			defer rows.Close()
+			if err != nil {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Unauthorized"))
+				return
+			}
+
+			for rows.Next() {
+				rows.Scan(&id, &name)
+			}
+			if id == 0 && name == "" {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Unauthorized"))
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			ctx := context.WithValue(r.Context(), "user_id", id)
+			ctx = context.WithValue(ctx, "user_name", name)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+	})
 }

@@ -14,6 +14,7 @@ func addUserHandler(role string) http.HandlerFunc {
 		var (
 			err    error
 			id     int
+			uid    string
 			exists bool
 			req    map[string]interface{}
 		)
@@ -39,7 +40,7 @@ func addUserHandler(role string) http.HandlerFunc {
 			s := Teacher{
 				Name: name,
 			}
-			id, exists, err = s.Add()
+			id, uid, exists, err = s.Add()
 			if err != nil {
 				log.Printf("Failed to add Teacher. Err: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -50,7 +51,7 @@ func addUserHandler(role string) http.HandlerFunc {
 			s := Studnet{
 				Name: name,
 			}
-			id, exists, err = s.Add()
+			id, uid, exists, err = s.Add()
 			if err != nil {
 				log.Printf("Failed to add Student. Err: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -70,6 +71,7 @@ func addUserHandler(role string) http.HandlerFunc {
 		d := map[string]interface{}{
 			"id":   id,
 			"name": name,
+			"uuid": uid,
 		}
 		data, _ := json.Marshal(d)
 		fmt.Fprint(w, string(data))

@@ -33,6 +33,22 @@ func informIPAddress() string {
 	return ""
 }
 
+func GetLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
+}
+
 func init_config(filename string) *Configuration {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -45,7 +61,7 @@ func init_config(filename string) *Configuration {
 		log.Fatal(err)
 	}
 	if config.IP == "" {
-		config.IP = informIPAddress()
+		config.IP = GetLocalIP()
 	}
 	config.Address = fmt.Sprintf("%s:%d", config.IP, config.Port)
 	return config
@@ -73,24 +89,31 @@ func main() {
 
 	http.HandleFunc("/problem", problemHandler())
 
+	http.Handle("/problems/delete", AuthorizeTeacher(http.HandlerFunc(deleteProblem)))
+
 	http.HandleFunc("/problems/list", listProblemsHandler())
 
 	http.HandleFunc("/students/submissions", studentSubmissionHandler())
-	http.HandleFunc("/teachers/submissions", teacherSubmissionHandler())
-	http.HandleFunc("/teachers/snapshots", teacherSnapshotHandler())
+
+	http.Handle("/teachers/submissions", AuthorizeTeacher(http.HandlerFunc(teacherSubmissionHandler)))
+	http.Handle("/teachers/snapshots", AuthorizeTeacher(http.HandlerFunc(teacherSnapshotHandler)))
 
 	http.HandleFunc("/teachers/graded_submissions", gradedSubmissionHandler())
 
-	http.HandleFunc("/submissions/grade", submissionGradeHandler())
+	http.Handle("/submissions/grade", AuthorizeTeacher(http.HandlerFunc(submissionGradeHandler)))
+	http.Handle("/submissions/flag", AuthorizeTeacher(http.HandlerFunc(flagSubmissionHandler)))
 
-	http.HandleFunc("/teachers/feedbacks", teacherFeedbackHandler())
+	http.Handle("/teachers/feedbacks", AuthorizeTeacher(http.HandlerFunc(teacherFeedbackHandler)))
 
 	http.HandleFunc("/students/get_submission_feedbacks", getSubmissionFeedbacks())
 
-	http.HandleFunc("/solution", solutionHandler())
+	http.Handle("/snapshots/watch", AuthorizeTeacher(http.HandlerFunc(watchedSubHandler)))
 
+	http.HandleFunc("/solution", solutionHandler())
 	http.HandleFunc("/students/status", viewStudentSubmissionStatus())
-	http.HandleFunc("/problems/status", viewProblemStatus())
+
+	http.Handle("/problems/status", AuthorizeTeacher(http.HandlerFunc(viewProblemStatus)))
+
 	http.HandleFunc("/problem_detail", problemDetail())
 
 	log.Println("serving at port: 8081")

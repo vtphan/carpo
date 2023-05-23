@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -49,7 +50,7 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		// Get Submission status
 		subStats := make([]StudentSubmissionStatus, 0)
 
-		rows, err = Database.Query("select submission.problem_id, submission.id, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.feedback_at from submission LEFT JOIN grade on submission.id = grade.submission_id where submission.student_id = ? order by submission.created_at desc", student_id[0])
+		rows, err = Database.Query("select submission.problem_id, submission.id, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.feedback_at from submission LEFT JOIN grade on submission.id = grade.submission_id where submission.snapshot=2 and submission.student_id = ? order by submission.created_at desc", student_id[0])
 
 		defer rows.Close()
 		if err != nil {
@@ -117,7 +118,7 @@ func problemStatus(rows *sql.Rows) (pGradeStat ProblemGradeStatus) {
 		ungraded, correct, incorrect sql.NullInt64
 	)
 
-	rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated, &ungraded, &correct, &incorrect)
+	rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Question, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDate, &ungraded, &correct, &incorrect)
 
 	if !ungraded.Valid {
 		ungraded.Int64 = 0
@@ -138,67 +139,74 @@ func problemStatus(rows *sql.Rows) (pGradeStat ProblemGradeStatus) {
 
 }
 
-func viewProblemStatus() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ids := []int{}
-		// Get Problem Grading Status
-		pGradeStats := make([]ProblemGradeStatus, 0)
-		rows, err := Database.Query("select submission.problem_id, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id group by problem_id order by problem_id desc")
+func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
+	ids := []int{}
+	// Get Problem Grading Status
+	pGradeStats := make([]ProblemGradeStatus, 0)
+	rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id group by problem_id order by problem_id desc")
 
-		defer rows.Close()
-		if err != nil {
-			log.Printf("Error quering db viewProblemStatus. Err: %v", err)
-		}
-
-		for rows.Next() {
-			pGradeStat := problemStatus(rows)
-
-			pGradeStat.ExpiresAt = fmt.Sprintf("To be due in %s", fmtDuration(pGradeStat.LifeTime.Sub(time.Now())))
-			pGradeStats = append(pGradeStats, pGradeStat)
-			ids = append(ids, pGradeStat.ProblemID)
-		}
-
-		// Array of int to string with ,
-		IDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
-		// Get Problems that don't have submissions yet.
-		rows, err = Database.Query(fmt.Sprintf("select id, created_at, lifetime, status, updated_at from problem where id not in (%s) order by id desc", IDs))
-
-		defer rows.Close()
-		if err != nil {
-			log.Printf("Error quering db getProblems. Err: %v", err)
-		}
-
-		for rows.Next() {
-			pGradeStat := ProblemGradeStatus{}
-			rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDated)
-			pGradeStat.ExpiresAt = fmt.Sprintf("To be due in %s", fmtDuration(pGradeStat.LifeTime.Sub(time.Now())))
-			pGradeStats = append(pGradeStats, pGradeStat)
-		}
-
-		// Sort the merged array of struct by ProblemID
-		sort.Slice(pGradeStats, func(i, j int) bool {
-			return pGradeStats[i].ProblemID > pGradeStats[j].ProblemID
-		})
-
-		data := struct {
-			Stats []ProblemGradeStatus
-		}{
-			Stats: pGradeStats,
-		}
-
-		t, err := template.New("").Parse(PROBLEM_GRADE_STATUS_TEMPLATE)
-		if err != nil {
-			log.Printf("%v\n", err)
-		}
-
-		w.Header().Set("Content-Type", "text/html")
-		err = t.Execute(w, data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Printf("%v\n", err)
-		}
-
+	defer rows.Close()
+	if err != nil {
+		log.Printf("Error quering db viewProblemStatus. Err: %v", err)
 	}
+
+	for rows.Next() {
+		pGradeStat := problemStatus(rows)
+
+		pGradeStat.ExpiresAt = fmt.Sprintf("To be due in %s", fmtDuration(pGradeStat.LifeTime.Sub(time.Now())))
+		pGradeStats = append(pGradeStats, pGradeStat)
+		ids = append(ids, pGradeStat.ProblemID)
+	}
+
+	// Array of int to string with ,
+	IDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
+	// Get Problems that don't have submissions yet.
+	rows, err = Database.Query(fmt.Sprintf("select id, created_at, lifetime, status, updated_at from problem where id not in (%s) order by id desc", IDs))
+
+	defer rows.Close()
+	if err != nil {
+		log.Printf("Error quering db getProblems. Err: %v", err)
+	}
+
+	for rows.Next() {
+		pGradeStat := ProblemGradeStatus{}
+		rows.Scan(&pGradeStat.ProblemID, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDate)
+		pGradeStat.ExpiresAt = fmt.Sprintf("To be due in %s", fmtDuration(pGradeStat.LifeTime.Sub(time.Now())))
+		pGradeStats = append(pGradeStats, pGradeStat)
+	}
+
+	// Sort the merged array of struct by ProblemID
+	sort.Slice(pGradeStats, func(i, j int) bool {
+		return pGradeStats[i].ProblemID > pGradeStats[j].ProblemID
+	})
+
+	// data := struct {
+	// 	Stats []ProblemGradeStatus
+	// }{
+	// 	Stats: pGradeStats,
+	// }
+
+	resp := Response{}
+	sub, _ := json.Marshal(pGradeStats)
+
+	d := []map[string]interface{}{}
+	_ = json.Unmarshal(sub, &d)
+	resp.Data = d
+	da, _ := json.Marshal(resp)
+	fmt.Fprint(w, string(da))
+	return
+
+	// t, err := template.New("").Parse(PROBLEM_GRADE_STATUS_TEMPLATE)
+	// if err != nil {
+	// 	log.Printf("%v\n", err)
+	// }
+
+	// w.Header().Set("Content-Type", "text/html")
+	// err = t.Execute(w, data)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	log.Printf("%v\n", err)
+	// }
 
 }
 
@@ -230,7 +238,7 @@ func problemDetail() http.HandlerFunc {
 			rows.Scan(&problem)
 		}
 
-		rows, err = Database.Query("select submission.problem_id, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id where problem.id =? group by problem_id order by problem_id desc", problem_id[0])
+		rows, err = Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id where problem.id =? group by problem_id order by problem_id desc", problem_id[0])
 
 		defer rows.Close()
 		if err != nil {

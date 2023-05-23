@@ -15,13 +15,15 @@ func create_tables() {
 		}
 		sql_stmt.Exec()
 	}
-	execSQL("create table if not exists student (id integer primary key, name text unique)")
-	execSQL("create table if not exists teacher (id integer primary key, name text unique)")
+	execSQL("create table if not exists student (id integer primary key, name text unique, uuid BLOB)")
+	execSQL("create table if not exists teacher (id integer primary key, name text unique, uuid BLOB)")
 	execSQL("create table if not exists problem (id integer primary key, teacher_id integer, question text unique, format string, lifetime timestamp, status integer, created_at timestamp, updated_at timestamp)")
 	execSQL("create table if not exists submission (id integer primary key, problem_id integer, message text, code blob, snapshot integer, student_id integer, status integer, created_at timestamp, updated_at timestamp)")
 	execSQL("create table if not exists grade (id integer primary key, teacher_id integer, student_id integer, submission_id integer, score integer, code_feedback blob, comment text, status integer, has_feedback integer default 0, feedback_at timestamp, created_at timestamp, updated_at timestamp, UNIQUE (teacher_id, submission_id))")
 	execSQL("create table if not exists student_problem_status (id integer primary key, student_id integer, problem_id integer, tutor_status integer, problem_status integer, created_at timestamp, updated_at timestamp)")
 	execSQL("create table if not exists solution (id integer primary key, problem_id integer unique, code blob, created_at timestamp, updated_at timestamp)")
+	execSQL("create table if not exists flagged (id integer primary key, submission_id integer, problem_id integer, student_id integer, teacher_id integer, soft_delete integer default 0, created_at timestamp, updated_at timestamp, UNIQUE (problem_id, submission_id, student_id))")
+	execSQL("create table if not exists watched (id integer primary key, submission_id integer, problem_id integer, student_id integer, teacher_id integer, soft_delete integer default 0, created_at timestamp, updated_at timestamp, UNIQUE (problem_id, submission_id, student_id))")
 }
 
 func init_database(db_name string) {
@@ -51,4 +53,6 @@ func init_database(db_name string) {
 	AddStudentProblemStatusSQL = prepare("insert into student_problem_status (student_id, problem_id, problem_status, created_at, updated_at) values (?, ?, ?, ?, ?)")
 	AddSolutionSQL = prepare("insert into solution (problem_id, code, created_at, updated_at) values (?, ?, ?, ?)")
 	UpdateSolutionSQL = prepare("update solution set code=?, updated_at=? where problem_id=?")
+	AddFlaggedSubmissionSQL = prepare("insert or ignore into flagged (submission_id, problem_id, student_id, teacher_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)")
+	AddWatchSnapshot = prepare("insert or ignore into watched (submission_id, problem_id, student_id, teacher_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)")
 }

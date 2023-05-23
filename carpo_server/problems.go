@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,6 +10,58 @@ import (
 	"time"
 )
 
+func deleteProblem(w http.ResponseWriter, r *http.Request) {
+	teacher_id := 0
+
+	if user_id := r.Context().Value("user_id"); user_id != nil {
+		teacher_id = user_id.(int)
+	}
+
+	fmt.Printf("TeacherID: %v\n", teacher_id)
+
+	switch r.Method {
+	case http.MethodDelete:
+		body, err := readRequestBody(r)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Error reading request body",
+				http.StatusInternalServerError)
+			return
+		}
+		id := int(body["problem_id"].(float64))
+		if id != 0 {
+			err = archiveProblem(id)
+			if err != nil {
+				log.Printf("Failed to archive Problem ID: %v. Err: %v", id, err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to archive question to DB.",
+					http.StatusInternalServerError)
+				return
+			}
+
+			d := map[string]interface{}{
+				"id":  id,
+				"msg": "Question archived successfully.",
+			}
+
+			// Delete snapshot as well
+			// Remove snapshots from the global map if the problem is expired
+			for k := range studentWorkSnapshot {
+				expiredProblem := fmt.Sprintf("-%d", id)
+				if strings.Contains(k, expiredProblem) {
+					fmt.Printf("Deleting student Work Snapshot from map with key: %s.", k)
+					delete(studentWorkSnapshot, k)
+				}
+			}
+
+			data, _ := json.Marshal(d)
+			fmt.Fprint(w, string(data))
+		} else {
+			log.Printf("Invalid Problem ID: %v.\n", body["problem_id"])
+		}
+
+	}
+}
 func problemHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -151,6 +204,16 @@ func problemHandler() http.HandlerFunc {
 					"msg": "Question archived successfully.",
 				}
 
+				// Delete snapshot as well
+				// Remove snapshots from the global map if the problem is expired
+				for k := range studentWorkSnapshot {
+					expiredProblem := fmt.Sprintf("-%d", id)
+					if strings.Contains(k, expiredProblem) {
+						fmt.Printf("Deleting student Work Snapshot from map with key: %s.", k)
+						delete(studentWorkSnapshot, k)
+					}
+				}
+
 				data, _ := json.Marshal(d)
 				fmt.Fprint(w, string(data))
 			} else {
@@ -248,12 +311,29 @@ func expireProblems() error {
 		for k := range studentWorkSnapshot {
 			expiredProblem := fmt.Sprintf("-%d", pid)
 			if strings.Contains(k, expiredProblem) {
-				fmt.Printf("Deleting student Work Snapshot from map with key: %s.", k)
+				fmt.Printf("[Cron] Deleting student Work Snapshot from map with key: %s.", k)
 				delete(studentWorkSnapshot, k)
 			}
 		}
 	}
 
 	return nil
+
+}
+
+func isExpired(id int) (bool, error) {
+	sqlStmt := `SELECT id FROM problem WHERE id = ? and status=0`
+	err := Database.QueryRow(sqlStmt, id).Scan(&id)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			// a real error happened! you should change your function return
+			// to "(bool, error)" and return "false, err" here
+			return false, err
+		}
+
+		return false, err
+	}
+
+	return true, nil
 
 }

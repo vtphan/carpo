@@ -82,15 +82,16 @@ type StudentSubmissionStatus struct {
 }
 
 type ProblemGradeStatus struct {
-	ProblemID        int
-	Ungraded         int
-	Correct          int
-	Incorrect        int
-	ProblemStatus    int
-	PublishedDate    time.Time
-	UnpublishedDated time.Time
-	LifeTime         time.Time
-	ExpiresAt        string
+	ProblemID       int
+	Question        string
+	Ungraded        int
+	Correct         int
+	Incorrect       int
+	ProblemStatus   int
+	PublishedDate   time.Time
+	UnpublishedDate time.Time
+	LifeTime        time.Time
+	ExpiresAt       string
 }
 type Response struct {
 	Data      []map[string]interface{} `json:"data"`
@@ -109,4 +110,16 @@ type Problem struct {
 	Format   string    `json:"format"`
 	Lifetime time.Time `json:"lifetime"`
 	Status   int       `json:"status"`
+}
+
+type FlagSubmission struct {
+	ID           int       `json:"id"`
+	ProblemID    int       `json:"problem_id"`
+	SubmissionID int       `json:"submission_id"`
+	StudentID    int       `json:"student_id"`
+	TeacherID    int       `json:"teacher_id"`
+	StudentName  string    `json:"student_name"`
+	Code         string    `json:"code"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
