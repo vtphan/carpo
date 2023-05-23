@@ -143,7 +143,7 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	ids := []int{}
 	// Get Problem Grading Status
 	pGradeStats := make([]ProblemGradeStatus, 0)
-	rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id group by problem_id order by problem_id desc")
+	rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) and submission.snapshot=2 then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id group by problem_id order by problem_id desc")
 
 	defer rows.Close()
 	if err != nil {

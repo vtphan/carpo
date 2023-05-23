@@ -81,7 +81,7 @@ export class GetSolutionButton
       tooltip: 'Upload solutions to the problem.',
     });
 
-    panel.toolbar.insertItem(15, 'getSolutions', button);
+    panel.toolbar.insertItem(14, 'getSolutions', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

@@ -59,13 +59,16 @@ const CodeCellButtonComponent = ({
             showErrorMessage('Code Share Error', "Invalid code block. Use specific problem notebook.");
             return
         }
+        // clear message skeleton
+        info.message = info.message.replace("## Message to instructor: ", "") 
 
         let postBody = {
             "message": info.message,
             "code": cell.model.value.text,
-            "problem_id":info.problem_id
+            "problem_id":info.problem_id,
+            "snapshot": 2
         }
-        // console.log("From widget: ", postBody)
+        console.log("From widget: ", postBody)
         requestAPI<any>('submissions',{
             method: 'POST',
             body: JSON.stringify(postBody)
@@ -87,35 +90,35 @@ const CodeCellButtonComponent = ({
 
             // Keep checking for new feedback.
             // This setInterval will be cleared once the feedback is downloaded (after reload())
-            setInterval(function(){
-                // console.log("Checking for feedback...")
-                requestAPI<any>('feedback',{
-                method: 'GET'
-                })
-                .then(data => {
-                    // console.log(data);
-                    if (data['hard-reload'] != -1) {
-                    showDialog({
-                        title:'',
-                        body: data.msg,
-                        buttons: [Dialog.okButton({ label: 'Ok' })]
-                    }).then( result => {
-                        if (result.button.accept ) {
-                            window.location.reload();
-                        }
-                    })
+            // setInterval(function(){
+            //     // console.log("Checking for feedback...")
+            //     requestAPI<any>('feedback',{
+            //     method: 'GET'
+            //     })
+            //     .then(data => {
+            //         // console.log(data);
+            //         if (data['hard-reload'] != -1) {
+            //         showDialog({
+            //             title:'',
+            //             body: data.msg,
+            //             buttons: [Dialog.okButton({ label: 'Ok' })]
+            //         }).then( result => {
+            //             if (result.button.accept ) {
+            //                 window.location.reload();
+            //             }
+            //         })
         
-                    }
+            //         }
                     
-                })
-                .catch(reason => {
-                    showErrorMessage('Get Feedback Error', reason);
-                    console.error(
-                    `Failed to fetch recent feedbacks.\n${reason}`
-                    );
-                });
+            //     })
+            //     .catch(reason => {
+            //         showErrorMessage('Get Feedback Error', reason);
+            //         console.error(
+            //         `Failed to fetch recent feedbacks.\n${reason}`
+            //         );
+            //     });
         
-            }, 60000);
+            // }, 60000);
 
         })
         .catch(reason => {

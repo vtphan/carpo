@@ -49,9 +49,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
       settingRegistry: ISettingRegistry | null
     ) => {
     console.log('JupyterLab extension carpo-student is activated!');
-
+    // var interval => (); 
+    var counter: number = 0;
     nbTrack.currentChanged.connect(() => {
-
+      console.log("my counter: ", counter);
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
       const filename = notebookPanel.context.path
@@ -102,16 +103,43 @@ const plugin: JupyterFrontEndPlugin<void> = {
             }
             if (index == activeIndex) {
               question = c.model.value.text
+              if (question.includes("## PID ")){
+
+                const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
+
+                (cell.layout as PanelLayout).addWidget(newCheckButton);
+                currentCellCheckButton = newCheckButton;
+
+                // Send code snapshot to the server:
+                if (counter == 0 ){
+                  setInterval(function () {
+                    let postBody = {
+                      "message": "",
+                      "code": c.model.value.text,
+                      "problem_id":info.problem_id,
+                      "snapshot": 1
+                      }
+                      requestAPI<any>('submissions',{
+                          method: 'POST',
+                          body: JSON.stringify(postBody)
+                      })
+                      .then(data => {
+                          console.log("Snapshot sent.", data)
+                        });
+                  }, 20000);
+                  counter ++;
+                }
+              }
             }
           })
        
 
-          const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
+          // const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
           
-          if (question.includes("## PID ")){
-            (cell.layout as PanelLayout).addWidget(newCheckButton);
-            currentCellCheckButton = newCheckButton;
-          }
+          // if (question.includes("## PID ")){
+          //   (cell.layout as PanelLayout).addWidget(newCheckButton);
+          //   currentCellCheckButton = newCheckButton;
+          // }
 
           // Set the current cell and button for future
           // reference

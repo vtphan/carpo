@@ -144,12 +144,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
     
     //  tell the document registry about your widget extension:
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
-    app.docRegistry.addWidgetExtension('Notebook', new NewSubmissionButtonExtension());
-    app.docRegistry.addWidgetExtension('Notebook', new AllSubmissionButtonExtension());
+    app.docRegistry.addWidgetExtension('Notebook', new GoToApp());
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
-    app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
     
   }
 };
@@ -200,6 +198,46 @@ export class RegisterButton
     });
 
     panel.toolbar.insertItem(10, 'register', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
+
+export class GoToApp implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const viewWebApp = () => {
+
+    requestAPI<any>('view_app',{
+      method: 'GET'
+    })
+      .then(data => {
+        // console.log(data);
+        window.open(
+          data.url, "_blank");
+      })
+      .catch(reason => {
+        showErrorMessage('View App Status Error', reason);
+        console.error(
+          `Failed to view app status.\n${reason}`
+        );
+      });
+
+    };
+
+    const button = new ToolbarButton({
+      className: 'get-app-button',
+      label: 'App',
+      onClick: viewWebApp,
+      tooltip: 'Go to the web app',
+    });
+
+    panel.toolbar.insertItem(11, 'viewWebApp', button);
+
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -415,7 +453,7 @@ export class PublishProblemButtonExtension
       tooltip: 'Publish New Problem.',
     });
 
-    panel.toolbar.insertItem(13, 'publishNewProblem', button);
+    panel.toolbar.insertItem(12, 'publishNewProblem', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -491,54 +529,7 @@ export class ArchiveProblemButtonExtension
       tooltip: 'Unpublish the problem.',
     });
 
-    panel.toolbar.insertItem(14, 'archivesProblem', button);
-    return new DisposableDelegate(() => {
-      button.dispose();
-    });
-  }
-}
-
-export class viewProblemStatusExtension
-  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-{
-  /**
-   * Create a new extension for the notebook panel widget.
-   *
-   * @param panel Notebook panel
-   * @param context Notebook context
-   * @returns Disposable on the added button
-   */
-  createNew(
-    panel: NotebookPanel,
-    context: DocumentRegistry.IContext<INotebookModel>
-  ): IDisposable {
-    const viewProblemStatus = () => {
-
-      requestAPI<any>('view_problem_list',{
-        method: 'GET'
-      })
-        .then(data => {
-          console.log(data);
-          window.open(
-            data.url, "_blank");
-        })
-        .catch(reason => {
-          showErrorMessage('View Problem Status Error', reason);
-          console.error(
-            `Failed to view problem status.\n${reason}`
-          );
-        });
-
-    };
-
-    const button = new ToolbarButton({
-      className: 'get-status-button',
-      label: 'Problems',
-      onClick: viewProblemStatus,
-      tooltip: 'View all problem status',
-    });
-
-    panel.toolbar.insertItem(16, 'viewProblemStatus', button);
+    panel.toolbar.insertItem(13, 'archivesProblem', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

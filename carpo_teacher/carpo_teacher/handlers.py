@@ -39,7 +39,7 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "John Smith"
         config_data['server'] = "http://delphinus.cs.memphis.edu:XXXX"
-        config_data['carpo_version'] = "0.0.1"
+        config_data['carpo_version'] = "0.0.9"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -126,6 +126,7 @@ class RegistrationHandler(APIHandler):
             return
 
         config_data['id'] = response['id']
+        config_data['uuid'] = response['uuid']
         # Write id to the json file.
         with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -484,7 +485,7 @@ class ViewProblemStatusRouteHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
         # input_data is a dictionary with a key "name"
-        input_data = self.get_json_body()
+        # input_data = self.get_json_body()
 
         config_data = read_config_file()
 
@@ -497,6 +498,27 @@ class ViewProblemStatusRouteHandler(APIHandler):
 
         self.finish({"url":problems_status_url })
     
+class GoWebAppRouteHandler(APIHandler):
+    @tornado.web.authenticated
+    def get(self):
+        # input_data is a dictionary with a key "name"
+        # input_data = self.get_json_body()
+        config_data = read_config_file()
+
+        if not {'id', 'name', 'server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        if not {'app_url'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "app_url not found in config."}))
+            return
+
+        web_page_url = config_data['app_url'] +"/#/?token="+ config_data['uuid']
+
+        self.finish({"url":web_page_url })
+
 def setup_handlers(web_app):
     host_pattern = ".*$"
 
@@ -525,3 +547,7 @@ def setup_handlers(web_app):
 
     route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "solution")
     web_app.add_handlers(host_pattern, [(route_pattern_problems_status, SolutionHandler)])
+
+    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "view_app")
+    web_app.add_handlers(host_pattern, [(route_pattern_problems_status, GoWebAppRouteHandler)])
+
