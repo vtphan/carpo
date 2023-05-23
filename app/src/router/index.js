@@ -10,8 +10,9 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'Home',
-      component: ProblemList
+      redirect: '/problems',
+      name: 'Home'
+
     },
     {
       path: '/problems',

@@ -125,6 +125,14 @@ export default {
       return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
       // https://stackoverflow.com/questions/18623783/get-the-time-difference-between-two-datetimes
     },
+    toast (msg) {
+      this.$bvToast.toast(`${msg}`, {
+        title: `Notification`,
+        toaster: 'b-toaster-top-center',
+        variant: 'secondary',
+        solid: true
+      })
+    },
     watchSubmission (sub) {
       const config = {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
@@ -133,12 +141,12 @@ export default {
         'student_id': sub.student_id,
         'submission_id': sub.id,
         'problem_id': sub.problem_id
-        // 'teacher_id': Number(this.$route.query.id)
       }
 
       this.$http.post(Config.apiUrl + '/snapshots/watch', postBody, config)
         .then(() => {
-          alert('Snapshot  with id ' + sub.student_id + ' is on watch list.')
+          // alert('Snapshot  with id ' + sub.student_id + ' is on watch list.')
+          this.toast('Snapshot with id ' + sub.student_id + ' is on watch list.')
         })
         .catch(function (error) {
           console.log(error)
@@ -152,7 +160,8 @@ export default {
         data: {watch_id: sub.id}
       })
         .then(() => {
-          alert('Snapshot  with id ' + sub.student_id + ' is removed from the watch list.')
+          // alert('Snapshot  with id ' + sub.student_id + ' is removed from the watch list.')
+          this.toast('Snapshot with id ' + sub.student_id + ' is removed from the watch list.')
         })
         .catch(function (error) {
           console.log(error)
@@ -173,7 +182,8 @@ export default {
 
       this.$http.post(Config.apiUrl + '/teachers/feedbacks', postBody, config)
         .then(data => {
-          alert('Feedback sent to student.')
+          // alert('Feedback sent to student.')
+          this.toast('Feedback is sent to student.')
         })
     },
     getSnapshotList: function () {
@@ -189,9 +199,9 @@ export default {
           console.log('Snapshot: ', response)
           this.message = response.data
         })
-        .catch(function (error) {
-          console.log(error)
-          // alert(error)
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
         })
     },
     getWatchedSubsList: function () {
@@ -204,8 +214,9 @@ export default {
           this.watchSubs = response.data
           console.log('watched' + JSON.stringify(this.watchSubs))
         })
-        .catch(function (error) {
-          console.log(error)
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
         })
     },
     setSorting (params) {

@@ -5,16 +5,13 @@
         <div class="collapse navbar-collapse" id="navbarResponsive">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <router-link class="nav-link" to="/">Home</router-link>
+              <router-link class="nav-link" active-class="active" :to="{name: 'Problems',query: {token: $route.query.token }}">Problems</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/problems">Problems</router-link>
+              <router-link class="nav-link" active-class="active" :to="{name: 'Submissions' ,query: {token: $route.query.token }}">Submissions</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/submissions">Submissions</router-link>
-            </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/sanpshots">Snapshots</router-link>
+              <router-link class="nav-link" active-class="active" :to="{name: 'Snapshots' ,query: {token: $route.query.token }}">Snapshots</router-link>
             </li>
           </ul>
         </div>
@@ -73,4 +70,8 @@ export default {
   transform: translateY(-400px);
  }
 }
+.active {
+  font-weight: bold;
+}
+
 </style>

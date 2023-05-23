@@ -41,18 +41,19 @@
 
             <b-modal id="myModal" title="Submission Grading" size="lg" ok-only ok-variant="secondary" ok-title="Cancel">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
+                <a> Message: {{ selectedSub.message }} </a>
                 <b-row>
                   <b-col cols="6" >
                     <div style="text-align: left">
-                      <b-button class="btn-secondary" @click="flagSubmission(selectedSub)">Flag</b-button>
+                      <b-button class="btn-secondary" @click="flagSubmission(selectedSub); $bvModal.hide('myModal')">Flag</b-button>
                     </div>
                   </b-col>
                   <b-col cols="6" >
                     <div style="text-align: right">
                       <b-button-group>
-                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1)">Correct</b-button>
-                        <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2)">Incorrect</b-button>
-                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id)">Try Again</b-button>
+                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); $bvModal.hide('myModal') ">Correct</b-button>
+                        <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); $bvModal.hide('myModal') ">Incorrect</b-button>
+                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id); $bvModal.hide('myModal')">Try Again</b-button>
                       </b-button-group>
                     </div>
                   </b-col>
@@ -88,15 +89,15 @@
                   </b-card>
               </div>
             </div>
-            <b-modal id="flagModal" title="Flagged Submission" size="lg" ok-only ok-variant="secondary" ok-title="Unflag" @ok="Unflag(selectedSub)">
+            <b-modal id="flagModal" title="Flagged Submission" size="lg" ok-only ok-variant="secondary" ok-title="Unflag" @ok="Unflag(selectedSub); $bvModal.hide('flagModal')">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
                 <b-row>
                   <b-col cols="6" >
                     <div style="text-align: right">
                       <b-button-group>
-                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.submission_id, 1)">Correct</b-button>
-                        <b-button class="btn-danger" @click="sendGrade(selectedSub,selectedSub.submission_id, 2)">Incorrect</b-button>
-                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id)">Try Again</b-button>
+                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.submission_id, 1); $bvModal.hide('flagModal')">Correct</b-button>
+                        <b-button class="btn-danger" @click="sendGrade(selectedSub,selectedSub.submission_id, 2); $bvModal.hide('flagModal')">Incorrect</b-button>
+                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id); $bvModal.hide('flagModal')">Try Again</b-button>
                       </b-button-group>
                     </div>
                   </b-col>
@@ -159,6 +160,14 @@ export default {
       return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
       // https://stackoverflow.com/questions/18623783/get-the-time-difference-between-two-datetimes
     },
+    toast (msg) {
+      this.$bvToast.toast(`${msg}`, {
+        title: `Notification`,
+        toaster: 'b-toaster-top-center',
+        variant: 'secondary',
+        solid: true
+      })
+    },
     flagSubmission (submission) {
       const config = {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
@@ -167,16 +176,15 @@ export default {
         'student_id': submission.student_id,
         'submission_id': submission.id,
         'problem_id': submission.problem_id
-        // 'teacher_id': Number(this.$route.query.id)
       }
 
       this.$http.post(Config.apiUrl + '/submissions/flag', postBody, config)
         .then(() => {
-          alert('This submission is now flagged.')
+          // alert('This submission is now flagged.')
+          this.toast('Submission with id ' + submission.id + ' is flagged.')
         })
         .catch(function (error) {
           console.log(error)
-          // alert(error)
         })
     },
     Unflag (submission) {
@@ -185,7 +193,8 @@ export default {
         data: {flag_id: submission.id}
       })
         .then(() => {
-          alert('This submission is now unflagged.')
+          // alert('This submission is now unflagged.')
+          this.toast('Submission with id ' + submission.submission_id + ' is unflagged.')
         })
         .catch(function (error) {
           console.log(error)
@@ -210,7 +219,8 @@ export default {
 
       this.$http.post(Config.apiUrl + '/submissions/grade', postBody, config)
         .then(data => {
-          alert('This submission is now graded as ' + status)
+          // alert('This submission is now graded as ' + status)
+          this.toast('Submission with id ' + id + ' is graded as ' + status)
         })
     },
     sendFeedback (submission, id) {
@@ -222,13 +232,13 @@ export default {
         'student_id': submission.student_id,
         'submission_id': id,
         'problem_id': submission.problem_id,
-        // 'teacher_id': this.$route.query.id,
         'code': submission.code
       }
 
       this.$http.post(Config.apiUrl + '/teachers/feedbacks', postBody, config)
         .then(data => {
-          alert('Feedback sent to student.')
+          // alert('Feedback sent to student.')
+          this.toast('Feedback for submission with id ' + id + ' is sent to student.')
         })
     },
     getSubmissionList: function () {
@@ -239,9 +249,9 @@ export default {
         .then((response) => {
           this.message = response.data
         })
-        .catch(function (error) {
-          console.log(error)
-          // alert(error)
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
         })
     },
     getFlaggedSubsList: function () {
@@ -253,8 +263,9 @@ export default {
         .then((response) => {
           this.flagSubs = response.data
         })
-        .catch(function (error) {
-          console.log(error)
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
         })
     },
     setSorting (params) {
