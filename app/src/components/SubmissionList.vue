@@ -6,7 +6,7 @@
           <template #title>
             <div>Submission</div>
           </template>
-          <div style="float:right; position: absolute; top: 2px; left: calc(100% - 165px);">
+          <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
             <b-dropdown no-caret>
               <template #button-content>
                 <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Order By
@@ -17,7 +17,8 @@
           </div>
           <b-card-text>
             <div>
-              <div class="items" >
+              <v-row class="five-cols">
+              <!-- <div class="items" > -->
                   <b-card
                     class="item"
                     v-b-modal = "'myModal'"
@@ -36,7 +37,8 @@
                           <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
                       </template>
                   </b-card>
-              </div>
+              <!-- </div> -->
+              </v-row>
             </div>
 
             <b-modal id="myModal" title="Submission Grading" size="lg" ok-only ok-variant="secondary" ok-title="Cancel">
@@ -68,7 +70,8 @@
           </template>
           <b-card-text>
             <div>
-              <div class="items" >
+              <!-- <div class="items" > -->
+              <v-row class="five-cols">
                   <b-card
                     class="item"
                     v-b-modal = "'flagModal'"
@@ -87,7 +90,8 @@
                           <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
                       </template>
                   </b-card>
-              </div>
+              <!-- </div> -->
+              </v-row>
             </div>
             <b-modal id="flagModal" title="Flagged Submission" size="lg" ok-only ok-variant="secondary" ok-title="Unflag" @ok="Unflag(selectedSub); $bvModal.hide('flagModal')">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
@@ -284,8 +288,17 @@ export default {
 
 <style>
 
+.five-cols {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  background-color: rgb(206, 209, 212);
+  padding: 5px;
+  text-align: left;
+}
+
 /* https://stackoverflow.com/questions/59445065/stack-v-cards-within-n-columns */
 .items {
+  column-count: 8;
   padding: 5px;
   text-align: left;
   background-color: rgb(206, 209, 212);
@@ -294,7 +307,7 @@ export default {
 .item {
   background-color: lightgrey;
   display: inline-block;
-  width: 100%;
+  /* width: 100%; */
   margin: 10px;
 }
 
@@ -315,7 +328,7 @@ button {
 
 @media only screen and (max-width: 600px) {
   .items {
-    column-count: 6;
+    column-count: 3;
   }
 }
 
@@ -327,7 +340,7 @@ button {
 
 @media only screen and (max-width: 100px) {
   .items {
-    column-count: 1;
+    column-count: 2;
   }
 }
 

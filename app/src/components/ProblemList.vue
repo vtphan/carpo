@@ -48,7 +48,7 @@ export default {
           return value ? 'True' : 'False'
         }
       },
-      { key: 'UnpublishedDate',
+      { key: 'LifeTime',
         label: 'UnPublished Date',
         formatter: value => {
           return moment(value, 'YYYY-MM-DD hh:mm').format('LLL')

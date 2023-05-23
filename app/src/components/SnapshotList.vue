@@ -6,7 +6,7 @@
             <template #title>
               <div> Snapshot </div>
             </template>
-              <div style="float:right; position: absolute; top: 2px; left: calc(100% - 165px);">
+              <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
                 <b-dropdown no-caret>
                   <template #button-content>
                     <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Order By
@@ -17,7 +17,8 @@
               </div>
             <b-card-text>
               <div >
-                <div class="items" >
+                <v-row class="five-cols">
+                <!-- <div class="items" > -->
                     <b-card
                       class="item"
                       v-b-modal = "'myModal2'"
@@ -33,7 +34,8 @@
                             <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
                         </template>
                       </b-card>
-                  </div>
+                  <!-- </div> -->
+                </v-row>
               </div>
               <b-modal id="myModal2" title="Snapshot View" size="lg" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub)">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
@@ -50,7 +52,8 @@
             </template>
             <b-card-text>
               <div>
-                <div class="items" >
+                <!-- <div class="items" > -->
+                <v-row class="five-cols">
                     <b-card
                       class="item"
                       v-b-modal = "'watchModal'"
@@ -67,7 +70,8 @@
                             <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
                         </template>
                     </b-card>
-                </div>
+                <!-- </div> -->
+                </v-row>
               </div>
               <b-modal id="watchModal" title="On Watch Snapshot" size="lg" ok-only ok-variant="secondary" ok-title="Unwatch" @ok="unwatchSub(selectedSub)">
                   <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
@@ -234,8 +238,17 @@ export default {
 </script>
 <style>
 
+.five-cols {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  background-color: rgb(206, 209, 212);
+  padding: 5px;
+  text-align: left;
+}
+
 /* https://stackoverflow.com/questions/59445065/stack-v-cards-within-n-columns */
 .items {
+  column-count: 8;
   padding: 5px;
   text-align: left;
   background-color: rgb(206, 209, 212);
@@ -244,7 +257,7 @@ export default {
 .item {
   background-color: lightgrey;
   display: inline-block;
-  width: 100%;
+  /* width: 100%; */
   margin: 10px;
 }
 
