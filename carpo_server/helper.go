@@ -11,6 +11,14 @@ import (
 	"time"
 )
 
+func showSnapshotHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(studentWorkSnapshot)
+		fmt.Fprint(w, string(data))
+	}
+
+}
+
 func readRequestBody(r *http.Request) (req map[string]interface{}, err error) {
 
 	body, err := ioutil.ReadAll(r.Body)

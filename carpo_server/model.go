@@ -74,6 +74,7 @@ type Feedback struct {
 type StudentSubmissionStatus struct {
 	ProblemID    int
 	SubmissionID int
+	Code         string
 	Submitted    string
 	Score        int
 	GradeAt      string

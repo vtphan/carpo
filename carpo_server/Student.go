@@ -14,7 +14,8 @@ type Studnet struct {
 
 func (st *Studnet) Add() (id int, uid string, alreadyExists bool, err error) {
 
-	rows, err := Database.Query("select id, uid from student where name=?", st.Name)
+	log.Printf("Adding Student: %v\n", st.Name)
+	rows, err := Database.Query("select id, uuid from student where name=?", st.Name)
 	defer rows.Close()
 	if err != nil {
 		return 0, "", false, err

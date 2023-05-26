@@ -8,19 +8,20 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 	<meta http-equiv="refresh" content="120" >
 	<script src="https://kit.fontawesome.com/923539b4ee.js" crossorigin="anonymous"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css" integrity="sha512-IgmDkwzs96t4SrChW29No3NXBIBv8baW490zk5aXvhCD8vuZM3yUSkbyTBcXohkySecyzIrUwiF/qV0cuPcL3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/js/all.min.js'></script>
 	<style>
-		#modal {
+		#box {
 			width: 70%;
 			border: 1px solid #CCC;
 			box-shadow: 0 1px 5px #CCC;
 			margin: 25px auto;
 		}
-		#modal header {
+		#box header {
 			background: #f1f1f1;
 			box-shadow: 0 1px 2px #888;
 			padding: 10px;
 		}
-		#modal h1, h2 {
+		#box h1, h2 {
 			padding: 0;
 			margin: 0;
 			font-size: 18px;
@@ -29,10 +30,14 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 		th {
 			text-align: left;
 		}
+		.modal-content {
+			margin-top: 100px;
+			width: 450px;
+		  }
 	</style>
 	</head>
 	<body>
-	<div id="modal" class="container">
+	<div id="box" class="container">
 		<header>
 			<h1>Submission Status<h1>
 			<h2 style="font-size: 16px">Name: {{ .Name }}</h2>
@@ -50,10 +55,10 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 			</thead>
 
 			<tbody>
-			{{ range .Stats }}
+			{{ range $i, $e := .Stats }}
 			<tr>
 				<td>{{ .ProblemID }}</td>
-				<td>{{ .SubmissionID }}</td>
+				<td> <a href='#' id='btn-{{$i}}' class="modal-button" onclick='openpop({{$i}}, {{ .Code }})'>{{ .SubmissionID }}</a></td>
 				<td>{{ .Submitted }}</td>
 				<td>{{ if eq .Score 0 }} Ungraded {{else if eq .Score 1}} Correct {{else if eq .Score 2}} Incorrect {{end}}</td>
 				<td>{{ if .Score }} {{ .GradeAt }} {{ end }} </td>
@@ -63,6 +68,54 @@ var STUDENT_SUBMISSION_STATUS_TEMPLATE = `
 			</tbody>
 		</table>
 	</div>
+	<div class="modal">
+		<div class="modal-background"></div>
+		<div class="modal-content" style="width: 55%;">
+		<div class='box'>
+			<h1 class='title'>Your Submitted Code</h1>
+			<pre id="code-sec"></pre>
+		</div>
+		</div>
+		<button class="modal-close is-large" 
+				aria-label="close">
+		Model
+		</button>
+	</div>
+	<script>
+    // Bulma does not have JavaScript included,
+    // hence custom JavaScript has to be
+    // written to open or close the modal
+    const modal = 
+          document.querySelector('.modal');
+    const btn = 
+          document.querySelector('#btn')
+    const close = 
+          document.querySelector('.modal-close')
+  
+    // btn.addEventListener('click',
+    //                      function () {
+    //   modal.style.display = 'block'
+    // })
+
+	function openpop(i, code) {
+		modal.style.display = 'block'
+		document.getElementById("code-sec").innerHTML = code;
+	}
+  
+    close.addEventListener('click',
+                           function () {
+      modal.style.display = 'none'
+    })
+  
+    window.addEventListener('click',
+                            function (event) {
+      if (event.target.className === 
+          'modal-background') {
+        modal.style.display = 'none'
+      }
+    })
+  </script>
+
 	</body>
 </html>
 `

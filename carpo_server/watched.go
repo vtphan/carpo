@@ -43,27 +43,27 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 			key := fmt.Sprintf("%v-%v", s.StudentID, s.ProblemID)
 			if val, ok := studentWorkSnapshot[key]; ok {
 				subs = append(subs, FlagSubmission{
-					ID:        s.ID,
-					ProblemID: s.ProblemID,
-					// SubmissionID: s.SubmissionID,
-					StudentID:   s.StudentID,
-					TeacherID:   s.TeacherID,
-					StudentName: s.StudentName,
-					Code:        val.Code,
-					CreatedAt:   val.CreatedAt,
-					UpdatedAt:   val.UpdatedAt,
+					ID:           s.ID,
+					ProblemID:    s.ProblemID,
+					SubmissionID: val.ID,
+					StudentID:    s.StudentID,
+					TeacherID:    s.TeacherID,
+					StudentName:  s.StudentName,
+					Code:         val.Code,
+					CreatedAt:    val.CreatedAt,
+					UpdatedAt:    val.UpdatedAt,
 				})
 			} else {
 				subs = append(subs, FlagSubmission{
-					ID:        s.ID,
-					ProblemID: s.ProblemID,
-					// SubmissionID: s.SubmissionID,
-					StudentID:   s.StudentID,
-					TeacherID:   s.TeacherID,
-					StudentName: s.StudentName,
-					Code:        s.Code,
-					CreatedAt:   val.CreatedAt,
-					UpdatedAt:   val.UpdatedAt,
+					ID:           s.ID,
+					ProblemID:    s.ProblemID,
+					SubmissionID: s.SubmissionID,
+					StudentID:    s.StudentID,
+					TeacherID:    s.TeacherID,
+					StudentName:  s.StudentName,
+					Code:         s.Code,
+					CreatedAt:    s.CreatedAt,
+					UpdatedAt:    s.UpdatedAt,
 				})
 			}
 

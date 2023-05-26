@@ -83,6 +83,7 @@ func main() {
 	// log.SetOutput(file)
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "pong") })
+	http.HandleFunc("/show_snapshot", showSnapshotHandler())
 
 	http.HandleFunc("/add_teacher", addUserHandler("teacher"))
 	http.HandleFunc("/add_student", addUserHandler("studnet"))
