@@ -49,10 +49,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
       settingRegistry: ISettingRegistry | null
     ) => {
     console.log('JupyterLab extension carpo-student is activated!');
-    // var interval => (); 
-    var counter: number = 0;
+    var cronTracker: Array<string>  = [];
     nbTrack.currentChanged.connect(() => {
-      console.log("my counter: ", counter);
+      // console.log("my tracker: ", tracker);
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
       const filename = notebookPanel.context.path
@@ -111,7 +110,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
                 currentCellCheckButton = newCheckButton;
 
                 // Send code snapshot to the server:
-                if (counter == 0 ){
+                if (cronTracker.indexOf(filename) === -1 ){
                   setInterval(function () {
                     let postBody = {
                       "message": "",
@@ -127,7 +126,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
                           console.log("Snapshot sent.", data)
                         });
                   }, 20000);
-                  counter ++;
+                  cronTracker.push(filename)
                 }
               }
             }

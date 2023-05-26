@@ -4,7 +4,7 @@
         <b-tabs card>
           <b-tab active>
             <template #title>
-              <div> Snapshot </div>
+              <div v-on:click="getSnapshotList()"> Snapshot <a v-if="message.data">({{ message.data.length}})</a> </div>
             </template>
               <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
                 <b-dropdown no-caret>
@@ -28,10 +28,16 @@
                       img-top v-for="items in message.data" :key="items.id"
                       @click="sendInfo(items)">
                         <b-card-text >
-                            From: {{ items.student_name }}
+                           {{ items.student_name }}
                         </b-card-text>
                         <template #footer>
-                            <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
+                          <small>
+                            SUBID: {{ items.id }}
+                            <br>
+                            PID: {{ items.problem_id }}
+                            <br>
+                            Last Active: {{ timeDiff(items.created_at) }} ago
+                          </small>
                         </template>
                       </b-card>
                   <!-- </div> -->
@@ -40,14 +46,14 @@
               <b-modal id="myModal2" title="Snapshot View" size="lg" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub)">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
                   <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 85px);">
-                    <b-button class="btn-secondary" @click="watchSubmission(selectedSub)">Watch</b-button>
+                    <b-button class="btn-secondary" @click="watchSubmission(selectedSub); $bvModal.hide('myModal2')">Watch</b-button>
                   </div>
               </b-modal>
             </b-card-text>
           </b-tab>
           <b-tab >
             <template #title>
-              <div> Watched <a v-if="watchSubs.data">({{ watchSubs.data.length}})</a>
+              <div v-on:click="getWatchedSubsList()"> Watched <a v-if="watchSubs.data">({{ watchSubs.data.length}})</a>
               </div>
             </template>
             <b-card-text>
@@ -67,7 +73,13 @@
                             From: {{ items.student_name }}
                         </b-card-text>
                         <template #footer>
-                            <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
+                          <small>
+                            SUBID: {{ items.submission_id }}
+                            <br>
+                            PID: {{ items.problem_id }}
+                            <br>
+                            Last Active: {{ timeDiff(items.created_at) }} ago
+                          </small>
                         </template>
                     </b-card>
                 <!-- </div> -->
@@ -150,7 +162,7 @@ export default {
       this.$http.post(Config.apiUrl + '/snapshots/watch', postBody, config)
         .then(() => {
           // alert('Snapshot  with id ' + sub.student_id + ' is on watch list.')
-          this.toast('Snapshot with id ' + sub.student_id + ' is on watch list.')
+          this.toast('Snapshot of student with id ' + sub.student_id + ' is on watch list.')
         })
         .catch(function (error) {
           console.log(error)
@@ -158,14 +170,14 @@ export default {
         })
     },
     unwatchSub (sub) {
-      console.log('unwatch: ', sub)
       this.$http.delete(Config.apiUrl + '/snapshots/watch', {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
         data: {watch_id: sub.id}
       })
         .then(() => {
           // alert('Snapshot  with id ' + sub.student_id + ' is removed from the watch list.')
-          this.toast('Snapshot with id ' + sub.student_id + ' is removed from the watch list.')
+          this.toast('Snapshot of student with id ' + sub.student_id + ' is removed from the watch list.')
+          this.watchSubs.data = this.watchSubs.data.filter(item => item.id !== sub.id)
         })
         .catch(function (error) {
           console.log(error)
@@ -244,6 +256,13 @@ export default {
   background-color: rgb(206, 209, 212);
   padding: 5px;
   text-align: left;
+}
+
+br {
+  content: "";
+  margin: -2em;
+  display: block;
+  font-size: 24%;
 }
 
 /* https://stackoverflow.com/questions/59445065/stack-v-cards-within-n-columns */

@@ -29,7 +29,7 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		// Only Submissions 2 (not snapshot 1)
 		// Only Flagged Submisions/Not Unflagged
 		// Only Ungraded (status = 0 )
-		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, subs.code, s.name, f.created_at, f.updated_at from flagged as f inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id where f.soft_delete = 0 and subs.snapshot=2 and subs.status=0"
+		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, subs.code, s.name, f.created_at, f.updated_at from flagged as f inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id where f.soft_delete = 0 and subs.snapshot=2 and subs.status=1"
 
 		s := FlagSubmission{}
 		rows, err := Database.Query(sql)
@@ -99,6 +99,9 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			// Update the row
 			Database.Exec("Update flagged set soft_delete=0 where id = ?", flag_id)
 		}
+		// Set Submission status = 1 (Flagged)
+		Database.Exec("Update submission set status=1 where id = ?", sub_id)
+
 		w.WriteHeader(http.StatusCreated)
 		resp := []byte(`{"msg": "Submission flagged successfully."}`)
 		fmt.Fprint(w, string(resp))
@@ -112,7 +115,7 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Printf("Body: %v", body)
+		// fmt.Printf("Body: %v", body)
 		fid, _ := strconv.Atoi(fmt.Sprintf("%v", body["flag_id"]))
 		if fid == 0 {
 			log.Printf("Failed to soft-delete flagged submission. Empty Flag ID")
@@ -121,7 +124,7 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 				http.StatusInternalServerError)
 			return
 		}
-
+		sub_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["submission_id"]))
 		stmt, err := Database.Prepare("UPDATE flagged SET soft_delete=?, updated_at=? where id=?")
 		if err != nil {
 			log.Printf("SQL Error %v. Err: %v", stmt, err)
@@ -135,7 +138,10 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		// Set Submission status = 0 (UnFlagged)
+		Database.Exec("Update submission set status=0 where id = ?", sub_id)
+
+		w.WriteHeader(http.StatusOK)
 		resp := []byte(`{"msg": "Submission Unflagged successfully."}`)
 		fmt.Fprint(w, string(resp))
 

@@ -49,7 +49,7 @@ export default {
         }
       },
       { key: 'LifeTime',
-        label: 'UnPublished Date',
+        label: 'Deadline',
         formatter: value => {
           return moment(value, 'YYYY-MM-DD hh:mm').format('LLL')
         }

@@ -4,7 +4,7 @@
       <b-tabs card>
         <b-tab active>
           <template #title>
-            <div>Submission</div>
+            <div v-on:click="getSubmissionList()">Submission <a v-if="message.data">({{ message.data.length}})</a></div>
           </template>
           <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
             <b-dropdown no-caret>
@@ -29,12 +29,16 @@
                     v-for="items in message.data" :key="items.id"
                     @click="sendInfo(items)">
                       <b-card-text >
-                          From: {{ items.student_name }}
-                          <br>
-                          SubID: {{ items.id }}
+                          {{ items.student_name }}
                       </b-card-text>
                       <template #footer>
-                          <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
+                          <small>
+                            SUBID: {{ items.id }}
+                            <br>
+                            PID: {{ items.problem_id }}
+                            <br>
+                            Last Active: {{ timeDiff(items.created_at) }} ago
+                          </small>
                       </template>
                   </b-card>
               <!-- </div> -->
@@ -65,7 +69,7 @@
         </b-tab>
         <b-tab >
           <template #title>
-            <div> Flagged <a v-if="flagSubs.data">({{ flagSubs.data.length}})</a>
+            <div v-on:click="getFlaggedSubsList()"> Flagged <a v-if="flagSubs.data">({{ flagSubs.data.length}})</a>
             </div>
           </template>
           <b-card-text>
@@ -82,12 +86,16 @@
                     v-for="items in flagSubs.data" :key="items.id"
                     @click="sendInfo(items)">
                       <b-card-text >
-                          From: {{ items.student_name }}
-                          <br>
-                          SubID: {{ items.submission_id }}
+                          {{ items.student_name }}
                       </b-card-text>
                       <template #footer>
-                          <small class="text-muted">Last Active: {{ timeDiff(items.created_at) }} ago </small>
+                          <small>
+                            SUBID: {{ items.submission_id }}
+                            <br>
+                            PID: {{ items.problem_id }}
+                            <br>
+                            Last Active: {{ timeDiff(items.created_at) }} ago
+                          </small>
                       </template>
                   </b-card>
               <!-- </div> -->
@@ -186,6 +194,7 @@ export default {
         .then(() => {
           // alert('This submission is now flagged.')
           this.toast('Submission with id ' + submission.id + ' is flagged.')
+          this.message.data = this.message.data.filter(item => item.id !== submission.id)
         })
         .catch(function (error) {
           console.log(error)
@@ -194,11 +203,12 @@ export default {
     Unflag (submission) {
       this.$http.delete(Config.apiUrl + '/submissions/flag', {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
-        data: {flag_id: submission.id}
+        data: {flag_id: submission.id, submission_id: submission.submission_id}
       })
         .then(() => {
           // alert('This submission is now unflagged.')
           this.toast('Submission with id ' + submission.submission_id + ' is unflagged.')
+          this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
         })
         .catch(function (error) {
           console.log(error)
@@ -281,7 +291,6 @@ export default {
   created: function () {
     this.getSubmissionList()
     this.getFlaggedSubsList()
-    // setInterval(() => this.getSubmissionList(), 10000)
   }
 }
 </script>
@@ -294,6 +303,17 @@ export default {
   background-color: rgb(206, 209, 212);
   padding: 5px;
   text-align: left;
+}
+
+.card-footer {
+  padding: 0.25rem 0.25rem;
+}
+
+br {
+  content: "";
+  margin: -2em;
+  display: block;
+  font-size: 24%;
 }
 
 /* https://stackoverflow.com/questions/59445065/stack-v-cards-within-n-columns */
