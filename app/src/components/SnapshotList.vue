@@ -85,8 +85,11 @@
                 <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="watchModal" title="On Watch Snapshot" size="lg" ok-only ok-variant="secondary" ok-title="Unwatch" @ok="unwatchSub(selectedSub)">
-                  <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
+              <b-modal id="watchModal" title="On Watch Snapshot" size="lg" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub)">
+                  <codemirror v-model="selectedSub.code" :options="cmOptions" />
+                  <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 95px);">
+                    <b-button class="btn-secondary" @click="unwatchSub(selectedSub); $bvModal.hide('watchModal')">Unwatch</b-button>
+                  </div>
               </b-modal>
             </b-card-text>
           </b-tab>

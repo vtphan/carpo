@@ -59,7 +59,7 @@
                       <b-button-group>
                         <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); $bvModal.hide('myModal') ">Correct</b-button>
                         <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); $bvModal.hide('myModal') ">Incorrect</b-button>
-                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id); $bvModal.hide('myModal')">Try Again</b-button>
+                        <!-- <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id); $bvModal.hide('myModal')">Try Again</b-button> -->
                       </b-button-group>
                     </div>
                   </b-col>
@@ -101,15 +101,21 @@
               <!-- </div> -->
               </v-row>
             </div>
-            <b-modal id="flagModal" title="Flagged Submission" size="lg" ok-only ok-variant="secondary" ok-title="Unflag" @ok="Unflag(selectedSub); $bvModal.hide('flagModal')">
+            <b-modal id="flagModal" title="Flagged Submission" size="lg" ok-only ok-variant="secondary" ok-title="Cancel" @ok="Unflag(selectedSub); $bvModal.hide('flagModal')">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
+                <a> Message: {{ selectedSub.message }} </a>
                 <b-row>
+                  <b-col cols="6" >
+                    <div style="text-align: left">
+                      <b-button class="btn-secondary" @click="Unflag(selectedSub); $bvModal.hide('flagModal')">Unflag</b-button>
+                    </div>
+                  </b-col>
                   <b-col cols="6" >
                     <div style="text-align: right">
                       <b-button-group>
                         <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.submission_id, 1); $bvModal.hide('flagModal')">Correct</b-button>
                         <b-button class="btn-danger" @click="sendGrade(selectedSub,selectedSub.submission_id, 2); $bvModal.hide('flagModal')">Incorrect</b-button>
-                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id); $bvModal.hide('flagModal')">Try Again</b-button>
+                        <!-- <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id); $bvModal.hide('flagModal')">Try Again</b-button> -->
                       </b-button-group>
                     </div>
                   </b-col>
