@@ -74,6 +74,15 @@ func studentSubmissionHandler() http.HandlerFunc {
 		key := fmt.Sprintf("%v-%v", studnet.ID, body["problem_id"])
 		switch r.Method {
 		case http.MethodPost:
+			expiredProblem, _ := isExpired(pid)
+			// Ignore snapshot if the problem is expired
+			if expiredProblem && sub_type == 1 {
+				log.Printf("Discard snapshot for inactive problem with key: %s. ", key)
+				resp := []byte(`{"msg": "Snapshot no longer needed."}`)
+				fmt.Fprint(w, string(resp))
+				return
+			}
+
 			if !isAllowedSubmission(studnet.ID) && sub_type == 2 {
 				log.Printf("Submission is not allowed within 30 seconds of previous submission. StudentID: %v\n", studnet.ID)
 				resp := []byte(`{"msg": "Please wait for 30 seconds before you make another submission on this problem."}`)
@@ -102,10 +111,8 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 			// Put SnapshotID for the studentWorkSnapshot that is saved to DB.
 			sub.ID = dbID
-			// Ignore snapshot if the problem is expired
-			if ok, _ := isExpired(pid); !ok {
-				studentWorkSnapshot[key] = sub
-			}
+
+			studentWorkSnapshot[key] = sub
 
 			_, err = AddStudentProblemStatusSQL.Exec(studnet.ID, pid, 1, time.Now(), time.Now())
 			if err != nil {
