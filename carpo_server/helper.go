@@ -72,9 +72,7 @@ func getTimeLimit(timeLimit string) (val int, err error) {
 }
 
 func hasFeedbackOnCode(codeFromT, codeFromS string) bool {
-	// Skip first line from TeacherCode.
-	teacherCode := strings.Join(strings.Split(codeFromT, "\n")[1:], "\n")
-	if strings.EqualFold(strings.Replace(teacherCode, " ", "", -1), strings.Replace(codeFromS, " ", "", -1)) {
+	if strings.EqualFold(strings.Replace(codeFromT, " ", "", -1), strings.Replace(codeFromS, " ", "", -1)) {
 		return false
 	}
 	return true

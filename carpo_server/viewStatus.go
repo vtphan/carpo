@@ -50,7 +50,7 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		// Get Submission status
 		subStats := make([]StudentSubmissionStatus, 0)
 
-		rows, err = Database.Query("select submission.problem_id, submission.id, submission.code, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.feedback_at from submission LEFT JOIN grade on submission.id = grade.submission_id where submission.snapshot=2 and submission.student_id = ? order by submission.created_at desc", student_id[0])
+		rows, err = Database.Query("select submission.problem_id, submission.id, submission.snapshot, submission.code, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code_feedback, grade.feedback_at from submission LEFT JOIN grade on grade.submission_id = submission.id where submission.snapshot=2 and submission.student_id = ? Union select submission.problem_id, submission.id, submission.snapshot, submission.code, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code_feedback, grade.feedback_at from submission INNER JOIN grade on grade.submission_id = submission.id where submission.snapshot=1 and submission.student_id = ? order by submission.created_at desc", student_id[0], student_id[0])
 
 		defer rows.Close()
 		if err != nil {
@@ -65,7 +65,7 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 				FeedbackCreatedAt string
 				score             sql.NullInt64
 			)
-			rows.Scan(&stat.ProblemID, &stat.SubmissionID, &stat.Code, &SubCreatedAt, &score, &GradeCreatedAt, &stat.HasFeedback, &FeedbackCreatedAt)
+			rows.Scan(&stat.ProblemID, &stat.SubmissionID, &stat.Snapshot, &stat.Code, &SubCreatedAt, &score, &GradeCreatedAt, &stat.HasFeedback, &stat.Feedback, &FeedbackCreatedAt)
 			if !score.Valid {
 				score.Int64 = 0
 			}
@@ -89,12 +89,43 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 			subStats = append(subStats, stat)
 		}
 
+		// Fetch Problem and solutions
+		problemStats := make([]ProblemStatus, 0)
+
+		rows, err = Database.Query("select problem.id, problem.question, problem.lifetime, problem.status, problem.created_at, solution.code, solution.created_at from problem LEFT join solution ON problem.id = solution.problem_id order by problem.id desc")
+
+		defer rows.Close()
+		if err != nil {
+			log.Printf("Error quering db ProblemStatus. Err: %v", err)
+		}
+
+		for rows.Next() {
+			var (
+				PCreatedAt  string
+				PDeadlineAt string
+			)
+			stat := ProblemStatus{}
+
+			rows.Scan(&stat.ProblemID, &stat.Question, &PDeadlineAt, &stat.Status, &PCreatedAt, &stat.Solution, &stat.UploadDate)
+
+			stime, _ := time.Parse(time.RFC3339, PDeadlineAt)
+			stat.LifeTime = stime
+			// stat.LifeTime = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(stime)))
+
+			stime, _ = time.Parse(time.RFC3339, PCreatedAt)
+			stat.PublishedDate = stime
+
+			problemStats = append(problemStats, stat)
+		}
+
 		data := struct {
-			Name  string
-			Stats []StudentSubmissionStatus
+			Name   string
+			Stats  []StudentSubmissionStatus
+			PStats []ProblemStatus
 		}{
-			Name:  name,
-			Stats: subStats,
+			Name:   name,
+			Stats:  subStats,
+			PStats: problemStats,
 		}
 
 		t, err := template.New("").Funcs(template.FuncMap{"add": add}).Parse(STUDENT_SUBMISSION_STATUS_TEMPLATE)

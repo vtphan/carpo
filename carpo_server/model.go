@@ -74,12 +74,24 @@ type Feedback struct {
 type StudentSubmissionStatus struct {
 	ProblemID    int
 	SubmissionID int
+	Snapshot     int
 	Code         string
 	Submitted    string
 	Score        int
 	GradeAt      string
 	HasFeedback  int
+	Feedback     string
 	FeedbackAt   string
+}
+type ProblemStatus struct {
+	ProblemID     int
+	Question      string
+	Status        int
+	PublishedDate time.Time
+	LifeTime      time.Time
+	ExpiresAt     string
+	Solution      string
+	UploadDate    time.Time
 }
 
 type ProblemGradeStatus struct {
@@ -121,6 +133,7 @@ type FlagSubmission struct {
 	TeacherID    int       `json:"teacher_id"`
 	StudentName  string    `json:"student_name"`
 	Code         string    `json:"code"`
+	Message      string    `json:"message"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
