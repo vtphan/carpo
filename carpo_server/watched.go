@@ -105,12 +105,13 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
+			} else {
+				log.Printf("Failed to query watch submission to DB. Err. %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to query watch submission to DB.",
+					http.StatusInternalServerError)
+				return
 			}
-			log.Printf("Failed to query flagged submission to DB. Err. %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			http.Error(w, "Failed to query flagged submission to DB.",
-				http.StatusInternalServerError)
-			return
 
 		}
 		if watch_id != 0 {
