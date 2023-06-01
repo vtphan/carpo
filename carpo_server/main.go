@@ -114,6 +114,7 @@ func main() {
 	http.HandleFunc("/students/status", viewStudentSubmissionStatus())
 
 	http.Handle("/problems/status", AuthorizeTeacher(http.HandlerFunc(viewProblemStatus)))
+	http.Handle("/solution/broadcast", AuthorizeTeacher(http.HandlerFunc(solutionBroadcast)))
 
 	http.HandleFunc("/problem_detail", problemDetail())
 

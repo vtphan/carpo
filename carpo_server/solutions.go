@@ -6,11 +6,46 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
 )
 
+func solutionBroadcast(w http.ResponseWriter, r *http.Request) {
+	body, err := readRequestBody(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "Error reading request body",
+			http.StatusInternalServerError)
+		return
+	}
+	sid, _ := strconv.Atoi(fmt.Sprintf("%v", body["solution_id"]))
+	if sid == 0 {
+		log.Printf("Failed to broadcast solution. Empty Solution ID")
+		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Failed to broadcast solution.",
+			http.StatusInternalServerError)
+		return
+	}
+	stmt, err := Database.Prepare("UPDATE solution SET broadcast=?, updated_at=? where id=?")
+	if err != nil {
+		log.Printf("SQL Error %v. Err: %v", stmt, err)
+	}
+	_, err = stmt.Exec(1, time.Now(), sid)
+	if err != nil {
+		log.Printf("Failed to broadcast solution in DB. Err. %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Failed to broadcast solution in DB.",
+			http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	resp := []byte(`{"msg": "Solution broadcasted successfully."}`)
+	fmt.Fprint(w, string(resp))
+
+}
 func solutionHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

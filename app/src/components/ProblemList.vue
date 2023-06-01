@@ -2,12 +2,22 @@
   <div>
       <b-table striped hover :items="message.data" :fields="fields" responsive="sm">
         <template #cell(actions)="row">
-          <b-button size="sm"  @click="info(row.item.Question)" class="mr-2">
-            View
+          <div class="sub-action">
+          <b-button size="sm"  @click="info('Problem Description', row.item.Question)" class="mr-2">
+            View Problem
           </b-button>
-          <b-button size="sm" :disabled="row.item.ProblemStatus === 0" @click="showConfirmBox(row.item.ProblemID)" class="mr-2">
-            Unpublish
+          <b-button size="sm" :disabled="row.item.ProblemStatus === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2">
+            Unpublish Problem
           </b-button>
+          </div>
+          <div class="sub-action">
+          <b-button size="sm" :disabled="!row.item.Solution" @click="info('Solution Code', row.item.Solution)" class="mr-2">
+            View Solution
+          </b-button>
+          <b-button size="sm" :disabled="!row.item.Solution" @click="showConfirmBox('broadcast', row.item)" class="mr-2">
+            Broadcast Solution
+          </b-button>
+          </div>
         </template>
       </b-table>
 
@@ -28,7 +38,7 @@ export default {
     selectedProb: '',
     infoModal: {
       id: 'info-modal',
-      title: 'Problem Detail',
+      title: '',
       quesiton: ''
     },
     fields: [
@@ -62,8 +72,9 @@ export default {
       console.log(item)
       this.selectedProb = item
     },
-    info (item, button) {
-      this.infoModal.quesiton = item
+    info (title, block, button) {
+      this.infoModal.title = title
+      this.infoModal.quesiton = block
       this.$root.$emit('bv::show::modal', this.infoModal.id, button)
     },
     toast (msg) {
@@ -74,9 +85,9 @@ export default {
         solid: true
       })
     },
-    showConfirmBox (id) {
+    showConfirmBox (msg, item) {
       this.boxOne = ''
-      this.$bvModal.msgBoxConfirm('Are you sure you want to unpublish this problem?', {
+      this.$bvModal.msgBoxConfirm('Are you sure you want to ' + msg + ' this ?', {
         title: 'Please Confirm',
         size: 'sm',
         buttonSize: 'sm',
@@ -91,7 +102,7 @@ export default {
           this.boxOne = value
           console.log('Value: ', this.boxOne)
           if (this.boxOne === true) {
-            this.unpublish(id)
+            msg === 'unpublish' ? this.unpublish(item) : this.broadcast(item)
           }
         })
         .catch(err => {
@@ -99,16 +110,33 @@ export default {
           console.log('Error: ', err)
         })
     },
-    unpublish (id) {
+    unpublish (item) {
       this.$http.delete(Config.apiUrl + '/problems/delete', {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
-        data: {problem_id: id}
+        data: {problem_id: item.ProblemID}
       })
         .then(() => {
-          this.toast('Problem with id ' + id + ' is unpublished.')
+          this.toast('Problem with id ' + item.ProblemID + ' is unpublished.')
         })
         .catch(function (error) {
           console.log(error)
+        })
+    },
+    broadcast (item) {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      let postBody = {
+        'solution_id': item.SolutionID
+      }
+      this.$http.post(Config.apiUrl + '/solution/broadcast', postBody, config)
+        .then(() => {
+          // alert('Snapshot  with id ' + sub.student_id + ' is on watch list.')
+          this.toast('Solution for problem with id ' + item.ProblemID + ' is broadcasted.')
+        })
+        .catch(function (error) {
+          console.log(error)
+          // alert(error)
         })
     },
     getProblemList: function () {
@@ -132,5 +160,9 @@ export default {
 }
 </script>
 <style>
+
+.sub-action {
+  margin: 5px;
+}
 
 </style>

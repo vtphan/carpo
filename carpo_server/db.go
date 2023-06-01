@@ -24,6 +24,7 @@ func create_tables() {
 	execSQL("create table if not exists solution (id integer primary key, problem_id integer unique, code blob, created_at timestamp, updated_at timestamp)")
 	execSQL("create table if not exists flagged (id integer primary key, submission_id integer, problem_id integer, student_id integer, teacher_id integer, soft_delete integer default 0, created_at timestamp, updated_at timestamp, UNIQUE (problem_id, submission_id, student_id))")
 	execSQL("create table if not exists watched (id integer primary key, submission_id integer, problem_id integer, student_id integer, teacher_id integer, soft_delete integer default 0, created_at timestamp, updated_at timestamp, UNIQUE (problem_id, submission_id, student_id))")
+	execSQL("alter table solution add column broadcast integer default 0")
 }
 
 func init_database(db_name string) {
