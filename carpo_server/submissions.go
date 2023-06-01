@@ -69,7 +69,14 @@ func studentSubmissionHandler() http.HandlerFunc {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		// fmt.Printf("Submission: %+v\n", sub)s
+
+		if pid == 0 {
+			log.Printf("Invalid Problem id %v", pid)
+			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, "Failed to save submission/snapshot.",
+				http.StatusInternalServerError)
+			return
+		}
 
 		key := fmt.Sprintf("%v-%v", studnet.ID, body["problem_id"])
 		switch r.Method {

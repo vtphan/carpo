@@ -97,6 +97,8 @@ type ProblemStatus struct {
 type ProblemGradeStatus struct {
 	ProblemID       int
 	Question        string
+	SolutionID      int
+	Solution        string
 	Ungraded        int
 	Correct         int
 	Incorrect       int

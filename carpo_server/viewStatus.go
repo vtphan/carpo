@@ -92,7 +92,7 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		// Fetch Problem and solutions
 		problemStats := make([]ProblemStatus, 0)
 
-		rows, err = Database.Query("select problem.id, problem.question, problem.lifetime, problem.status, problem.created_at, solution.code, solution.created_at from problem LEFT join solution ON problem.id = solution.problem_id order by problem.id desc")
+		rows, err = Database.Query("select problem.id, problem.question, problem.lifetime, problem.status, problem.created_at, solution.code, solution.broadcast, solution.created_at from problem LEFT join solution ON problem.id = solution.problem_id order by problem.id desc")
 
 		defer rows.Close()
 		if err != nil {
@@ -101,13 +101,16 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 
 		for rows.Next() {
 			var (
-				PCreatedAt  string
-				PDeadlineAt string
+				PCreatedAt    string
+				PDeadlineAt   string
+				isBroadcasted int64
 			)
 			stat := ProblemStatus{}
 
-			rows.Scan(&stat.ProblemID, &stat.Question, &PDeadlineAt, &stat.Status, &PCreatedAt, &stat.Solution, &stat.UploadDate)
-
+			rows.Scan(&stat.ProblemID, &stat.Question, &PDeadlineAt, &stat.Status, &PCreatedAt, &stat.Solution, &isBroadcasted, &stat.UploadDate)
+			if isBroadcasted == 0 {
+				stat.Solution = ""
+			}
 			stime, _ := time.Parse(time.RFC3339, PDeadlineAt)
 			stat.LifeTime = stime
 			// stat.LifeTime = fmt.Sprintf("%s ago", fmtDuration(time.Now().Sub(stime)))
@@ -149,7 +152,7 @@ func problemStatus(rows *sql.Rows) (pGradeStat ProblemGradeStatus) {
 		ungraded, correct, incorrect sql.NullInt64
 	)
 
-	rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Question, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDate, &ungraded, &correct, &incorrect)
+	rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Question, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &ungraded, &correct, &incorrect, &pGradeStat.SolutionID, &pGradeStat.Solution)
 
 	if !ungraded.Valid {
 		ungraded.Int64 = 0
@@ -174,9 +177,7 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	ids := []int{}
 	// Get Problem Grading Status
 	pGradeStats := make([]ProblemGradeStatus, 0)
-	// rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) and submission.snapshot=2 then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id group by problem_id order by problem_id desc")
-	rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) and submission.snapshot=2 then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from problem LEFT join submission on problem.id = submission.problem_id LEFT join grade on submission.id = grade.submission_id group by problem_id order by problem_id desc")
-
+	rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, sum(case when submission.status in (0,1) and submission.snapshot=2 then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect, s.id, s.code from problem LEFT join submission on problem.id = submission.problem_id LEFT join grade on submission.id = grade.submission_id LEFT join solution as s on problem.id = s.problem_id group by submission.problem_id order by submission.problem_id desc")
 	defer rows.Close()
 	if err != nil {
 		log.Printf("Error quering db viewProblemStatus. Err: %v", err)
@@ -193,7 +194,7 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	// Array of int to string with ,
 	IDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
 	// Get Problems that don't have submissions yet.
-	rows, err = Database.Query(fmt.Sprintf("select id, question, created_at, lifetime, status, updated_at from problem where id not in (%s) order by id desc", IDs))
+	rows, err = Database.Query(fmt.Sprintf("select p.id, p.question, p.created_at, p.lifetime, p.status, s.id, s.code from problem as p left join solution as s on p.id = s.problem_id where p.id not in (%s) order by p.id desc", IDs))
 
 	defer rows.Close()
 	if err != nil {
@@ -202,7 +203,7 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		pGradeStat := ProblemGradeStatus{}
-		rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Question, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.UnpublishedDate)
+		rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Question, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.SolutionID, &pGradeStat.Solution)
 		pGradeStat.ExpiresAt = fmt.Sprintf("To be due in %s", fmtDuration(pGradeStat.LifeTime.Sub(time.Now())))
 		pGradeStats = append(pGradeStats, pGradeStat)
 	}
@@ -211,12 +212,6 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(pGradeStats, func(i, j int) bool {
 		return pGradeStats[i].ProblemID > pGradeStats[j].ProblemID
 	})
-
-	// data := struct {
-	// 	Stats []ProblemGradeStatus
-	// }{
-	// 	Stats: pGradeStats,
-	// }
 
 	resp := Response{}
 	sub, _ := json.Marshal(pGradeStats)
@@ -227,18 +222,6 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	da, _ := json.Marshal(resp)
 	fmt.Fprint(w, string(da))
 	return
-
-	// t, err := template.New("").Parse(PROBLEM_GRADE_STATUS_TEMPLATE)
-	// if err != nil {
-	// 	log.Printf("%v\n", err)
-	// }
-
-	// w.Header().Set("Content-Type", "text/html")
-	// err = t.Execute(w, data)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	log.Printf("%v\n", err)
-	// }
 
 }
 

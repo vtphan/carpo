@@ -26,7 +26,7 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("Fetching all watched submission...\n")
 
-		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, subs.code, s.name, f.created_at, f.updated_at from watched as f inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id where f.soft_delete = 0 and subs.snapshot=1"
+		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, subs.code, s.name, f.created_at, f.updated_at from watched as f inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id inner join problem as p on p.id=subs.problem_id where f.soft_delete = 0 and subs.snapshot=1 and p.status = 1"
 
 		s := FlagSubmission{}
 		rows, err := Database.Query(sql)
