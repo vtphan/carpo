@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strings"
 )
 
 func teacherSnapshotHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,12 +77,12 @@ func teacherSnapshotHandler(w http.ResponseWriter, r *http.Request) {
 			case "name":
 				sort.Slice(snapshots, func(i, j int) bool {
 					// return snapshots[i].Name < snapshots[j].Name  // XYZ ABC
-					return snapshots[i].Name > snapshots[j].Name
+					return strings.ToLower(snapshots[i].Name) < strings.ToLower(snapshots[j].Name)
 				})
 
 			case "creation_time":
 				sort.Slice(snapshots, func(i, j int) bool {
-					return snapshots[i].CreatedAt.After(snapshots[j].CreatedAt) // After: 2 m, a few
+					return snapshots[i].CreatedAt.Before(snapshots[j].CreatedAt) // After: 2 m, a few
 				})
 			default:
 				log.Printf("sort_by parameter is missing. Using default sort by created_at.\n")

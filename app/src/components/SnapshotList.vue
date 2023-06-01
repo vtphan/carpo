@@ -207,13 +207,10 @@ export default {
     },
     getSnapshotList: function () {
       const config = {
-        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+        headers: { Authorization: 'Bearer ' + this.$route.query.token },
+        params: {'sort_by': this.sorting}
       }
-      this.$http.get(Config.apiUrl + '/teachers/snapshots', config, {
-        params: {
-          'sort_by': this.sorting
-        }
-      })
+      this.$http.get(Config.apiUrl + '/teachers/snapshots', config)
         .then((response) => {
           console.log('Snapshot: ', response)
           this.message = response.data
@@ -225,9 +222,9 @@ export default {
     },
     getWatchedSubsList: function () {
       const config = {
-        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) }
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
+        params: {'sort_by': this.sorting}
       }
-      console.log(config)
       this.$http.get(Config.apiUrl + '/snapshots/watch', config)
         .then((response) => {
           this.watchSubs = response.data

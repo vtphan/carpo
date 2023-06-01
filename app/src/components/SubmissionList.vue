@@ -263,9 +263,10 @@ export default {
     },
     getSubmissionList: function () {
       const config = {
-        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) }
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
+        params: {'sort_by': this.sorting}
       }
-      this.$http.get(Config.apiUrl + '/teachers/submissions', config, {params: {'sort_by': this.sorting}})
+      this.$http.get(Config.apiUrl + '/teachers/submissions', config)
         .then((response) => {
           this.message = response.data
         })
@@ -276,7 +277,8 @@ export default {
     },
     getFlaggedSubsList: function () {
       const config = {
-        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) }
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
+        params: {'sort_by': this.sorting}
       }
       console.log(config)
       this.$http.get(Config.apiUrl + '/submissions/flag', config)

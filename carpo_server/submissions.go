@@ -178,11 +178,11 @@ func teacherSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		// 	http.Error(w, fmt.Sprintf("You are not authorized to access this status."), http.StatusUnauthorized)
 		// 	return
 		// }
-		sorting := "submission.created_at"
+		sorting := ""
 		if sort_by, ok := query["sort_by"]; ok {
 			switch sort_by[0] {
 			case "name":
-				sorting = "student.name ASC"
+				sorting = "student.name COLLATE NOCASE ASC"
 			case "creation_time":
 				sorting = "submission.created_at ASC"
 			default:
