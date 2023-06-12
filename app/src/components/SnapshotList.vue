@@ -43,7 +43,7 @@
                   <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="myModal2" title="Snapshot View" size="lg" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.id)">
+              <b-modal id="myModal2" title="Snapshot View" size="xl" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.id)">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
                   <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 85px);">
                     <b-button class="btn-secondary" @click="watchSubmission(selectedSub); $bvModal.hide('myModal2')">Watch</b-button>
@@ -85,7 +85,7 @@
                 <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="watchModal" title="On Watch Snapshot" size="lg" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.submission_id)">
+              <b-modal id="watchModal" title="On Watch Snapshot" size="xl" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.submission_id)">
                   <codemirror v-model="selectedSub.code" :options="cmOptions" />
                   <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 95px);">
                     <b-button class="btn-secondary" @click="unwatchSub(selectedSub); $bvModal.hide('watchModal')">Unwatch</b-button>
@@ -252,7 +252,7 @@ export default {
 
 .five-cols {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(12, 1fr);
   background-color: rgb(206, 209, 212);
   padding: 5px;
   text-align: left;

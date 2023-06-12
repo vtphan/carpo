@@ -21,7 +21,7 @@
         </template>
       </b-table>
 
-      <b-modal :id="infoModal.id" :title="infoModal.title" ok-only>
+      <b-modal size='xl' :id="infoModal.id" :title="infoModal.title" ok-only>
         <pre>{{ infoModal.quesiton }}</pre>
       </b-modal>
   </div>

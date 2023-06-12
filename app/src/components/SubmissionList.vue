@@ -45,7 +45,7 @@
               </v-row>
             </div>
 
-            <b-modal id="myModal" title="Submission Grading" size="lg" ok-only ok-variant="secondary" ok-title="Cancel">
+            <b-modal id="myModal" title="Submission Grading" size="xl" ok-only ok-variant="secondary" ok-title="Cancel">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
                 <a> Message: {{ selectedSub.message }} </a>
                 <b-row>
@@ -101,7 +101,7 @@
               <!-- </div> -->
               </v-row>
             </div>
-            <b-modal id="flagModal" title="Flagged Submission" size="lg" ok-only ok-variant="secondary" ok-title="Cancel" @ok="Unflag(selectedSub); $bvModal.hide('flagModal')">
+            <b-modal id="flagModal" title="Flagged Submission" size="xl" ok-only ok-variant="secondary" ok-title="Cancel" @ok="Unflag(selectedSub); $bvModal.hide('flagModal')">
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
                 <a> Message: {{ selectedSub.message }} </a>
                 <b-row>
@@ -307,7 +307,7 @@ export default {
 
 .five-cols {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(12, 1fr);
   background-color: rgb(206, 209, 212);
   padding: 5px;
   text-align: left;
