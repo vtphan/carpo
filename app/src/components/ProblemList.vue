@@ -82,6 +82,7 @@ export default {
         title: `Notification`,
         toaster: 'b-toaster-top-center',
         variant: 'secondary',
+        autoHideDelay: 2000,
         solid: true
       })
     },

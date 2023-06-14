@@ -165,7 +165,6 @@ export default {
   }),
   methods: {
     sendInfo (item) {
-      console.log('SendInfo:', item)
       this.selectedSub = item
     },
     getImagePath () {
@@ -183,6 +182,7 @@ export default {
         title: `Notification`,
         toaster: 'b-toaster-top-center',
         variant: 'secondary',
+        autoHideDelay: 2000,
         solid: true
       })
     },
@@ -241,6 +241,8 @@ export default {
         .then(data => {
           // alert('This submission is now graded as ' + status)
           this.toast('Submission with id ' + id + ' is graded as ' + status)
+          this.message.data = this.message.data.filter(item => item.id !== id)
+          this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
         })
     },
     sendFeedback (submission, id) {
@@ -259,6 +261,8 @@ export default {
         .then(data => {
           // alert('Feedback sent to student.')
           this.toast('Feedback for submission with id ' + id + ' is sent to student.')
+          this.message.data = this.message.data.filter(item => item.id !== id)
+          this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
         })
     },
     getSubmissionList: function () {
@@ -307,7 +311,7 @@ export default {
 
 .five-cols {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   background-color: rgb(206, 209, 212);
   padding: 5px;
   text-align: left;

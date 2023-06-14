@@ -149,6 +149,7 @@ export default {
         title: `Notification`,
         toaster: 'b-toaster-top-center',
         variant: 'secondary',
+        autoHideDelay: 2000,
         solid: true
       })
     },
@@ -252,7 +253,7 @@ export default {
 
 .five-cols {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   background-color: rgb(206, 209, 212);
   padding: 5px;
   text-align: left;
