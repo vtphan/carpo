@@ -43,42 +43,34 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 		// fmt.Printf("Req body: %+v\n", body)
 
-		name := fmt.Sprintf("%v", body["name"])
-		studnet := Studnet{
-			Name: name,
-		}
-
-		id, err := studnet.GetIDFromName()
-		if err != nil || id == 0 {
-			w.WriteHeader(http.StatusInternalServerError)
-			http.Error(w, "No Student found.",
-				http.StatusNotFound)
-			return
-		}
-
 		pid, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
 		sub_type, _ := strconv.Atoi(fmt.Sprintf("%v", body["snapshot"])) // 1: codesnapshot, 2: submission
+		student_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
 
 		sub := Submission{
 			ProblemID: pid,
 			Message:   fmt.Sprintf("%v", body["message"]),
 			Code:      fmt.Sprintf("%v", body["code"]),
 			Snapshot:  sub_type,
-			StudentID: studnet.ID,
+			StudentID: student_id,
 			Status:    NewSub,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
 
-		if pid == 0 {
-			log.Printf("Invalid Problem id %v", pid)
+		studnet := Studnet{
+			ID: student_id,
+		}
+
+		if pid == 0 || student_id == 0 {
+			log.Printf("Invalid req body for sub_type %v with p_id %v from student id %v", sub_type, pid, student_id)
 			w.WriteHeader(http.StatusInternalServerError)
 			http.Error(w, "Failed to save submission/snapshot.",
 				http.StatusInternalServerError)
 			return
 		}
 
-		key := fmt.Sprintf("%v-%v", studnet.ID, body["problem_id"])
+		key := fmt.Sprintf("%v-%v", student_id, body["problem_id"])
 		switch r.Method {
 		case http.MethodPost:
 			expiredProblem, _ := isExpired(pid)
@@ -90,8 +82,8 @@ func studentSubmissionHandler() http.HandlerFunc {
 				return
 			}
 
-			if !isAllowedSubmission(studnet.ID) && sub_type == 2 {
-				log.Printf("Submission is not allowed within 30 seconds of previous submission. StudentID: %v\n", studnet.ID)
+			if !isAllowedSubmission(student_id) && sub_type == 2 {
+				log.Printf("Submission is not allowed within 30 seconds of previous submission. StudentID: %v\n", student_id)
 				resp := []byte(`{"msg": "Please wait for 30 seconds before you make another submission on this problem."}`)
 				fmt.Fprint(w, string(resp))
 				return
@@ -121,7 +113,7 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 			studentWorkSnapshot[key] = sub
 
-			_, err = AddStudentProblemStatusSQL.Exec(studnet.ID, pid, 1, time.Now(), time.Now())
+			_, err = AddStudentProblemStatusSQL.Exec(student_id, pid, 1, time.Now(), time.Now())
 			if err != nil {
 				log.Printf("Failed to update student problem status (1) to DB. Err. %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
