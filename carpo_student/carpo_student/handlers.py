@@ -36,8 +36,8 @@ def create_initial_files():
     if not os.path.isfile(config_path):
         config_data = {}
         config_data['name'] = "John Smith"
-        config_data['server'] = "http://delphinus.cs.memphis.edu:XXXX"
-        config_data['carpo_version'] = "0.0.9"
+        config_data['server'] = "http://141.225.10.176:8081"
+        config_data['carpo_version'] = "0.0.12"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -441,7 +441,7 @@ class SubmissionRouteHandler(APIHandler):
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
 
-        input_data['name'] = config_data['name']
+        input_data['student_id'] = config_data['id']
         url = config_data['server'] + "/students/submissions"
 
 
