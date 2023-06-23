@@ -30,11 +30,11 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 
 		s := FlagSubmission{}
 		rows, err := Database.Query(sql)
-		defer rows.Close()
 		if err != nil {
 			log.Printf("Error querying db watchedSubHandler GET. Err: %v", err)
 			return
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			rows.Scan(&s.ID, &s.SubmissionID, &s.ProblemID, &s.StudentID, &s.TeacherID, &s.Code, &s.StudentName, &s.CreatedAt, &s.UpdatedAt)
@@ -96,7 +96,7 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 		err = Database.QueryRow(sqlStmt, sub_id).Scan(&watch_id)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				_, err = AddWatchSnapshot.Exec(sub_id, pid, student_id, teacher_id, time.Now(), time.Now())
+				_, err = Database.Exec("insert or ignore into watched (submission_id, problem_id, student_id, teacher_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)", sub_id, pid, student_id, teacher_id, time.Now(), time.Now())
 				if err != nil {
 					log.Printf("Failed to watch snapshot to DB. Err. %v\n", err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -140,21 +140,18 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stmt, err := Database.Prepare("UPDATE watched SET soft_delete=?, updated_at=? where id=?")
+		_, err = Database.Exec("UPDATE watched SET soft_delete=?, updated_at=? where id=?", 1, time.Now(), fid)
+
 		if err != nil {
-			log.Printf("SQL Error %v. Err: %v", stmt, err)
-		}
-		_, err = stmt.Exec(1, time.Now(), fid)
-		if err != nil {
-			log.Printf("Failed to soft-delete flagged submission in DB. Err. %v\n", err)
+			log.Printf("Failed to soft-delete watched submission in DB. Err. %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			http.Error(w, "Failed to soft-delete flagged submission in DB.",
+			http.Error(w, "Failed to soft-delete watched submission in DB.",
 				http.StatusInternalServerError)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		resp := []byte(`{"msg": "Submission Unflagged successfully."}`)
+		resp := []byte(`{"msg": "Submission Unwatched successfully."}`)
 		fmt.Fprint(w, string(resp))
 
 		// case http.MethodOptions:

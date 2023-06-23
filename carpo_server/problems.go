@@ -84,10 +84,14 @@ func problemHandler() http.HandlerFunc {
 			activeQuestions := make([]map[string]interface{}, 0)
 			expiredID := make([]int, 0)
 			rows, err := Database.Query("select id, teacher_id, question, format, lifetime from problem where status = 1 order by created_at asc")
-			defer rows.Close()
 			if err != nil {
-				fmt.Errorf("Error quering db. Err: %v", err)
+				log.Printf("Failed to quering problem DB. Err. %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to quering problem DB.",
+					http.StatusInternalServerError)
+				return
 			}
+			defer rows.Close()
 
 			var (
 				id, teacher_id             int
@@ -118,7 +122,7 @@ func problemHandler() http.HandlerFunc {
 
 			// For each downloaded questions, update the StudentProblemStatus Table.
 			for _, q := range activeQuestions {
-				_, err = AddStudentProblemStatusSQL.Exec(student_id[0], q["id"], 0, time.Now(), time.Now())
+				_, err = Database.Exec("insert into problem (teacher_id, question, format, lifetime, status, created_at, updated_at) values ( ?, ?, ?, ?, ?, ?, ?)", student_id[0], q["id"], 0, time.Now(), time.Now())
 				if err != nil {
 					log.Printf("Failed to update student problem status(0) to DB. Err. %v\n", err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -163,8 +167,9 @@ func problemHandler() http.HandlerFunc {
 				}
 				questionLife = time.Now().Add((time.Minute * time.Duration(limit)))
 			}
+			res, err := Database.Exec("insert into problem (teacher_id, question, format, lifetime, status, created_at, updated_at) values ( ?, ?, ?, ?, ?, ?, ?)", body["teacher_id"], body["question"], body["format"], questionLife, 1, time.Now(), time.Now())
+			// res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], body["format"], questionLife, 1, time.Now(), time.Now())
 
-			res, err := AddProblemSQL.Exec(body["teacher_id"], body["question"], body["format"], questionLife, 1, time.Now(), time.Now())
 			if err != nil {
 
 				log.Printf("Failed to add question to DB. Err. %v\n", err)
@@ -244,6 +249,7 @@ func listProblemsHandler() http.HandlerFunc {
 					http.StatusInternalServerError)
 				return
 			}
+			defer rows.Close()
 
 			var problems []Problem
 
@@ -266,24 +272,26 @@ func listProblemsHandler() http.HandlerFunc {
 }
 
 func archiveProblem(id int) error {
-	stmt, err := Database.Prepare("update problem set status=?, lifetime=?, updated_at=?  where id=?")
+
+	_, err := Database.Exec("UPDATE problem SET status=?, lifetime=?, updated_at=?  where id=?", 0, time.Now(), time.Now(), id)
+
 	if err != nil {
 		log.Printf("SQL Error on archiveProblem. Err: %v", err)
+		log.Fatal(err)
 	}
+
 	log.Printf("Set Problem status to %v for Problem id: %v.\n", 0, id)
-	_, err = stmt.Exec(0, time.Now(), time.Now(), id)
 
 	return err
-
 }
 
 func expireProblems() error {
 
 	rows, err := Database.Query("select id from problem where status = 1  and datetime(lifetime) <= CURRENT_TIMESTAMP order by created_at desc")
-	defer rows.Close()
 	if err != nil {
-		return fmt.Errorf("Error querying db. Err: %v", err)
+		return fmt.Errorf("Error querying expired problem. Err: %v", err)
 	}
+	defer rows.Close()
 
 	var (
 		expiredIDs []int

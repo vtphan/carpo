@@ -7,24 +7,26 @@ import (
 )
 
 func (sub *Submission) SaveSubmission(studentID int) (id int, err error) {
-	var result sql.Result
-	result, err = AddSubmissionSQL.Exec(sub.ProblemID, sub.Message, sub.Code, sub.Snapshot, studentID, sub.Status, sub.CreatedAt, sub.UpdatedAt)
+	result, err := Database.Exec("insert into submission (problem_id, message, code, snapshot, student_id, status, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)", sub.ProblemID, sub.Message, sub.Code, sub.Snapshot, studentID, sub.Status, sub.CreatedAt, sub.UpdatedAt)
 	sid, _ := result.LastInsertId()
 	return int(sid), nil
 }
 
 func (sub *Submission) UpdateSubmission(studentID int) (err error) {
-	_, err = UpdateSubmissionSQL.Exec(sub.Message, sub.Code, sub.Status, sub.UpdatedAt, sub.ProblemID, sub.StudentID)
+	_, err = Database.Exec("update submission set message=?, code=?, status=?, updated_at=? where problem_id=? and student_id=?", sub.Message, sub.Code, sub.Status, sub.UpdatedAt, sub.ProblemID, sub.StudentID)
 	return
 }
 
 func (sub *Submission) SetSubmissionStatus(status int) (err error) {
-	stmt, err := Database.Prepare("update submission set status=?, updated_at=?  where id=?")
+
+	_, err = Database.Exec("UPDATE submission SET status=?, updated_at=?  where id=?", status, time.Now(), sub.ID)
+
 	if err != nil {
-		log.Printf("SQL Error %v. Err: %v", stmt, err)
+		log.Printf("SQL Error. Err: %v", err)
+		log.Fatal(err)
 	}
+
 	log.Printf("Submission status set to %v for sub id: %v.\n", status, sub.ID)
-	_, err = stmt.Exec(status, time.Now(), sub.ID)
 	return
 }
 

@@ -16,10 +16,10 @@ func (teacher *Teacher) Add() (id int, uid string, alreadyExists bool, err error
 
 	log.Printf("Adding Teacher: %v\n", teacher.Name)
 	rows, err := Database.Query("select id, uuid from teacher where name=?", teacher.Name)
-	defer rows.Close()
 	if err != nil {
 		return 0, "", false, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		rows.Scan(&id, &uid)

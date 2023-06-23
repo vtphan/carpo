@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"sync"
 )
 
 const (
@@ -25,21 +26,5 @@ var sortOption = [...]string{"name", "creation_time"}
 var Config *Configuration
 
 var Database *sql.DB
-var AddSubmissionSQL *sql.Stmt
-var UpdateSubmissionSQL *sql.Stmt
-var UpdateScoreSQL *sql.Stmt
-var AddScoreSQL *sql.Stmt
-var AddFeedbackSQL *sql.Stmt
-var UpdateFeedbackSQL *sql.Stmt
-var UpdateScoreFeedbackSQL *sql.Stmt
-var UpdateSubmissionFeedbackGivenSQL *sql.Stmt
-var AddStudentProblemStatus *sql.Stmt
-var UpdateStudentProblemStatus *sql.Stmt
-var GetStudentFeedback *sql.Stmt
-var UpdateSubmissionStatusSQL *sql.Stmt
-var AddProblemSQL *sql.Stmt
-var AddStudentProblemStatusSQL *sql.Stmt
-var AddSolutionSQL *sql.Stmt
-var UpdateSolutionSQL *sql.Stmt
-var AddFlaggedSubmissionSQL *sql.Stmt
-var AddWatchSnapshot *sql.Stmt
+
+var stuWrkSnapshotMutex = sync.RWMutex{}

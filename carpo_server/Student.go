@@ -16,10 +16,10 @@ func (st *Studnet) Add() (id int, uid string, alreadyExists bool, err error) {
 
 	log.Printf("Adding Student: %v\n", st.Name)
 	rows, err := Database.Query("select id, uuid from student where name=?", st.Name)
-	defer rows.Close()
 	if err != nil {
 		return 0, "", false, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		rows.Scan(&id, &uid)
@@ -73,10 +73,10 @@ func (st *Studnet) UpdateSubmission(s Submission) (err error) {
 func (st *Studnet) GetIDFromName() (id int, err error) {
 
 	rows, err := Database.Query("select id from student where name = ?", st.Name)
-	defer rows.Close()
 	if err != nil {
 		return 0, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		rows.Scan(&id)
@@ -89,10 +89,10 @@ func (st *Studnet) GetIDFromName() (id int, err error) {
 func (st *Studnet) GetNameFromID() (name string, err error) {
 
 	rows, err := Database.Query("select name from student where id = ?", st.ID)
-	defer rows.Close()
 	if err != nil {
 		return "", err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		rows.Scan(&name)

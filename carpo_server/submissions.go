@@ -16,10 +16,12 @@ func isAllowedSubmission(sID int) bool {
 
 	var prevSubAt string
 	rows, err := Database.Query("select created_at from submission where student_id=? and snapshot=2 order by created_at desc limit 1", sID)
-	defer rows.Close()
 	if err != nil {
 		log.Printf("Error SQL isAllowedSubmission. Error %v", err)
+		return false
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		rows.Scan(&prevSubAt)
@@ -32,6 +34,7 @@ func isAllowedSubmission(sID int) bool {
 
 func studentSubmissionHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 
 		body, err := readRequestBody(r)
 		if err != nil {
@@ -45,7 +48,7 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 		pid, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
 		sub_type, _ := strconv.Atoi(fmt.Sprintf("%v", body["snapshot"])) // 1: codesnapshot, 2: submission
-		student_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
+		student_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["student_id"]))
 
 		sub := Submission{
 			ProblemID: pid,
@@ -80,13 +83,16 @@ func studentSubmissionHandler() http.HandlerFunc {
 				resp := []byte(`{"msg": "Snapshot no longer needed."}`)
 				fmt.Fprint(w, string(resp))
 				return
+
 			}
 
-			if !isAllowedSubmission(student_id) && sub_type == 2 {
-				log.Printf("Submission is not allowed within 30 seconds of previous submission. StudentID: %v\n", student_id)
-				resp := []byte(`{"msg": "Please wait for 30 seconds before you make another submission on this problem."}`)
-				fmt.Fprint(w, string(resp))
-				return
+			if sub_type == 2 {
+				if !isAllowedSubmission(student_id) {
+					log.Printf("Submission is not allowed within 30 seconds of previous submission. StudentID: %v\n", student_id)
+					resp := []byte(`{"msg": "Please wait for 30 seconds before you make another submission on this problem."}`)
+					fmt.Fprint(w, string(resp))
+					return
+				}
 			}
 
 			if val, ok := studentWorkSnapshot[key]; ok {
@@ -110,10 +116,13 @@ func studentSubmissionHandler() http.HandlerFunc {
 
 			// Put SnapshotID for the studentWorkSnapshot that is saved to DB.
 			sub.ID = dbID
+			if !expiredProblem {
+				stuWrkSnapshotMutex.Lock()
+				defer stuWrkSnapshotMutex.Unlock()
+				studentWorkSnapshot[key] = sub
+			}
 
-			studentWorkSnapshot[key] = sub
-
-			_, err = AddStudentProblemStatusSQL.Exec(student_id, pid, 1, time.Now(), time.Now())
+			_, err = Database.Exec("insert into student_problem_status (student_id, problem_id, problem_status, created_at, updated_at) values (?, ?, ?, ?, ?)", student_id, pid, 1, time.Now(), time.Now())
 			if err != nil {
 				log.Printf("Failed to update student problem status (1) to DB. Err. %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -182,18 +191,6 @@ func teacherSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Get name
-		var name string
-		rows, err := Database.Query("select name from teacher where id=?", teacher_id)
-		defer rows.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for rows.Next() {
-			rows.Scan(&name)
-		}
-
 		// if name != teacher_name[0] {
 		// 	http.Error(w, fmt.Sprintf("You are not authorized to access this status."), http.StatusUnauthorized)
 		// 	return
@@ -212,12 +209,14 @@ func teacherSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		sql = fmt.Sprintf("%s ORDER BY %s", sql, sorting)
 
 		s := Submission{}
-		rows, err = Database.Query(sql)
-		defer rows.Close()
+		rows, err := Database.Query(sql)
 		if err != nil {
 			log.Printf("Error querying db teacherSubmissionHandler. Err: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.Format, &s.CreatedAt, &s.UpdatedAt)
@@ -248,12 +247,6 @@ func teacherSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 
 			submissions = append(submissions, s)
 		}
-
-		// Set submission status to 1 which are sent to client
-		// TODO: Uncomment this.
-		// for _, subs := range submissions {
-		// 	subs.SetSubmissionStatus(SubBeingLookedAt)
-		// }
 
 		if len(submissions) == 0 {
 			log.Printf("No new submissions found.\n")
@@ -291,8 +284,7 @@ func submissionGradeHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := readRequestBody(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Error reading request body",
-			http.StatusInternalServerError)
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
 		return
 	}
 
@@ -310,22 +302,22 @@ func submissionGradeHandler(w http.ResponseWriter, r *http.Request) {
 		// Check the code block. if different that the submission, Update Feedback attributes in DB else add score only.
 		var studentCode string
 		rows, err := Database.Query("select code from submission where id = ?", s.SubmissionID)
-		defer rows.Close()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Printf("Error querying db submissionGrade. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			rows.Scan(&studentCode)
 		}
 
 		if hasFeedbackOnCode(s.Code, studentCode) {
-			_, err = AddFeedbackSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, s.Code, s.Comment, 0, 1, time.Now(), time.Now(), time.Now())
+			_, err = Database.Exec("insert into grade (teacher_id, submission_id, student_id, score, code_feedback, comment, status, has_feedback, feedback_at, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, s.Code, s.Comment, 0, 1, time.Now(), time.Now(), time.Now())
 		} else {
-			_, err = AddScoreSQL.Exec(s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 0, time.Now(), time.Now())
+			_, err = Database.Exec("insert into grade (teacher_id, submission_id, student_id, score, status, created_at, updated_at) values (?,?, ?, ?, ?,?,?)", s.TeacherID, s.SubmissionID, s.StudnetID, s.Score, 0, time.Now(), time.Now())
 		}
 
 		if err != nil {
@@ -334,9 +326,11 @@ func submissionGradeHandler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("Submission already graded for %v. Updating...\n", s.SubmissionID)
 				if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
 					if hasFeedbackOnCode(s.Code, studentCode) {
-						_, err = UpdateScoreFeedbackSQL.Exec(s.Score, s.Code, s.Comment, time.Now(), s.TeacherID, s.SubmissionID)
+						_, err = Database.Exec("update grade set score=?, code_feedback=?, comment=?, has_feedback=1, feedback_at=?, status=0 where teacher_id=? and submission_id=?", s.Score, s.Code, s.Comment, time.Now(), s.TeacherID, s.SubmissionID)
+						// _, err = UpdateScoreFeedbackSQL.Exec(s.Score, s.Code, s.Comment, time.Now(), s.TeacherID, s.SubmissionID)
 					} else {
-						_, err = UpdateScoreSQL.Exec(s.Score, time.Now(), s.SubmissionID)
+						_, err = Database.Exec("update grade set score=?, updated_at=?, status=0 where submission_id=?", s.Score, time.Now(), s.SubmissionID)
+						// _, err = UpdateScoreSQL.Exec(s.Score, time.Now(), s.SubmissionID)
 					}
 
 					if err != nil {
@@ -361,7 +355,7 @@ func submissionGradeHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Failed to update Submission after grading submission. %v Err: %v\n", s, err)
 		}
 
-		_, err = AddStudentProblemStatusSQL.Exec(s.StudnetID, s.ProblemID, 2, time.Now(), time.Now())
+		_, err = Database.Exec("insert into student_problem_status (student_id, problem_id, problem_status, created_at, updated_at) values (?, ?, ?, ?, ?)", s.StudnetID, s.ProblemID, 2, time.Now(), time.Now())
 		if err != nil {
 			log.Printf("Failed to update student problem status (2) to DB. Err. %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -389,6 +383,7 @@ func submissionGradeHandler(w http.ResponseWriter, r *http.Request) {
 	// }
 }
 
+// API Not In use
 func gradedSubmissionHandler() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -401,11 +396,11 @@ func gradedSubmissionHandler() http.HandlerFunc {
 
 			s := GradedSubmission{}
 			rows, err := Database.Query("select submission.id, submission.message, submission.code, submission.created_at as sub_created_at, submission.student_id, grade.score, grade.created_at as grade_created_at, problem.id as problem_id, problem.lifetime, grade.comment from submission INNER join problem on submission.problem_id = problem.id left join grade on grade.submission_id = submission.id where grade.score in (1,2) order by submission.created_at desc")
-			defer rows.Close()
 			if err != nil {
 				log.Printf("Error quering db gradedSubmissionHandler. Err: %v", err)
 				return
 			}
+			defer rows.Close()
 
 			for rows.Next() {
 				rows.Scan(&s.ID, &s.Message, &s.Code, &s.SubCreatedAt, &s.StudentID, &s.Score, &s.GradedCreatedAt, &s.ProblemID, &s.ProblemLifeTime, &s.Comment)

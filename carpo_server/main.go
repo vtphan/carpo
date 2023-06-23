@@ -99,7 +99,7 @@ func main() {
 	http.Handle("/teachers/submissions", AuthorizeTeacher(http.HandlerFunc(teacherSubmissionHandler)))
 	http.Handle("/teachers/snapshots", AuthorizeTeacher(http.HandlerFunc(teacherSnapshotHandler)))
 
-	http.HandleFunc("/teachers/graded_submissions", gradedSubmissionHandler())
+	// http.HandleFunc("/teachers/graded_submissions", gradedSubmissionHandler())
 
 	http.Handle("/submissions/grade", AuthorizeTeacher(http.HandlerFunc(submissionGradeHandler)))
 	http.Handle("/submissions/flag", AuthorizeTeacher(http.HandlerFunc(flagSubmissionHandler)))

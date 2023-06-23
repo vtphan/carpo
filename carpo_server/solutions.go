@@ -28,11 +28,9 @@ func solutionBroadcast(w http.ResponseWriter, r *http.Request) {
 			http.StatusInternalServerError)
 		return
 	}
-	stmt, err := Database.Prepare("UPDATE solution SET broadcast=?, updated_at=? where id=?")
-	if err != nil {
-		log.Printf("SQL Error %v. Err: %v", stmt, err)
-	}
-	_, err = stmt.Exec(1, time.Now(), sid)
+
+	_, err = Database.Exec("UPDATE solution SET broadcast=?, updated_at=? where id=?", 1, time.Now(), sid)
+
 	if err != nil {
 		log.Printf("Failed to broadcast solution in DB. Err. %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -49,15 +47,20 @@ func solutionBroadcast(w http.ResponseWriter, r *http.Request) {
 func solutionHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
+		// Deprecated. Not in Use
 		case http.MethodGet:
 			// Get all problems
 			// Get all solutions
 			rows, err := Database.Query("select id, teacher_id, question, format from problem order by created_at asc")
-			defer rows.Close()
 			if err != nil {
 				err = fmt.Errorf("Error quering GetSolution problem. Err: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				http.Error(w, "Error reading request body",
+					http.StatusInternalServerError)
 				return
 			}
+			defer rows.Close()
+
 			var (
 				id, teacher_id   int
 				question, format string
@@ -72,11 +75,11 @@ func solutionHandler() http.HandlerFunc {
 				}
 
 				rows, err := Database.Query("select code from solution where problem_id=?", id)
-				defer rows.Close()
 				if err != nil {
 					err = fmt.Errorf("Error quering GetSolution. Err: %v", err)
 					return
 				}
+				defer rows.Close()
 
 				for rows.Next() {
 					rows.Scan(&sol.Solution)
@@ -112,13 +115,13 @@ func solutionHandler() http.HandlerFunc {
 			}
 			code := fmt.Sprintf("%v", body["code"])
 
-			_, err = AddSolutionSQL.Exec(problem_id[0], code, time.Now(), time.Now())
+			_, err = Database.Exec("insert into solution (problem_id, code, created_at, updated_at) values (?, ?, ?, ?)", problem_id[0], code, time.Now(), time.Now())
 			if err != nil {
 				var sqliteErr sqlite3.Error
 				if errors.As(err, &sqliteErr) {
 					log.Printf("Solution already exists for problemID %v. Updating...\n", problem_id[0])
 					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-						_, err = UpdateSolutionSQL.Exec(code, time.Now(), problem_id[0])
+						_, err = Database.Exec("update solution set code=?, updated_at=? where problem_id=?", code, time.Now(), problem_id[0])
 						if err != nil {
 							log.Printf("Failed to update solution for problemID %+v. Err: %v", problem_id[0], err)
 						}

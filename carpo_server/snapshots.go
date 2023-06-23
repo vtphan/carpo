@@ -10,17 +10,12 @@ import (
 )
 
 func teacherSnapshotHandler(w http.ResponseWriter, r *http.Request) {
-	// return func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	// 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	// 	w.Header().Set("Access-Control-Max-Age", "15")
-	// role := "teacher"
 
-	teacher_id := 0
+	// teacher_id := 0
 
-	if user_id := r.Context().Value("user_id"); user_id != nil {
-		teacher_id = user_id.(int)
-	}
+	// if user_id := r.Context().Value("user_id"); user_id != nil {
+	// 	teacher_id = user_id.(int)
+	// }
 
 	snapshots := make([]Submission, 0)
 
@@ -40,18 +35,6 @@ func teacherSnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		// 	http.Error(w, fmt.Sprintf("You are not authorized to access this status."), http.StatusUnauthorized)
 		// 	return
 		// }
-
-		// Get name
-		var name string
-		rows, err := Database.Query("select name from teacher where id=?", teacher_id)
-		defer rows.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for rows.Next() {
-			rows.Scan(&name)
-		}
 
 		for _, value := range studentWorkSnapshot {
 			s := Submission{}

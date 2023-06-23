@@ -33,11 +33,11 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 
 		s := FlagSubmission{}
 		rows, err := Database.Query(sql)
-		defer rows.Close()
 		if err != nil {
 			log.Printf("Error querying db flagSubmissionHandler GET. Err: %v", err)
 			return
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			rows.Scan(&s.ID, &s.SubmissionID, &s.ProblemID, &s.StudentID, &s.TeacherID, &s.Code, &s.Message, &s.StudentName, &s.CreatedAt, &s.UpdatedAt)
@@ -78,7 +78,7 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		err = Database.QueryRow(sqlStmt, sub_id).Scan(&flag_id)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				_, err = AddFlaggedSubmissionSQL.Exec(sub_id, pid, student_id, teacher_id, time.Now(), time.Now())
+				_, err = Database.Exec("insert or ignore into flagged (submission_id, problem_id, student_id, teacher_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)", sub_id, pid, student_id, teacher_id, time.Now(), time.Now())
 				if err != nil {
 					log.Printf("Failed to save flagged submission to DB. Err. %v\n", err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -126,11 +126,13 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		sub_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["submission_id"]))
-		stmt, err := Database.Prepare("UPDATE flagged SET soft_delete=?, updated_at=? where id=?")
+
+		_, err = Database.Exec("UPDATE flagged SET soft_delete=?, updated_at=? where id=?", 1, time.Now(), fid)
+
 		if err != nil {
-			log.Printf("SQL Error %v. Err: %v", stmt, err)
+			log.Fatal(err)
 		}
-		_, err = stmt.Exec(1, time.Now(), fid)
+
 		if err != nil {
 			log.Printf("Failed to soft-delete flagged submission in DB. Err. %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)

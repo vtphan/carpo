@@ -33,10 +33,10 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		// Get name
 		var name string
 		rows, err := Database.Query("select name from student where id=?", student_id[0])
-		defer rows.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			rows.Scan(&name)
@@ -51,11 +51,11 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		subStats := make([]StudentSubmissionStatus, 0)
 
 		rows, err = Database.Query("select submission.problem_id, submission.id, submission.snapshot, submission.code, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code_feedback, grade.feedback_at from submission LEFT JOIN grade on grade.submission_id = submission.id where submission.snapshot=2 and submission.student_id = ? Union select submission.problem_id, submission.id, submission.snapshot, submission.code, submission.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code_feedback, grade.feedback_at from submission INNER JOIN grade on grade.submission_id = submission.id where submission.snapshot=1 and submission.student_id = ? order by submission.created_at desc", student_id[0], student_id[0])
-
-		defer rows.Close()
 		if err != nil {
 			log.Printf("Error quering db viewStudentSubmissionStatus. Err: %v", err)
+			log.Fatal(err)
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			stat := StudentSubmissionStatus{}
@@ -93,11 +93,11 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 		problemStats := make([]ProblemStatus, 0)
 
 		rows, err = Database.Query("select problem.id, problem.question, problem.lifetime, problem.status, problem.created_at, solution.code, solution.broadcast, solution.created_at from problem LEFT join solution ON problem.id = solution.problem_id order by problem.id desc")
-
-		defer rows.Close()
 		if err != nil {
 			log.Printf("Error quering db ProblemStatus. Err: %v", err)
+			log.Fatal(err)
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			var (
@@ -178,10 +178,11 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	// Get Problem Grading Status
 	pGradeStats := make([]ProblemGradeStatus, 0)
 	rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, sum(case when submission.status in (0,1) and submission.snapshot=2 then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect, s.id, s.code from problem LEFT join submission on problem.id = submission.problem_id LEFT join grade on submission.id = grade.submission_id LEFT join solution as s on problem.id = s.problem_id group by submission.problem_id order by submission.problem_id desc")
-	defer rows.Close()
 	if err != nil {
 		log.Printf("Error quering db viewProblemStatus. Err: %v", err)
+		log.Fatal(err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		pGradeStat := problemStatus(rows)
@@ -196,10 +197,11 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	// Get Problems that don't have submissions yet.
 	rows, err = Database.Query(fmt.Sprintf("select p.id, p.question, p.created_at, p.lifetime, p.status, s.id, s.code from problem as p left join solution as s on p.id = s.problem_id where p.id not in (%s) order by p.id desc", IDs))
 
-	defer rows.Close()
 	if err != nil {
 		log.Printf("Error quering db getProblems. Err: %v", err)
+		log.Fatal(err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		pGradeStat := ProblemGradeStatus{}
@@ -243,24 +245,25 @@ func problemDetail() http.HandlerFunc {
 		)
 
 		rows, err := Database.Query("select question from problem where id = ?", problem_id[0])
-		defer rows.Close()
 		if err != nil {
 			log.Printf("Error querying db problemQuestion. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		defer rows.Close()
+
 		for rows.Next() {
 			rows.Scan(&problem)
 		}
 
 		rows, err = Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id where problem.id =? group by problem_id order by problem_id desc", problem_id[0])
 
-		defer rows.Close()
 		if err != nil {
 			log.Printf("Error querying db problemDetail. Err: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		defer rows.Close()
 
 		for rows.Next() {
 			pGradeStat = problemStatus(rows)
