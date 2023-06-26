@@ -22,21 +22,18 @@
                   <b-card
                     class="item"
                     v-b-modal = "'myModal'"
-                    v-bind:img-src="getImagePath()"
-                    img-alt="Card image"
-                    img-top
-                    style="max-width: 14rem;"
                     v-for="items in message.data" :key="items.id"
                     @click="sendInfo(items)">
+                      <template #header>
+                            SUBID: {{ items.id }}
+                            <br>
+                            PID: {{ items.problem_id }}
+                      </template>
                       <b-card-text >
                           {{ items.student_name }}
                       </b-card-text>
                       <template #footer>
                           <small>
-                            SUBID: {{ items.id }}
-                            <br>
-                            PID: {{ items.problem_id }}
-                            <br>
                             Last Active: {{ timeDiff(items.created_at) }} ago
                           </small>
                       </template>
@@ -79,20 +76,18 @@
                   <b-card
                     class="item"
                     v-b-modal = "'flagModal'"
-                    v-bind:img-src="getImagePath()"
-                    img-alt="Card image"
-                    img-top
-                    style="max-width: 14rem;"
                     v-for="items in flagSubs.data" :key="items.id"
                     @click="sendInfo(items)">
+                      <template #header >
+                        SUBID: {{ items.submission_id }}
+                        <br>
+                        PID: {{ items.problem_id }}
+                      </template>
                       <b-card-text >
                           {{ items.student_name }}
                       </b-card-text>
                       <template #footer>
                           <small>
-                            SUBID: {{ items.submission_id }}
-                            <br>
-                            PID: {{ items.problem_id }}
                             <br>
                             Last Active: {{ timeDiff(items.created_at) }} ago
                           </small>
@@ -314,11 +309,33 @@ export default {
   grid-template-columns: repeat(10, 1fr);
   background-color: rgb(206, 209, 212);
   padding: 5px;
-  text-align: left;
+  /* text-align: left; */
+}
+
+.card-header {
+  padding: 0.25rem 0.25rem;
+  font-weight: 300;
+  font-size: 12px;
+}
+
+.card-body {
+  padding: 2px;
+  height: 55px;
+}
+
+b-card-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-footer {
   padding: 0.25rem 0.25rem;
+}
+
+small, .small {
+    font-size: 11px;
+    font-weight: 400;
 }
 
 br {
@@ -328,19 +345,15 @@ br {
   font-size: 24%;
 }
 
-/* https://stackoverflow.com/questions/59445065/stack-v-cards-within-n-columns */
-.items {
-  column-count: 8;
-  padding: 5px;
-  text-align: left;
-  background-color: rgb(206, 209, 212);
-}
-
 .item {
-  background-color: lightgrey;
+  background-color: rgb(235, 229, 229);
   display: inline-block;
-  /* width: 100%; */
-  margin: 10px;
+  width: 100%;
+  max-width: 14rem;
+  margin: 5px;
+  font-size: 12px;
+  font-weight: 300;
+  border-width: 3px;
 }
 
 .tab-content .active {
@@ -351,7 +364,7 @@ button {
   margin: 5px
 }
 
-/* Make it responsive */
+/* Make it responsive
 @media only screen and (max-width: 1000px) {
   .items {
     column-count: 6;
@@ -374,6 +387,6 @@ button {
   .items {
     column-count: 2;
   }
-}
+} */
 
 </style>
