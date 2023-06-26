@@ -15,12 +15,16 @@
               <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
             </b-dropdown>
           </div>
-          <b-card-text>
-            <div>
+          <div v-if="isLoading">
+                <p>LOADING...</p>
+          </div>
+          <b-card-text v-else>
+            <div >
               <v-row class="five-cols">
               <!-- <div class="items" > -->
                   <b-card
                     class="item"
+                    :style="{'border-color': setborderColor(items.created_at)}"
                     v-b-modal = "'myModal'"
                     v-for="items in message.data" :key="items.id"
                     @click="sendInfo(items)">
@@ -69,13 +73,17 @@
             <div v-on:click="getFlaggedSubsList()"> Flagged <a v-if="flagSubs.data">({{ flagSubs.data.length}})</a>
             </div>
           </template>
-          <b-card-text>
+          <div v-if="isLoading">
+                <p>LOADING...</p>
+          </div>
+          <b-card-text v-else>
             <div>
               <!-- <div class="items" > -->
               <v-row class="five-cols">
                   <b-card
                     class="item"
                     v-b-modal = "'flagModal'"
+                    :style="{'border-color': setborderColor(items.created_at)}"
                     v-for="items in flagSubs.data" :key="items.id"
                     @click="sendInfo(items)">
                       <template #header >
@@ -147,6 +155,7 @@ export default {
     flagSubs: '',
     sorting: 'creation_time',
     selectedSub: '',
+    isLoading: true,
     cmOptions: {
       autoRefresh: true,
       tabSize: 4,
@@ -171,6 +180,21 @@ export default {
     timeDiff (dbTimestamp) {
       return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
       // https://stackoverflow.com/questions/18623783/get-the-time-difference-between-two-datetimes
+    },
+    getColor (value) {
+      // value from 0 to 1
+      var hue = ((1 - value) * 120).toString(10)
+      return ['hsl(', hue, ',100%,50%)'].join('')
+    },
+    setborderColor (dbTimestamp) {
+      // https://stackoverflow.com/questions/7128675/from-green-to-red-color-depend-on-percentage
+      const limit = 5
+      var ago = moment.duration(moment().diff(moment(dbTimestamp))).minutes()
+      if (ago > 5) {
+        ago = 5
+      }
+      var value = ago / limit
+      return this.getColor(value)
     },
     toast (msg) {
       this.$bvToast.toast(`${msg}`, {
@@ -261,6 +285,7 @@ export default {
         })
     },
     getSubmissionList: function () {
+      this.isLoading = true
       const config = {
         headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
         params: {'sort_by': this.sorting}
@@ -268,6 +293,7 @@ export default {
       this.$http.get(Config.apiUrl + '/teachers/submissions', config)
         .then((response) => {
           this.message = response.data
+          this.isLoading = false
         })
         .catch((error) => {
           console.log('Error', error)
@@ -275,6 +301,7 @@ export default {
         })
     },
     getFlaggedSubsList: function () {
+      this.isLoading = true
       const config = {
         headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
         params: {'sort_by': this.sorting}
@@ -283,6 +310,7 @@ export default {
       this.$http.get(Config.apiUrl + '/submissions/flag', config)
         .then((response) => {
           this.flagSubs = response.data
+          this.isLoading = false
         })
         .catch((error) => {
           console.log('Error', error)
@@ -307,12 +335,13 @@ export default {
 .five-cols {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
+  column-gap: 8px;
   background-color: rgb(206, 209, 212);
   padding: 5px;
   /* text-align: left; */
 }
 
-.card-header {
+.item .card-header {
   padding: 0.25rem 0.25rem;
   font-weight: 300;
   font-size: 12px;

@@ -15,20 +15,24 @@
                   <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
                 </b-dropdown>
               </div>
-            <b-card-text>
-              <div >
+              <div  v-if="isLoading">
+                <div>LOADING...</div>
+              </div>
+              <b-card-text v-else>
+                <div>
                 <v-row class="five-cols">
                 <!-- <div class="items" > -->
                     <b-card
                       class="item"
                       v-b-modal = "'myModal2'"
-                      img-top v-for="items in message.data" :key="items.id"
+                      :style="{'border-color': setborderColor(items.created_at)}"
+                      v-for="items in message.data" :key="items.id"
                       @click="sendInfo(items)">
                         <template #header>
                             SUBID: {{ items.id }}
                             <br>
                             PID: {{ items.problem_id }}
-                        </template> 
+                        </template>
                         <b-card-text >
                            {{ items.student_name }}
                         </b-card-text>
@@ -54,17 +58,17 @@
               <div v-on:click="getWatchedSubsList()"> Watched <a v-if="watchSubs.data">({{ watchSubs.data.length}})</a>
               </div>
             </template>
-            <b-card-text>
+            <div v-if="isLoading">
+              <p>LOADING...</p>
+            </div>
+            <b-card-text v-else>
               <div>
                 <!-- <div class="items" > -->
                 <v-row class="five-cols">
                     <b-card
                       class="item"
                       v-b-modal = "'watchModal'"
-                      v-bind:img-src="getImagePath()"
-                      img-alt="Card image"
-                      img-top
-                      style="max-width: 14rem;"
+                      :style="{'border-color': setborderColor(items.created_at)}"
                       v-for="items in watchSubs.data" :key="items.id"
                       @click="sendInfo(items)">
                         <template #header >
@@ -120,6 +124,7 @@ export default {
     watchSubs: '',
     sorting: 'creation_time',
     watchedSub: '',
+    isLoading: true,
     cmOptions: {
       autoRefresh: true,
       tabSize: 4,
@@ -142,6 +147,20 @@ export default {
     timeDiff (dbTimestamp) {
       return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
       // https://stackoverflow.com/questions/18623783/get-the-time-difference-between-two-datetimes
+    },
+    getColor (value) {
+      // value from 0 to 1
+      var hue = ((1 - value) * 120).toString(10)
+      return ['hsl(', hue, ',100%,50%)'].join('')
+    },
+    setborderColor (dbTimestamp) {
+      const limit = 5
+      var ago = moment.duration(moment().diff(moment(dbTimestamp))).minutes()
+      if (ago > 5) {
+        ago = 5
+      }
+      var value = ago / limit
+      return this.getColor(value)
     },
     toast (msg) {
       this.$bvToast.toast(`${msg}`, {
@@ -206,6 +225,7 @@ export default {
         })
     },
     getSnapshotList: function () {
+      this.isLoading = true
       const config = {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
         params: {'sort_by': this.sorting}
@@ -214,6 +234,7 @@ export default {
         .then((response) => {
           console.log('Snapshot: ', response)
           this.message = response.data
+          this.isLoading = false
         })
         .catch((error) => {
           console.log('Error', error)
@@ -221,6 +242,7 @@ export default {
         })
     },
     getWatchedSubsList: function () {
+      this.isLoading = true
       const config = {
         headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
         params: {'sort_by': this.sorting}
@@ -228,7 +250,8 @@ export default {
       this.$http.get(Config.apiUrl + '/snapshots/watch', config)
         .then((response) => {
           this.watchSubs = response.data
-          console.log('watched' + JSON.stringify(this.watchSubs))
+          // console.log('watched' + JSON.stringify(this.watchSubs))
+          this.isLoading = false
         })
         .catch((error) => {
           console.log('Error', error)
@@ -253,12 +276,13 @@ export default {
 .five-cols {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
+  column-gap: 8px;
   background-color: rgb(206, 209, 212);
   padding: 5px;
   /* text-align: left; */
 }
 
-.card-header {
+.item .card-header {
   padding: 0.25rem 0.25rem;
   font-weight: 300;
   font-size: 12px;
