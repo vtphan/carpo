@@ -115,13 +115,28 @@ func solutionHandler() http.HandlerFunc {
 			}
 			code := fmt.Sprintf("%v", body["code"])
 
-			_, err = Database.Exec("insert into solution (problem_id, code, created_at, updated_at) values (?, ?, ?, ?)", problem_id[0], code, time.Now(), time.Now())
+			// If the problem is unpublished, the solution should should broadcast.
+			broadcast := 0
+			pid, _ := strconv.Atoi(problem_id[0])
+			expiredProblem, err := isExpired(pid)
+			if err != nil {
+				log.Printf("Failed to check the expired problem in solutionHandler. Err: %v", err)
+				http.Error(w, "Error reading request body",
+					http.StatusInternalServerError)
+				return
+			}
+			if expiredProblem {
+				broadcast = 1
+				log.Printf("Setting solution to broadcast for problem id: %v", pid)
+			}
+
+			_, err = Database.Exec("insert into solution (problem_id, code, broadcast, created_at, updated_at) values (?, ?, ?, ?)", problem_id[0], code, broadcast, time.Now(), time.Now())
 			if err != nil {
 				var sqliteErr sqlite3.Error
 				if errors.As(err, &sqliteErr) {
 					log.Printf("Solution already exists for problemID %v. Updating...\n", problem_id[0])
 					if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
-						_, err = Database.Exec("update solution set code=?, updated_at=? where problem_id=?", code, time.Now(), problem_id[0])
+						_, err = Database.Exec("update solution set code=?, broadcast=?, updated_at=? where problem_id=?", code, broadcast, time.Now(), problem_id[0])
 						if err != nil {
 							log.Printf("Failed to update solution for problemID %+v. Err: %v", problem_id[0], err)
 						}

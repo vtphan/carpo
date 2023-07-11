@@ -29,16 +29,14 @@
                     v-for="items in message.data" :key="items.id"
                     @click="sendInfo(items)">
                       <template #header>
-                            SUBID: {{ items.id }}
-                            <br>
-                            PID: {{ items.problem_id }}
+                        {{ items.id }} : {{ items.problem_id }}
                       </template>
                       <b-card-text >
                           {{ items.student_name }}
                       </b-card-text>
                       <template #footer>
                           <small>
-                            Last Active: {{ timeDiff(items.created_at) }} ago
+                            Active {{ timeDiff(items.created_at) }} ago
                           </small>
                       </template>
                   </b-card>
@@ -46,21 +44,27 @@
               </v-row>
             </div>
 
-            <b-modal id="myModal" title="Submission Grading" size="xl" ok-only ok-variant="secondary" ok-title="Cancel">
+            <b-modal id="myModal" size="xl" :hide-footer="true">
+                <template #modal-title>
+                  Submission
+                  <b-badge v-if="selectedSub.score==1" variant="success">correct</b-badge>
+                  <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
+                  <b-badge v-if="!selectedSub.score" variant="secondary">ungraded</b-badge>
+                </template>
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
                 <a> Message: {{ selectedSub.message }} </a>
                 <b-row>
                   <b-col cols="6" >
                     <div style="text-align: left">
-                      <b-button class="btn-secondary" @click="flagSubmission(selectedSub); $bvModal.hide('myModal')">Flag</b-button>
+                      <b-button class="btn-secondary" @click="flagSubmission(selectedSub);">Flag</b-button>
                     </div>
                   </b-col>
                   <b-col cols="6" >
                     <div style="text-align: right">
                       <b-button-group>
-                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); $bvModal.hide('myModal') ">Correct</b-button>
-                        <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); $bvModal.hide('myModal') ">Incorrect</b-button>
-                        <!-- <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id); $bvModal.hide('myModal')">Try Again</b-button> -->
+                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); ">Correct</b-button>
+                        <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); ">Incorrect</b-button>
+                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id);">Send Feedback</b-button>
                       </b-button-group>
                     </div>
                   </b-col>
@@ -87,9 +91,7 @@
                     v-for="items in flagSubs.data" :key="items.id"
                     @click="sendInfo(items)">
                       <template #header >
-                        SUBID: {{ items.submission_id }}
-                        <br>
-                        PID: {{ items.problem_id }}
+                        {{ items.submission_id }} : {{ items.problem_id }}
                       </template>
                       <b-card-text >
                           {{ items.student_name }}
@@ -97,28 +99,34 @@
                       <template #footer>
                           <small>
                             <br>
-                            Last Active: {{ timeDiff(items.created_at) }} ago
+                            Active {{ timeDiff(items.created_at) }} ago
                           </small>
                       </template>
                   </b-card>
               <!-- </div> -->
               </v-row>
             </div>
-            <b-modal id="flagModal" title="Flagged Submission" size="xl" ok-only ok-variant="secondary" ok-title="Cancel" @ok="Unflag(selectedSub); $bvModal.hide('flagModal')">
+            <b-modal id="flagModal" size="xl" :hide-footer="true">
+                 <template #modal-title>
+                    Submission
+                    <b-badge v-if="selectedSub.score==1" variant="success">correct</b-badge>
+                    <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
+                    <b-badge v-if="!selectedSub.score" variant="secondary">ungraded</b-badge>
+                  </template>
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
                 <a> Message: {{ selectedSub.message }} </a>
                 <b-row>
                   <b-col cols="6" >
                     <div style="text-align: left">
-                      <b-button class="btn-secondary" @click="Unflag(selectedSub); $bvModal.hide('flagModal')">Unflag</b-button>
+                      <b-button class="btn-secondary" @click="Unflag(selectedSub); ">Unflag</b-button>
                     </div>
                   </b-col>
                   <b-col cols="6" >
                     <div style="text-align: right">
                       <b-button-group>
-                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.submission_id, 1); $bvModal.hide('flagModal')">Correct</b-button>
-                        <b-button class="btn-danger" @click="sendGrade(selectedSub,selectedSub.submission_id, 2); $bvModal.hide('flagModal')">Incorrect</b-button>
-                        <!-- <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id); $bvModal.hide('flagModal')">Try Again</b-button> -->
+                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.submission_id, 1); ">Correct</b-button>
+                        <b-button class="btn-danger" @click="sendGrade(selectedSub,selectedSub.submission_id, 2); ">Incorrect</b-button>
+                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id); ">Send Feedback</b-button>
                       </b-button-group>
                     </div>
                   </b-col>
@@ -171,6 +179,11 @@ export default {
     sendInfo (item) {
       this.selectedSub = item
     },
+    close (sub) {
+      this.$bvModal.hide()
+      this.message.data = this.message.data.filter(item => item.id !== sub.id)
+      // this.$bvModal.hide('modal-prevent-closing')
+    },
     getImagePath () {
       return require('../assets/code-block-1.png')
     },
@@ -219,7 +232,7 @@ export default {
         .then(() => {
           // alert('This submission is now flagged.')
           this.toast('Submission with id ' + submission.id + ' is flagged.')
-          this.message.data = this.message.data.filter(item => item.id !== submission.id)
+          // this.message.data = this.message.data.filter(item => item.id !== submission.id)
         })
         .catch(function (error) {
           console.log(error)
@@ -233,7 +246,7 @@ export default {
         .then(() => {
           // alert('This submission is now unflagged.')
           this.toast('Submission with id ' + submission.submission_id + ' is unflagged.')
-          this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
+          // this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
         })
         .catch(function (error) {
           console.log(error)
@@ -255,13 +268,14 @@ export default {
       }
 
       var status = score === 1 ? 'Correct.' : 'Incorrect.'
+      submission.score = score
 
       this.$http.post(Config.apiUrl + '/submissions/grade', postBody, config)
         .then(data => {
           // alert('This submission is now graded as ' + status)
           this.toast('Submission with id ' + id + ' is graded as ' + status)
-          this.message.data = this.message.data.filter(item => item.id !== id)
-          this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
+          // this.message.data = this.message.data.filter(item => item.id !== id)
+          // this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
         })
     },
     sendFeedback (submission, id) {
@@ -280,8 +294,8 @@ export default {
         .then(data => {
           // alert('Feedback sent to student.')
           this.toast('Feedback for submission with id ' + id + ' is sent to student.')
-          this.message.data = this.message.data.filter(item => item.id !== id)
-          this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
+          // this.message.data = this.message.data.filter(item => item.id !== id)
+          // this.flagSubs.data = this.flagSubs.data.filter(item => item.id !== submission.id)
         })
     },
     getSubmissionList: function () {

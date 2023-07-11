@@ -22,6 +22,7 @@ type Submission struct {
 	StudentID int       `json:"student_id" db:"student_id"`
 	Name      string    `json:"student_name" db:"name"`
 	Status    int       `json:"status" db:"status"`
+	Score     int       `json:"score"`
 	Time      string    `json:"time"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
@@ -131,6 +132,7 @@ type FlagSubmission struct {
 	ID           int       `json:"id"`
 	ProblemID    int       `json:"problem_id"`
 	SubmissionID int       `json:"submission_id"`
+	Score        int       `json:"score"`
 	StudentID    int       `json:"student_id"`
 	TeacherID    int       `json:"teacher_id"`
 	StudentName  string    `json:"student_name"`

@@ -29,26 +29,27 @@
                       v-for="items in message.data" :key="items.id"
                       @click="sendInfo(items)">
                         <template #header>
-                            SUBID: {{ items.id }}
-                            <br>
-                            PID: {{ items.problem_id }}
+                          {{ items.id }} : {{ items.problem_id }}
                         </template>
                         <b-card-text >
                            {{ items.student_name }}
                         </b-card-text>
                         <template #footer>
                           <small>
-                            Last Active: {{ timeDiff(items.created_at) }} ago
+                            Active {{ timeDiff(items.created_at) }} ago
                           </small>
                         </template>
                       </b-card>
                   <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="myModal2" title="Snapshot View" size="xl" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.id)">
+              <b-modal id="myModal2" size="xl" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.id)">
+                <template #modal-title>
+                  Snapshot {{ timeDiff(selectedSub.created_at) }} ago
+                </template>
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
                   <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 85px);">
-                    <b-button class="btn-secondary" @click="watchSubmission(selectedSub); $bvModal.hide('myModal2')">Watch</b-button>
+                    <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
                   </div>
               </b-modal>
             </b-card-text>
@@ -72,16 +73,14 @@
                       v-for="items in watchSubs.data" :key="items.id"
                       @click="sendInfo(items)">
                         <template #header >
-                          SUBID: {{ items.submission_id }}
-                          <br>
-                          PID: {{ items.problem_id }}
+                          {{ items.submission_id }} : {{ items.problem_id }}
                         </template>
                         <b-card-text >
                             From: {{ items.student_name }}
                         </b-card-text>
                         <template #footer>
                           <small>
-                            Last Active: {{ timeDiff(items.created_at) }} ago
+                            Active {{ timeDiff(items.created_at) }} ago
                           </small>
                         </template>
                     </b-card>
@@ -89,9 +88,12 @@
                 </v-row>
               </div>
               <b-modal id="watchModal" title="On Watch Snapshot" size="xl" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.submission_id)">
+                  <template #modal-title>
+                    Watch Snapshot {{ timeDiff(selectedSub.created_at) }} ago
+                  </template>
                   <codemirror v-model="selectedSub.code" :options="cmOptions" />
                   <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 95px);">
-                    <b-button class="btn-secondary" @click="unwatchSub(selectedSub); $bvModal.hide('watchModal')">Unwatch</b-button>
+                    <b-button class="btn-secondary" @click="unwatchSub(selectedSub);">Unwatch</b-button>
                   </div>
               </b-modal>
             </b-card-text>

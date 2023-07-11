@@ -54,6 +54,16 @@ func deleteProblem(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			// If solution exists, broadcast the solution:
+			_, err = Database.Exec("UPDATE solution SET broadcast=?, updated_at=? where problem_id=?", 1, time.Now(), id)
+			if err != nil {
+				log.Printf("Failed to broadcast solution when problem expires in DB. Err. %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to broadcast solution when problem expires in DB.",
+					http.StatusInternalServerError)
+				return
+			}
+
 			data, _ := json.Marshal(d)
 			fmt.Fprint(w, string(data))
 		} else {
@@ -122,7 +132,7 @@ func problemHandler() http.HandlerFunc {
 
 			// For each downloaded questions, update the StudentProblemStatus Table.
 			for _, q := range activeQuestions {
-				_, err = Database.Exec("insert into problem (teacher_id, question, format, lifetime, status, created_at, updated_at) values ( ?, ?, ?, ?, ?, ?, ?)", student_id[0], q["id"], 0, time.Now(), time.Now())
+				_, err = Database.Exec("insert into student_problem_status (student_id, problem_id, problem_status, created_at, updated_at) values (?, ?, ?, ?, ?)", student_id[0], q["id"], 0, time.Now(), time.Now())
 				if err != nil {
 					log.Printf("Failed to update student problem status(0) to DB. Err. %v\n", err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -217,6 +227,16 @@ func problemHandler() http.HandlerFunc {
 						fmt.Printf("Deleting student Work Snapshot from map with key: %s.", k)
 						delete(studentWorkSnapshot, k)
 					}
+				}
+
+				// If solution exists, broadcast the solution:
+				_, err = Database.Exec("UPDATE solution SET broadcast=?, updated_at=? where problem_id=?", 1, time.Now(), id)
+				if err != nil {
+					log.Printf("Failed to broadcast solution when problem expires in DB. Err. %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					http.Error(w, "Failed to broadcast solution when problem expires in DB.",
+						http.StatusInternalServerError)
+					return
 				}
 
 				data, _ := json.Marshal(d)
