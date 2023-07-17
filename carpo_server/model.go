@@ -135,6 +135,7 @@ type FlagSubmission struct {
 	Score        int       `json:"score"`
 	StudentID    int       `json:"student_id"`
 	TeacherID    int       `json:"teacher_id"`
+	Reason       string    `json:"reason"`
 	StudentName  string    `json:"student_name"`
 	Code         string    `json:"code"`
 	Message      string    `json:"message"`

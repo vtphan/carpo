@@ -43,14 +43,28 @@
                   <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="myModal2" size="xl" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.id)">
+              <b-modal id="myModal2" size="xl" :hide-footer="true">
                 <template #modal-title>
                   Snapshot {{ timeDiff(selectedSub.created_at) }} ago
                 </template>
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
-                  <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 85px);">
-                    <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
-                  </div>
+                <b-row>
+                  <b-col cols="6" >
+                    <div style="text-align: left">
+                      <div class="row">
+                        <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
+                        <b-form-input style="width: 60%; height: auto;" v-model="reason" placeholder="Reason to set on Watch (Optional)"></b-form-input>
+                      </div>
+                    </div>
+                  </b-col>
+                  <b-col cols="6" >
+                    <div style="text-align: right">
+                      <b-button-group>
+                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id)">Send Feedback</b-button>
+                      </b-button-group>
+                    </div>
+                  </b-col>
+                </b-row>
               </b-modal>
             </b-card-text>
           </b-tab>
@@ -81,20 +95,34 @@
                         <template #footer>
                           <small>
                             Active {{ timeDiff(items.created_at) }} ago
+                            <br>
+                            {{ items.reason }}
                           </small>
                         </template>
                     </b-card>
                 <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="watchModal" title="On Watch Snapshot" size="xl" ok-only ok-variant="secondary" ok-title="Send Feedback" @ok="sendFeedback(selectedSub, selectedSub.submission_id)">
+              <b-modal id="watchModal" title="On Watch Snapshot" size="xl" :hide-footer="true" >
                   <template #modal-title>
-                    Watch Snapshot {{ timeDiff(selectedSub.created_at) }} ago
+                    On Watch Snapshot {{ timeDiff(selectedSub.created_at) }} ago
+                    <b-badge v-if="selectedSub.reason" variant="info">Tag: {{ selectedSub.reason }}</b-badge>
                   </template>
                   <codemirror v-model="selectedSub.code" :options="cmOptions" />
-                  <div style="float:right; position: absolute; bottom: -55px; right: calc(100% - 95px);">
-                    <b-button class="btn-secondary" @click="unwatchSub(selectedSub);">Unwatch</b-button>
-                  </div>
+                  <b-row>
+                    <b-col cols="6" >
+                      <div style="text-align: left">
+                        <div class="row">
+                          <b-button class="btn-secondary" @click="unwatchSub(selectedSub);">Unwatch</b-button>
+                        </div>
+                      </div>
+                    </b-col>
+                    <b-col cols="6" >
+                      <div style="text-align: right">
+                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id)">Send Feedback</b-button>
+                      </div>
+                    </b-col>
+                  </b-row>
               </b-modal>
             </b-card-text>
           </b-tab>
@@ -124,6 +152,7 @@ export default {
     message: '',
     selectedSub: '',
     watchSubs: '',
+    reason: '',
     sorting: 'creation_time',
     watchedSub: '',
     isLoading: true,
@@ -140,8 +169,9 @@ export default {
   }),
   methods: {
     sendInfo (item) {
-      console.log('SendInfo:', item)
+      // console.log('SendInfo:', item)
       this.selectedSub = item
+      this.reason = ''
     },
     getImagePath () {
       return require('../assets/code-block-1.png')
@@ -180,7 +210,8 @@ export default {
       let postBody = {
         'student_id': sub.student_id,
         'submission_id': sub.id,
-        'problem_id': sub.problem_id
+        'problem_id': sub.problem_id,
+        'reason': this.reason
       }
 
       this.$http.post(Config.apiUrl + '/snapshots/watch', postBody, config)
@@ -331,29 +362,12 @@ br {
 .tab-content .active {
     padding: 0px;
 }
-/* Make it responsive */
-@media only screen and (max-width: 1000px) {
-  .items {
-    column-count: 4;
-  }
+
+button {
+  margin: 5px
 }
 
-@media only screen and (max-width: 600px) {
-  .items {
-    column-count: 3;
-  }
+input:placeholder-shown {
+   font-style: italic;
 }
-
-@media only screen and (max-width: 400px) {
-  .items {
-    column-count: 2;
-  }
-}
-
-@media only screen and (max-width: 100px) {
-  .items {
-    column-count: 1;
-  }
-}
-
 </style>

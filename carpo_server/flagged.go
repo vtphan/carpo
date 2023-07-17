@@ -28,9 +28,8 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Fetching all flagged submission...\n")
 		// Only Submissions 2 (not snapshot 1)
 		// Only Flagged Submisions/Not Unflagged
-		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, subs.code, subs.message, s.name, f.created_at, f.updated_at, g.score from flagged as f  left join grade as g on f.submission_id = g.submission_id inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id inner join problem as p on p.id=subs.problem_id where f.soft_delete = 0 and subs.snapshot=2 and p.status = 1"
+		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, COALESCE(f.reason,''), subs.code, subs.message, s.name, f.created_at, f.updated_at, g.score from flagged as f  left join grade as g on f.submission_id = g.submission_id inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id inner join problem as p on p.id=subs.problem_id where f.soft_delete = 0 and subs.snapshot=2 and p.status = 1"
 
-		s := FlagSubmission{}
 		rows, err := Database.Query(sql)
 		if err != nil {
 			log.Printf("Error querying db flagSubmissionHandler GET. Err: %v", err)
@@ -39,7 +38,8 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		defer rows.Close()
 
 		for rows.Next() {
-			rows.Scan(&s.ID, &s.SubmissionID, &s.ProblemID, &s.StudentID, &s.TeacherID, &s.Code, &s.Message, &s.StudentName, &s.CreatedAt, &s.UpdatedAt, &s.Score)
+			s := FlagSubmission{}
+			rows.Scan(&s.ID, &s.SubmissionID, &s.ProblemID, &s.StudentID, &s.TeacherID, &s.Reason, &s.Code, &s.Message, &s.StudentName, &s.CreatedAt, &s.UpdatedAt, &s.Score)
 			subs = append(subs, s)
 		}
 
@@ -64,6 +64,8 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		pid, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
 		sub_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["submission_id"]))
 		student_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["student_id"]))
+		reason := fmt.Sprintf("%v", body["reason"])
+
 		if pid == 0 || sub_id == 0 || student_id == 0 {
 			log.Printf("Failed to save flagged submission to DB. Err. %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -77,7 +79,7 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		err = Database.QueryRow(sqlStmt, sub_id).Scan(&flag_id)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				_, err = Database.Exec("insert or ignore into flagged (submission_id, problem_id, student_id, teacher_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)", sub_id, pid, student_id, teacher_id, time.Now(), time.Now())
+				_, err = Database.Exec("insert or ignore into flagged (submission_id, problem_id, student_id, teacher_id, reason, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)", sub_id, pid, student_id, teacher_id, reason, time.Now(), time.Now())
 				if err != nil {
 					log.Printf("Failed to save flagged submission to DB. Err. %v\n", err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -97,10 +99,10 @@ func flagSubmissionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if flag_id != 0 {
 			// Update the row
-			Database.Exec("Update flagged set soft_delete=0 where id = ?", flag_id)
+			Database.Exec("Update flagged set soft_delete=0, reason=? where id = ?", reason, flag_id)
 		}
-		// Set Submission status = 1 (Flagged)
-		Database.Exec("Update submission set status=1 where id = ?", sub_id)
+		// // Set Submission status = 1 (Flagged)
+		// Database.Exec("Update submission set status=1 where id = ?", sub_id)
 
 		w.WriteHeader(http.StatusCreated)
 		resp := []byte(`{"msg": "Submission flagged successfully."}`)

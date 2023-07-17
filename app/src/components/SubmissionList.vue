@@ -56,7 +56,10 @@
                 <b-row>
                   <b-col cols="6" >
                     <div style="text-align: left">
-                      <b-button class="btn-secondary" @click="flagSubmission(selectedSub);">Flag</b-button>
+                      <div class="row">
+                        <b-button class="btn-secondary" @click="flagSubmission(selectedSub);">Flag</b-button>
+                        <b-form-input style="width: 60%; height: auto;" v-model="reason" placeholder="Reason to flag (Optional)"></b-form-input>
+                      </div>
                     </div>
                   </b-col>
                   <b-col cols="6" >
@@ -98,8 +101,9 @@
                       </b-card-text>
                       <template #footer>
                           <small>
-                            <br>
                             Active {{ timeDiff(items.created_at) }} ago
+                            <br>
+                            {{ items.reason }}
                           </small>
                       </template>
                   </b-card>
@@ -112,6 +116,7 @@
                     <b-badge v-if="selectedSub.score==1" variant="success">correct</b-badge>
                     <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
                     <b-badge v-if="!selectedSub.score" variant="secondary">ungraded</b-badge>
+                    <b-badge v-if="selectedSub.reason" variant="info">Tag: {{ selectedSub.reason }}</b-badge>
                   </template>
                 <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
                 <a> Message: {{ selectedSub.message }} </a>
@@ -161,6 +166,7 @@ export default {
     token: '',
     message: '',
     flagSubs: '',
+    reason: '',
     sorting: 'creation_time',
     selectedSub: '',
     isLoading: true,
@@ -178,6 +184,7 @@ export default {
   methods: {
     sendInfo (item) {
       this.selectedSub = item
+      this.reason = ''
     },
     close (sub) {
       this.$bvModal.hide()
@@ -225,7 +232,8 @@ export default {
       let postBody = {
         'student_id': submission.student_id,
         'submission_id': submission.id,
-        'problem_id': submission.problem_id
+        'problem_id': submission.problem_id,
+        'reason': this.reason
       }
 
       this.$http.post(Config.apiUrl + '/submissions/flag', postBody, config)
@@ -407,29 +415,7 @@ button {
   margin: 5px
 }
 
-/* Make it responsive
-@media only screen and (max-width: 1000px) {
-  .items {
-    column-count: 6;
-  }
+input:placeholder-shown {
+   font-style: italic;
 }
-
-@media only screen and (max-width: 600px) {
-  .items {
-    column-count: 3;
-  }
-}
-
-@media only screen and (max-width: 400px) {
-  .items {
-    column-count: 2;
-  }
-}
-
-@media only screen and (max-width: 100px) {
-  .items {
-    column-count: 2;
-  }
-} */
-
 </style>

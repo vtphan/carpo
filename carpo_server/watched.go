@@ -26,9 +26,8 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("Fetching all watched submission...\n")
 
-		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, subs.code, s.name, f.created_at, f.updated_at from watched as f inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id inner join problem as p on p.id=subs.problem_id where f.soft_delete = 0 and subs.snapshot=1 and p.status = 1"
+		sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, COALESCE(f.reason,''), subs.code, s.name, f.created_at, f.updated_at from watched as f inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id inner join problem as p on p.id=subs.problem_id where f.soft_delete = 0 and subs.snapshot=1 and p.status = 1"
 
-		s := FlagSubmission{}
 		rows, err := Database.Query(sql)
 		if err != nil {
 			log.Printf("Error querying db watchedSubHandler GET. Err: %v", err)
@@ -37,7 +36,8 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 		defer rows.Close()
 
 		for rows.Next() {
-			rows.Scan(&s.ID, &s.SubmissionID, &s.ProblemID, &s.StudentID, &s.TeacherID, &s.Code, &s.StudentName, &s.CreatedAt, &s.UpdatedAt)
+			s := FlagSubmission{}
+			rows.Scan(&s.ID, &s.SubmissionID, &s.ProblemID, &s.StudentID, &s.TeacherID, &s.Reason, &s.Code, &s.StudentName, &s.CreatedAt, &s.UpdatedAt)
 
 			// build key to look up on studentWorkSnapshot for latest changes
 			key := fmt.Sprintf("%v-%v", s.StudentID, s.ProblemID)
@@ -48,6 +48,7 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 					SubmissionID: val.ID,
 					StudentID:    s.StudentID,
 					TeacherID:    s.TeacherID,
+					Reason:       s.Reason,
 					StudentName:  s.StudentName,
 					Code:         val.Code,
 					CreatedAt:    val.CreatedAt,
@@ -60,6 +61,7 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 					SubmissionID: s.SubmissionID,
 					StudentID:    s.StudentID,
 					TeacherID:    s.TeacherID,
+					Reason:       s.Reason,
 					StudentName:  s.StudentName,
 					Code:         s.Code,
 					CreatedAt:    s.CreatedAt,
@@ -90,13 +92,14 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 		pid, _ := strconv.Atoi(fmt.Sprintf("%v", body["problem_id"]))
 		sub_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["submission_id"]))
 		student_id, _ := strconv.Atoi(fmt.Sprintf("%v", body["student_id"]))
+		reason := fmt.Sprintf("%v", body["reason"])
 
 		watch_id := 0
 		sqlStmt := "select id from watched where submission_id = ?"
 		err = Database.QueryRow(sqlStmt, sub_id).Scan(&watch_id)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				_, err = Database.Exec("insert or ignore into watched (submission_id, problem_id, student_id, teacher_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?)", sub_id, pid, student_id, teacher_id, time.Now(), time.Now())
+				_, err = Database.Exec("insert or ignore into watched (submission_id, problem_id, student_id, teacher_id, reason, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)", sub_id, pid, student_id, teacher_id, reason, time.Now(), time.Now())
 				if err != nil {
 					log.Printf("Failed to watch snapshot to DB. Err. %v\n", err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -116,7 +119,7 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if watch_id != 0 {
 			// Update the row
-			Database.Exec("Update watched set soft_delete=0 where id = ?", watch_id)
+			Database.Exec("Update watched set soft_delete=0, reason=? where id = ?", reason, watch_id)
 		}
 
 		w.WriteHeader(http.StatusCreated)

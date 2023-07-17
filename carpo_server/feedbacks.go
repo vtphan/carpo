@@ -108,10 +108,12 @@ func teacherFeedbackHandler(w http.ResponseWriter, r *http.Request) {
 						// _, err = UpdateFeedbackSQL.Exec(f.Code, f.Comment, time.Now(), f.TeacherID, f.SubmissionID)
 						if err != nil {
 							log.Printf("Failed to update feedback %+v. Err: %v", f, err)
+							w.WriteHeader(http.StatusInternalServerError)
+							http.Error(w, "Failed to save Feedback.",
+								http.StatusInternalServerError)
+							return
 						}
-						log.Printf("Feedback successfully updated.")
 					}
-
 				} else {
 					log.Printf("Failed to save Feedback: %v Err. %v\n", f, err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -120,6 +122,9 @@ func teacherFeedbackHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			}
+
+			log.Printf("Feedback successfully updated.")
+
 			w.WriteHeader(http.StatusCreated)
 			resp := []byte(`{"msg": "Feedback is sent to the student."}`)
 			fmt.Fprint(w, string(resp))

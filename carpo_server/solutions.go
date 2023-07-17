@@ -139,8 +139,11 @@ func solutionHandler() http.HandlerFunc {
 						_, err = Database.Exec("update solution set code=?, broadcast=?, updated_at=? where problem_id=?", code, broadcast, time.Now(), problem_id[0])
 						if err != nil {
 							log.Printf("Failed to update solution for problemID %+v. Err: %v", problem_id[0], err)
+							w.WriteHeader(http.StatusInternalServerError)
+							http.Error(w, "Failed to save solution.",
+								http.StatusInternalServerError)
+							return
 						}
-						log.Printf("Solution successfully updated.")
 					}
 
 				} else {
@@ -151,6 +154,9 @@ func solutionHandler() http.HandlerFunc {
 					return
 				}
 			}
+
+			log.Printf("Solution successfully updated.")
+
 			w.WriteHeader(http.StatusCreated)
 			resp := []byte(`{"msg": "Solution successfully uploaded."}`)
 			fmt.Fprint(w, string(resp))
