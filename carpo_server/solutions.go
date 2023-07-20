@@ -118,19 +118,13 @@ func solutionHandler() http.HandlerFunc {
 			// If the problem is unpublished, the solution should should broadcast.
 			broadcast := 0
 			pid, _ := strconv.Atoi(problem_id[0])
-			expiredProblem, err := isExpired(pid)
-			if err != nil {
-				log.Printf("Failed to check the expired problem in solutionHandler. Err: %v", err)
-				http.Error(w, "Error reading request body",
-					http.StatusInternalServerError)
-				return
-			}
+			expiredProblem, _ := isExpired(pid)
 			if expiredProblem {
 				broadcast = 1
 				log.Printf("Setting solution to broadcast for problem id: %v", pid)
 			}
 
-			_, err = Database.Exec("insert into solution (problem_id, code, broadcast, created_at, updated_at) values (?, ?, ?, ?)", problem_id[0], code, broadcast, time.Now(), time.Now())
+			_, err = Database.Exec("insert into solution (problem_id, code, broadcast, created_at, updated_at) values (?, ?, ?, ?, ?)", problem_id[0], code, broadcast, time.Now(), time.Now())
 			if err != nil {
 				var sqliteErr sqlite3.Error
 				if errors.As(err, &sqliteErr) {
