@@ -247,7 +247,7 @@ export default {
         'student_id': submission.student_id,
         'submission_id': id,
         'problem_id': submission.problem_id,
-        'teacher_id': this.$route.query.id,
+        // 'teacher_id': this.$route.query.id,
         'code': submission.code
       }
 

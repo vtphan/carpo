@@ -103,11 +103,21 @@ type ProblemGradeStatus struct {
 	Ungraded        int
 	Correct         int
 	Incorrect       int
+	OnWatch         int
 	ProblemStatus   int
 	PublishedDate   time.Time
 	UnpublishedDate time.Time
 	LifeTime        time.Time
 	ExpiresAt       string
+}
+
+type ProblemWatch struct {
+	ID           int
+	ProblemID    int
+	SubmissionID int
+	Reason       string
+	Code         string
+	CreatedAt    time.Time
 }
 type Response struct {
 	Data      []map[string]interface{} `json:"data"`

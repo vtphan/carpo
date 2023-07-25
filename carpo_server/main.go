@@ -116,7 +116,7 @@ func main() {
 	http.Handle("/problems/status", AuthorizeTeacher(http.HandlerFunc(viewProblemStatus)))
 	http.Handle("/solution/broadcast", AuthorizeTeacher(http.HandlerFunc(solutionBroadcast)))
 
-	http.HandleFunc("/problem_detail", problemDetail())
+	http.Handle("/problems/on_watch", AuthorizeTeacher(http.HandlerFunc(problemOnWatch)))
 
 	log.Println("serving at port: 8081")
 

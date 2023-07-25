@@ -146,7 +146,7 @@ func viewStudentSubmissionStatus() http.HandlerFunc {
 	}
 }
 
-func problemStatus(rows *sql.Rows) (pGradeStat ProblemGradeStatus) {
+func problemStatus(rows *sql.Rows, problemOnWatch map[int]int) (pGradeStat ProblemGradeStatus) {
 
 	var (
 		ungraded, correct, incorrect sql.NullInt64
@@ -169,15 +169,37 @@ func problemStatus(rows *sql.Rows) (pGradeStat ProblemGradeStatus) {
 	}
 	pGradeStat.Incorrect = int(incorrect.Int64)
 
+	pGradeStat.OnWatch = problemOnWatch[int(pGradeStat.ProblemID)]
+
 	return
 
 }
 
 func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	ids := []int{}
+	problemOnWatch := map[int]int{}
+
+	// Get On Watch for the Problem
+	rows, err := Database.Query(fmt.Sprintf("select problem_id, count(*) as on_watch from watched group by problem_id"))
+
+	if err != nil {
+		log.Printf("Error quering db getProblems for On Watch. Err: %v", err)
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			problem_id, on_watch int64
+		)
+		rows.Scan(&problem_id, &on_watch)
+		problemOnWatch[int(problem_id)] = int(on_watch)
+
+	}
+
 	// Get Problem Grading Status
 	pGradeStats := make([]ProblemGradeStatus, 0)
-	rows, err := Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, sum(case when submission.status in (0,1) and submission.snapshot=2 then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect, s.id, s.code from problem LEFT join submission on problem.id = submission.problem_id LEFT join grade on submission.id = grade.submission_id LEFT join solution as s on problem.id = s.problem_id group by submission.problem_id order by submission.problem_id desc")
+	rows, err = Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, sum(case when submission.status in (0,1) and submission.snapshot=2 then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect, s.id, s.code from problem LEFT join submission on problem.id = submission.problem_id LEFT join grade on submission.id = grade.submission_id LEFT join solution as s on problem.id = s.problem_id group by submission.problem_id order by submission.problem_id desc")
 	if err != nil {
 		log.Printf("Error quering db viewProblemStatus. Err: %v", err)
 		log.Fatal(err)
@@ -185,7 +207,7 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	for rows.Next() {
-		pGradeStat := problemStatus(rows)
+		pGradeStat := problemStatus(rows, problemOnWatch)
 
 		pGradeStat.ExpiresAt = fmt.Sprintf("To be due in %s", fmtDuration(pGradeStat.LifeTime.Sub(time.Now())))
 		pGradeStats = append(pGradeStats, pGradeStat)
@@ -227,72 +249,40 @@ func viewProblemStatus(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func problemDetail() http.HandlerFunc {
+func problemOnWatch(w http.ResponseWriter, r *http.Request) {
 
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		query := r.URL.Query()
-		problem_id, ok := query["problem_id"]
-		if !ok || len(problem_id) < 1 {
-			log.Printf("Url Param 'problem_id' is missing.\n")
-			http.Error(w, fmt.Sprintf("Invalid Problem Id."), http.StatusUnauthorized)
-			return
-		}
-
-		var (
-			problem    string
-			pGradeStat ProblemGradeStatus
-		)
-
-		rows, err := Database.Query("select question from problem where id = ?", problem_id[0])
-		if err != nil {
-			log.Printf("Error querying db problemQuestion. Err: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			rows.Scan(&problem)
-		}
-
-		rows, err = Database.Query("select submission.problem_id, problem.question, problem.created_at, problem.lifetime, problem.status, problem.updated_at, sum(case when submission.status in (0,1) then 1 end) as Ungraded, sum(case when grade.score = 1 then 1 end) as Correct, sum(case when grade.score = 2 then 1 end) as Incorrect from submission LEFT join grade on submission.id = grade.submission_id  INNER join problem on problem.id = submission.problem_id where problem.id =? group by problem_id order by problem_id desc", problem_id[0])
-
-		if err != nil {
-			log.Printf("Error querying db problemDetail. Err: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			pGradeStat = problemStatus(rows)
-			pGradeStat.ExpiresAt = fmt.Sprintf("To be due in %s", fmtDuration(pGradeStat.LifeTime.Sub(time.Now())))
-
-		}
-
-		data := struct {
-			Stats    ProblemGradeStatus
-			Question string
-		}{
-			Stats:    pGradeStat,
-			Question: strings.TrimSpace(problem),
-		}
-
-		t, err := template.New("").Parse(PROBLEM_DETAIL_TEMPLATE)
-		if err != nil {
-			log.Printf("%v\n", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html")
-		err = t.Execute(w, data)
-		if err != nil {
-			log.Printf("%v\n", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
+	problem_id, ok := r.URL.Query()["problem_id"]
+	if !ok || len(problem_id[0]) < 1 {
+		log.Println("Url Param 'problem_id' is missing")
+		http.Error(w, fmt.Sprintf("problem_id is missing."), http.StatusUnprocessableEntity)
+		return
 	}
+	pWatch := []ProblemWatch{}
+	// Get On Watch for the Problem
+	rows, err := Database.Query("select w.id as id, w.problem_id, w.submission_id, s.code, w.reason from watched as w inner join submission as s on w.submission_id = s.id where w.problem_id = ?;", problem_id[0])
+
+	if err != nil {
+		log.Printf("Error quering db problemOnWatch. Err: %v", err)
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		watch := ProblemWatch{}
+		rows.Scan(&watch.ID, &watch.ProblemID, &watch.SubmissionID, &watch.Code, &watch.Reason)
+		pWatch = append(pWatch, watch)
+	}
+
+	// fmt.Printf("ProblemWatch: %+v\n", pWatch)
+
+	resp := Response{}
+	sub, _ := json.Marshal(pWatch)
+
+	d := []map[string]interface{}{}
+	_ = json.Unmarshal(sub, &d)
+	resp.Data = d
+	da, _ := json.Marshal(resp)
+	fmt.Fprint(w, string(da))
+	return
 
 }

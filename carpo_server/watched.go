@@ -71,6 +71,37 @@ func watchedSubHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 
+		submission_id, ok := r.URL.Query()["submission_id"]
+		if ok {
+			sub_id, _ := strconv.Atoi(submission_id[0])
+			if sub_id != 0 {
+				for _, item := range subs {
+					if item.SubmissionID == sub_id {
+						b, _ := json.Marshal(item)
+						fmt.Fprint(w, string(b))
+						return
+					}
+				}
+				// If request for sub id whose problem is not active
+				sql := "select f.id, f.submission_id, f.problem_id, f.student_id, f.teacher_id, COALESCE(f.reason,''), subs.code, s.name, f.created_at, f.updated_at from watched as f inner join submission as subs on f.submission_id = subs.id INNER join  student as s on f.student_id = s.id inner join problem as p on p.id=subs.problem_id where f.soft_delete = 0 and subs.snapshot=1 and subs.id=?"
+				rows, err := Database.Query(sql, sub_id)
+				if err != nil {
+					log.Printf("Error querying db watchedSubHandler GET. Err: %v", err)
+					return
+				}
+				defer rows.Close()
+
+				for rows.Next() {
+					s := FlagSubmission{}
+					rows.Scan(&s.ID, &s.SubmissionID, &s.ProblemID, &s.StudentID, &s.TeacherID, &s.Reason, &s.Code, &s.StudentName, &s.CreatedAt, &s.UpdatedAt)
+					b, _ := json.Marshal(s)
+					fmt.Fprint(w, string(b))
+					return
+				}
+
+			}
+		}
+
 		resp := Response{}
 		resp.Remaining = len(subs)
 		sub, _ := json.Marshal(subs)

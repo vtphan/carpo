@@ -1,6 +1,9 @@
 <template>
   <div>
       <b-table striped hover :items="message.data" :fields="fields" responsive="sm">
+        <template #cell(OnWatch)="data" >
+          <a href="javascript:;" @click="fetchWatch(data.item.ProblemID)">{{ data.item.OnWatch }}</a>
+        </template>
         <template #cell(actions)="row">
           <div class="sub-action">
           <b-button size="sm"  @click="info('Problem Description', row.item.Question)" class="mr-2">
@@ -24,28 +27,85 @@
       <b-modal size='xl' :id="infoModal.id" :title="infoModal.title" ok-only>
         <pre>{{ infoModal.quesiton }}</pre>
       </b-modal>
+
+      <b-modal size='xl' :id="watchlist.id" :title="watchlist.title" ok-only>
+        <b-table striped hover :items="watchlist.watch.data" responsive="sm" :fields="['SubmissionID', 'Reason', 'Action']">
+        <template #cell(Action)="row">
+          <div class="sub-action">
+            <b-button size="sm" v-b-modal.modal-multi-3 @click="getWatchedSub(row.item.SubmissionID)" class="mr-2">
+              See Code
+            </b-button>
+          </div>
+        </template>
+        </b-table>
+      </b-modal>
+
+      <b-modal id="modal-multi-3" size="xl" :hide-footer="true">
+        <template #modal-title>
+            On Watch Snapshot {{ timeDiff(selectedSub.created_at) }} ago
+            <b-badge v-if="selectedSub.reason" variant="info">Tag: {{ selectedSub.reason }}</b-badge>
+          </template>
+          <codemirror v-model="selectedSub.code" :options="cmOptions" />
+          <b-row>
+            <b-col cols="6" >
+            </b-col>
+            <b-col cols="6" >
+              <div style="text-align: right">
+                <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id)">Send Feedback</b-button>
+              </div>
+            </b-col>
+          </b-row>
+
+      </b-modal>
   </div>
 </template>
 
 <script>
 import * as Config from '../config'
 import moment from 'moment'
+import { codemirror } from 'vue-codemirror'
+import 'codemirror/lib/codemirror.css'
+// language
+import 'codemirror/mode/python/python.js'
+
+// theme css
+import 'codemirror/theme/duotone-light.css'
 
 export default {
   name: 'ProblemList',
+  components: {
+    codemirror
+  },
   data: () => ({
     message: '',
     selectedProb: '',
+    selectedSub: '',
+    cmOptions: {
+      autoRefresh: true,
+      tabSize: 4,
+      styleActiveLine: true,
+      lineNumbers: true,
+      line: true,
+      mode: 'application/x-httpd-python',
+      lineWrapping: true,
+      theme: 'duotone-light'
+    },
     infoModal: {
       id: 'info-modal',
       title: '',
       quesiton: ''
+    },
+    watchlist: {
+      id: 'on-watch-modal',
+      title: '',
+      watch: ''
     },
     fields: [
       { key: 'ProblemID', label: 'ProblemID' },
       { key: 'Ungraded', label: 'Ungraded' },
       { key: 'Correct', label: 'Correct' },
       { key: 'Incorrect', label: 'InCorrect' },
+      { key: 'OnWatch', label: 'OnWatch' },
       { key: 'PublishedDate',
         label: 'Published Date',
         formatter: value => {
@@ -76,6 +136,28 @@ export default {
       this.infoModal.title = title
       this.infoModal.quesiton = block
       this.$root.$emit('bv::show::modal', this.infoModal.id, button)
+    },
+    timeDiff (dbTimestamp) {
+      return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
+      // https://stackoverflow.com/questions/18623783/get-the-time-difference-between-two-datetimes
+    },
+    fetchWatch (problemId, button) {
+      console.log('Fetch watch list for this problem_id: ', problemId)
+      this.watchlist.title = 'Watch messages for ProblemID ' + problemId
+      const config = {
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
+        params: {'problem_id': problemId}
+      }
+      this.$http.get(Config.apiUrl + '/problems/on_watch', config)
+        .then((response) => {
+          // console.log(response)
+          this.watchlist.watch = response.data
+          this.$root.$emit('bv::show::modal', this.watchlist.id, button)
+        })
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
+        })
     },
     toast (msg) {
       this.$bvToast.toast(`${msg}`, {
@@ -140,6 +222,23 @@ export default {
           // alert(error)
         })
     },
+    sendFeedback (submission, id) {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      let postBody = {
+        'student_id': submission.student_id,
+        'submission_id': id,
+        'problem_id': submission.problem_id,
+        'code': submission.code
+      }
+
+      this.$http.post(Config.apiUrl + '/teachers/feedbacks', postBody, config)
+        .then(data => {
+          // alert('Feedback sent to student.')
+          this.toast('Feedback is sent to student.')
+        })
+    },
     getProblemList: function () {
       const config = {
         headers: { Authorization: 'Bearer '.concat(this.$route.query.token) }
@@ -148,6 +247,23 @@ export default {
         .then((response) => {
           console.log(response)
           this.message = response.data
+        })
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
+        })
+    },
+    getWatchedSub (subId) {
+      const config = {
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
+        params: {
+          'sort_by': this.sorting,
+          'submission_id': subId
+        }}
+      this.$http.get(Config.apiUrl + '/snapshots/watch', config)
+        .then((response) => {
+          this.selectedSub = response.data
+          // console.log('watched' + JSON.stringify(this.selectedSub))
         })
         .catch((error) => {
           console.log('Error', error)
