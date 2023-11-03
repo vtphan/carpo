@@ -11,8 +11,7 @@ import (
 )
 
 type SubmissionAPI struct {
-	SubService  SubStore
-	ProbService ProblemStore
+	SubService SubStore
 }
 
 func (sub *SubmissionAPI) SubmissionHandler(c *gin.Context) {
@@ -22,13 +21,13 @@ func (sub *SubmissionAPI) SubmissionHandler(c *gin.Context) {
 	// string to int
 	user_id, err := strconv.Atoi(user)
 	if err != nil || user_id == 0 {
-		log.Infof("Error parsing request params in Submission. Err: %v", err)
+		log.Infof("Error parsing request params in SubmissionHandler. Err: %v", err)
 		c.JSON(400, err.Error())
 		return
 	}
 
 	if err := c.BindJSON(&newSub); err != nil {
-		log.Infof("Error parsing request body in Submission. Err: %v", err)
+		log.Infof("Error parsing request body in SubmissionHandler. Err: %v", err)
 		c.JSON(400, err.Error())
 		return
 	}
@@ -43,7 +42,7 @@ func (sub *SubmissionAPI) SubmissionHandler(c *gin.Context) {
 
 	studentKey := fmt.Sprintf("%v-%v", newSub.StudentID, newSub.ProblemID)
 	// Ignore snapshot update if problem is expired
-	expiredProb, err := sub.ProbService.IsExpired(newSub.ProblemID)
+	expiredProb, err := sub.SubService.IsExpired(newSub.ProblemID)
 	if err != nil {
 		resp := "Failed to check problem expiry. Err: %v"
 		log.Infof(resp, err)

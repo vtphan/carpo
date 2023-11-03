@@ -10,6 +10,7 @@ type SubStore interface {
 	SaveSubmission(Submission) (int, error)
 	GetSubmissions() ([]Submission, error)
 	GetUserNameByID(int) (User, error)
+	IsExpired(int) (bool, error)
 }
 
 type Submission struct {

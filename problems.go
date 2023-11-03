@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -60,19 +62,28 @@ func (p *ProblemAPI) GetActiveProblems(c *gin.Context) {
 func (p *ProblemAPI) UnpublishProblem(c *gin.Context) {
 	problem := c.Param("id")
 	// string to int
-	problem_id, err := strconv.Atoi(problem)
-	if err != nil || problem_id == 0 {
+	problemID, err := strconv.Atoi(problem)
+	if err != nil || problemID == 0 {
 		log.Infof("Error parsing request body in UnpublishProblem. Err: %v", err)
 		c.JSON(400, err)
 		return
 	}
 
-	err = p.ProblemService.ArchiveProblem(problem_id)
+	err = p.ProblemService.ArchiveProblem(problemID)
 	if err != nil {
-		log.Printf("Failed to archive Problem ID: %v. Err: %v", problem_id, err)
+		log.Printf("Failed to archive Problem ID: %v. Err: %v", problemID, err)
 		c.JSON(500, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"id": problem_id, "msg": "Question archived successfully."})
+	// Remove students work from studentWorkSnapshot
+	for k := range studentWorkSnapshot {
+		expiredProblem := fmt.Sprintf("-%d", problemID)
+		if strings.Contains(k, expiredProblem) {
+			log.Printf("Deleting student Work Snapshot from map with key: %s.", k)
+			delete(studentWorkSnapshot, k)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"id": problemID, "msg": "Question archived successfully."})
 }
