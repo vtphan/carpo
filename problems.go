@@ -48,7 +48,7 @@ func (p *ProblemAPI) GetActiveProblems(c *gin.Context) {
 		return
 	}
 
-	activeProblems, err := p.ProblemService.GetProblems()
+	activeProblems, err := p.ProblemService.GetProblems(user_id)
 	if err != nil {
 		log.Infof("Error in saving new problem. Err: %v", err)
 		c.JSON(500, gin.H{"msg": err})
@@ -86,4 +86,15 @@ func (p *ProblemAPI) UnpublishProblem(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"id": problemID, "msg": "Question archived successfully."})
+}
+
+func (p *ProblemAPI) ViewProblemStatus(c *gin.Context) {
+	problemStatus, err := p.ProblemService.ListProblemGradeStatus()
+	if err != nil {
+		log.Infof("Error in getting problem status. Err: %v", err)
+		c.JSON(500, gin.H{"msg": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": problemStatus})
 }

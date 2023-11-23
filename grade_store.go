@@ -45,6 +45,14 @@ func (db *Database) SaveGradeFeedback(g GradeFeedback) (id int, err error) {
 	if err != nil {
 		return id, err
 	}
+
+	updateStatement := `UPDATE submissions set status=2 where id = $1`
+	_, err = db.DB.Exec(updateStatement, g.SubmissionID)
+
+	if err != nil {
+		return id, err
+	}
+
 	return
 }
 
@@ -56,5 +64,13 @@ func (db *Database) UpdateGradeFeedback(g GradeFeedback) (err error) {
 	if err != nil {
 		return err
 	}
+
+	updateStatement := `UPDATE submissions set status=2 where id = $1`
+	_, err = db.DB.Exec(updateStatement, g.SubmissionID)
+
+	if err != nil {
+		return err
+	}
+
 	return
 }

@@ -24,7 +24,7 @@ func main() {
 	// - No origin allowed by default
 	// - GET,POST, PUT, HEAD methods
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://127.0.0.1:8080"}
+	config.AllowOrigins = []string{"http://127.0.0.1:8080", "http://localhost:8080"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	config.AllowCredentials = true
 	r.Use(cors.New(config))
@@ -35,11 +35,12 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 
-	psqlInfo := fmt.Sprintf("postgresql://%v:%v@%v/%v?sslmode=disable", os.Getenv("POSTGRES_USR"), os.Getenv("POSTGRES_PWD"), os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_DB"))
+	psqlInfo := fmt.Sprintf("postgres://%v:%v@%v/%v?sslmode=disable", os.Getenv("POSTGRES_USR"), os.Getenv("POSTGRES_PWD"), os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_DB"))
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -51,10 +52,9 @@ func main() {
 	pAPI := ProblemAPI{&Database{DB: db}}
 	subAPI := SubmissionAPI{&Database{DB: db}}
 	gradeAPI := GradeAPI{&Database{DB: db}}
-
 	flagAPI := FlagWatchAPI{&Database{DB: db}}
-
 	solAPI := SolutionAPI{&Database{DB: db}}
+	tagAPI := TagAPI{&Database{DB: db}}
 
 	// Register Users
 	r.POST("/users", uAPI.RegisterUser)
@@ -90,6 +90,26 @@ func main() {
 	r.GET("/snapshots/watch", flagAPI.GetWatchSubsHandler)
 	r.POST("/snapshots/watch", flagAPI.FlagSubHandler)
 	r.DELETE("/snapshots/watch", flagAPI.DelFlagSubHandler)
+
+	// Tag
+	r.GET("/tags", tagAPI.GetTagHandler)
+	r.POST("/tags", tagAPI.SaveTagHandler)
+	r.OPTIONS("/tags")
+	r.DELETE("/tags/:id", tagAPI.DeleteTagHandler)
+
+	// Tag Submissions
+	r.POST("/tags/submissions/", tagAPI.TagSubmissionHandler)
+	r.DELETE("/tags/:id/submissions/:sid", tagAPI.TagSubmissionDelHandler)
+
+	// Tag Problems
+	r.POST("/tags/problems/", tagAPI.TagProblemHandler)
+	r.DELETE("/tags/:id/problems/:pid", tagAPI.TagProblemDelHandler)
+
+	r.GET("/tags/tagged", tagAPI.GetAllTagHandler)
+
+	// Problem Status Page
+	r.GET("/problems/status", pAPI.ViewProblemStatus)
+	r.OPTIONS("/problems/status")
 
 	r.Run(":8081")
 }

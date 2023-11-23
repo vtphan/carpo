@@ -31,7 +31,7 @@ type FlagSubmission struct {
 func (db *Database) GetFlagSubs(isSnapshot int, mode int) ([]FlagSubmission, error) {
 	fSubs := make([]FlagSubmission, 0)
 	// Only Submissions 2 (not snapshot 1)
-	// Only Flagged Submisions/Not Unflagged
+	// Only Flagged Submissions/Not Unflagged
 	sql := "SELECT fw.id, fw.submission_id, fw.problem_id, subs.user_id, fw.user_id, fw.reason, subs.code, subs.message, u.name, fw.created_at, fw.updated_at, g.score from flag_watch as fw  left join grades as g on fw.submission_id = g.submission_id inner join submissions as subs on fw.submission_id = subs.id INNER join  users as u on  subs.user_id = u.id inner join problems as p on p.id=subs.problem_id where fw.soft_delete = 0 and subs.is_snapshot=$1 and p.status = 1 and fw.mode=$2;"
 
 	rows, err := db.DB.Query(sql, isSnapshot, mode)

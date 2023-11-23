@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type Submission struct {
 	Code      string    `json:"code" db:"code"`
 	Snapshot  int       `json:"snapshot" db:"is_snapshot"`
 	Status    int       `json:"status" db:"status"`
+	Tag       []Tag     `json:"tag,omitempty"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -65,6 +67,7 @@ func (db *Database) GetSubCodeFromID(subID int) (sCode string, err error) {
 // TODO: Sorting by Name and creation time
 func (db *Database) GetSubmissions() ([]Submission, error) {
 	subs := make([]Submission, 0)
+	ids := make([]int, 0)
 
 	// sorting := "lower(users.name) ASC"
 	sorting := "submissions.created_at ASC"
@@ -83,10 +86,34 @@ func (db *Database) GetSubmissions() ([]Submission, error) {
 	for rows.Next() {
 		rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.Format, &s.CreatedAt, &s.UpdatedAt)
 		subs = append(subs, s)
+		ids = append(ids, s.ID)
 	}
 
 	if len(subs) == 0 {
 		log.Printf("No new submissions found.\n")
+	}
+
+	// convert id from []int to []string
+	stringIDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
+	// Get Tags associated with the submissions.
+	sql = "select st.tag_id, st.submission_id, t.name from submission_tag as st inner join tags as t on st.tag_id = t.id where st.submission_id in (" + stringIDs + ")"
+	fmt.Printf("Sql: ", sql)
+
+	rows, err = db.DB.Query(sql)
+	if err != nil {
+		return subs, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		t := Tag{}
+		subID := 0
+		rows.Scan(&t.ID, &subID, &t.Name)
+		for idx, sub := range subs {
+			if sub.ID == subID {
+				subs[idx].Tag = append(subs[idx].Tag, t)
+			}
+		}
 	}
 
 	return subs, err
