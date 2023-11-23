@@ -211,7 +211,8 @@ export default {
         'student_id': sub.student_id,
         'submission_id': sub.id,
         'problem_id': sub.problem_id,
-        'reason': this.reason
+        'reason': this.reason,
+        'mode': 1
       }
 
       this.$http.post(Config.apiUrl + '/snapshots/watch', postBody, config)
@@ -227,7 +228,7 @@ export default {
     unwatchSub (sub) {
       this.$http.delete(Config.apiUrl + '/snapshots/watch', {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
-        data: {watch_id: sub.id}
+        data: {id: sub.id}
       })
         .then(() => {
           // alert('Snapshot  with id ' + sub.student_id + ' is removed from the watch list.')
@@ -251,7 +252,7 @@ export default {
         'code': submission.code
       }
 
-      this.$http.post(Config.apiUrl + '/teachers/feedbacks', postBody, config)
+      this.$http.post(Config.apiUrl + '/submissions/grades', postBody, config)
         .then(data => {
           // alert('Feedback sent to student.')
           this.toast('Feedback is sent to student.')
@@ -263,7 +264,7 @@ export default {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
         params: {'sort_by': this.sorting}
       }
-      this.$http.get(Config.apiUrl + '/teachers/snapshots', config)
+      this.$http.get(Config.apiUrl + '/snapshots/teachers', config)
         .then((response) => {
           console.log('Snapshot: ', response)
           this.message = response.data
@@ -369,5 +370,9 @@ button {
 
 input:placeholder-shown {
    font-style: italic;
+}
+
+.CodeMirror {
+  height: 600px;
 }
 </style>

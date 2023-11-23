@@ -23,6 +23,7 @@
     "vue": "^2.7.14",
     "vue-axios": "^3.5.2",
     "vue-codemirror": "^4.0.0",
+    "vue-multiselect": "^2.1.8",
     "vue-router": "^3.0.1"
   },
   "devDependencies": {

@@ -12860,6 +12860,11 @@ vue-loader@^17.0.0:
     hash-sum "^2.0.0"
     loader-utils "^2.0.0"
 
+vue-multiselect@^2.1.8:
+  version "2.1.8"
+  resolved "https://registry.npmjs.org/vue-multiselect/-/vue-multiselect-2.1.8.tgz"
+  integrity sha512-bgpvWZlT4EiUUCcwLAR655LdiifeqF62BDL2TLVddKfS/NcdIYVlvOr456N7GQIlBFNbb7vHfq+qOl8mpGAOJw==
+
 vue-router@^3.0.1:
   version "3.6.5"
   resolved "https://registry.npmjs.org/vue-router/-/vue-router-3.6.5.tgz"

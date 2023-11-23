@@ -11,7 +11,10 @@
               <router-link class="nav-link" active-class="active" :to="{name: 'Submissions' ,query: {token: $route.query.token }}">Submissions</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{name: 'Snapshots' ,query: {token: $route.query.token }}">Snapshots</router-link>
+              <router-link class="nav-link" active-class="active" :to="{name: 'Snapshots' ,query: {token: $route.query.token }}">Students</router-link>
+            </li>
+            <li class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{name: 'Tags' ,query: {token: $route.query.token }}">Tags</router-link>
             </li>
           </ul>
         </div>

@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import ProblemList from '@/components/ProblemList.vue'
 import SubmissionList from '@/components/SubmissionList.vue'
 import SnapshotList from '@/components/SnapshotList.vue'
+import TagList from '@/components/TagList.vue'
 
 Vue.use(Router)
 
@@ -30,6 +31,12 @@ export default new Router({
       path: '/sanpshots',
       name: 'Snapshots',
       component: SnapshotList
+
+    },
+    {
+      path: '/tags',
+      name: 'Tags',
+      component: TagList
 
     }
   ]

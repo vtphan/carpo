@@ -1,5 +1,15 @@
 <template>
   <div>
+    <div>
+      <h2 style="float: left;"> Available Tags: </h2>
+      <br clear="all"/>
+      <b-list-group horizontal>
+        <b-list-group-item v-for="items in available_tags.data" :key="items.id">
+          <label><input type="checkbox" :value="items.id" v-model="select_tag"> <span class="checkbox-label"> {{items.name}} </span></label> <br>
+        </b-list-group-item>
+      </b-list-group>
+      <span> Selected Tags: {{ select_tag }}</span>
+    </div>
     <b-card no-body>
       <b-tabs card>
         <b-tab active>
@@ -51,14 +61,21 @@
                   <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
                   <b-badge v-if="!selectedSub.score" variant="secondary">ungraded</b-badge>
                 </template>
-                <codemirror v-model="selectedSub.code" :options="cmOptions" ref="focusThis" />
-                <a> Message: {{ selectedSub.message }} </a>
+                <codemirror v-model="selectedSub.code" :options="cmOptions" :style="{ height: '600px' }" ref="focusThis" />
+                <!-- <a> Message: {{ selectedSub.message }} </a> -->
                 <b-row>
                   <b-col cols="6" >
                     <div style="text-align: left">
-                      <div class="row">
+                      <!-- <div class="row">
                         <b-button class="btn-secondary" @click="flagSubmission(selectedSub);">Flag</b-button>
                         <b-form-input style="width: 60%; height: auto;" v-model="reason" placeholder="Reason to flag (Optional)"></b-form-input>
+                      </div> -->
+                      <div class="row" style="margin: 5px;">
+                        <h4 style="margin: 5px;">Tag: </h4>
+                        <multiselect style="width: 50%;" v-model="assign_tags" track-by="id" label="name" placeholder="Select one" :options="available_tags.data" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
+                          <template slot="singleLabel" slot-scope="{ option }"><strong>{{ option.name }}</strong> </template>
+                        </multiselect>
+                        <b-button type="submit" variant="primary" @click="saveSubmissionTag(selectedSub.id)">Save Tag</b-button>
                       </div>
                     </div>
                   </b-col>
@@ -154,13 +171,16 @@ import 'codemirror/mode/python/python.js'
 // theme css
 import 'codemirror/theme/duotone-light.css'
 
+import Multiselect from 'vue-multiselect'
+
 import * as Config from '../config'
 import moment from 'moment'
 
 export default {
   name: 'SubmissionList',
   components: {
-    codemirror
+    codemirror,
+    Multiselect
   },
   data: () => ({
     token: '',
@@ -179,12 +199,16 @@ export default {
       mode: 'application/x-httpd-python',
       lineWrapping: true,
       theme: 'duotone-light'
-    }
+    },
+    available_tags: '',
+    select_tag: [],
+    assign_tags: []
   }),
   methods: {
     sendInfo (item) {
       this.selectedSub = item
       this.reason = ''
+      this.assign_tags = item.tag
     },
     close (sub) {
       this.$bvModal.hide()
@@ -233,7 +257,8 @@ export default {
         'student_id': submission.student_id,
         'submission_id': submission.id,
         'problem_id': submission.problem_id,
-        'reason': this.reason
+        'reason': this.reason,
+        'mode': 2
       }
 
       this.$http.post(Config.apiUrl + '/submissions/flag', postBody, config)
@@ -249,7 +274,7 @@ export default {
     Unflag (submission) {
       this.$http.delete(Config.apiUrl + '/submissions/flag', {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
-        data: {flag_id: submission.id, submission_id: submission.submission_id}
+        data: {id: submission.id, submission_id: submission.submission_id}
       })
         .then(() => {
           // alert('This submission is now unflagged.')
@@ -278,7 +303,7 @@ export default {
       var status = score === 1 ? 'Correct.' : 'Incorrect.'
       submission.score = score
 
-      this.$http.post(Config.apiUrl + '/submissions/grade', postBody, config)
+      this.$http.post(Config.apiUrl + '/submissions/grades', postBody, config)
         .then(data => {
           // alert('This submission is now graded as ' + status)
           this.toast('Submission with id ' + id + ' is graded as ' + status)
@@ -298,7 +323,7 @@ export default {
         'code': submission.code
       }
 
-      this.$http.post(Config.apiUrl + '/teachers/feedbacks', postBody, config)
+      this.$http.post(Config.apiUrl + '/submissions/grades', postBody, config)
         .then(data => {
           // alert('Feedback sent to student.')
           this.toast('Feedback for submission with id ' + id + ' is sent to student.')
@@ -312,7 +337,7 @@ export default {
         headers: { Authorization: 'Bearer '.concat(this.$route.query.token) },
         params: {'sort_by': this.sorting}
       }
-      this.$http.get(Config.apiUrl + '/teachers/submissions', config)
+      this.$http.get(Config.apiUrl + '/submissions/teachers', config)
         .then((response) => {
           this.message = response.data
           this.isLoading = false
@@ -339,6 +364,52 @@ export default {
           this.toast('Unauthorized Access.')
         })
     },
+    getAvailableTags () {
+      const config = {
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) }
+      }
+      this.$http.get(Config.apiUrl + '/tags?mode=2', config)
+        .then((response) => {
+          this.available_tags = response.data
+          // console.log('Available Tags: ' + JSON.stringify(this.available_tags))
+        })
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
+        })
+    },
+    saveSubmissionTag (sID) {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      this.assign_tags.forEach(i => {
+        let postBody = {
+          'submission_id': sID,
+          'tag_id': i.id
+        }
+        this.$http.post(Config.apiUrl + '/tags/submissions/', postBody, config)
+          .then((resp) => {
+            console.log(resp)
+            this.toast('Submission Tag is saved.')
+          })
+          .catch(function (error) {
+            alert(error)
+          })
+      })
+    },
+    remove_tag ({ name, id }) {
+      // console.log("Removing: ", name, id, this.selectedSub.id)
+      this.$http.delete(Config.apiUrl + '/tags/' + id + '/submissions/' + this.selectedSub.id, {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      })
+        .then((resp) => {
+          console.log(resp)
+          this.toast('Tag for submission with id ' + this.selectedSub.id + ' is removed.')
+        })
+        .catch(function (error) {
+          alert(error)
+        })
+    },
     setSorting (params) {
       this.sorting = params
       this.getSubmissionList()
@@ -347,7 +418,8 @@ export default {
   },
   created: function () {
     this.getSubmissionList()
-    this.getFlaggedSubsList()
+    // this.getFlaggedSubsList()
+    this.getAvailableTags()
   }
 }
 </script>
@@ -418,4 +490,11 @@ button {
 input:placeholder-shown {
    font-style: italic;
 }
+
+.CodeMirror {
+  height: 600px;
+}
+
 </style>
+
+<style src="vue-multiselect/dist/vue-multiselect.min.css"></style>

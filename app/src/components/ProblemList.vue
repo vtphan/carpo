@@ -2,30 +2,42 @@
   <div>
       <b-table striped hover :items="message.data" :fields="fields" responsive="sm">
         <template #cell(OnWatch)="data" >
-          <a href="javascript:;" @click="fetchWatch(data.item.ProblemID)">{{ data.item.OnWatch }}</a>
+          <a href="javascript:;" @click="fetchWatch(data.item.problem_id)">{{ data.item.on_watch }}</a>
         </template>
         <template #cell(actions)="row">
           <div class="sub-action">
-          <b-button size="sm"  @click="info('Problem Description', row.item.Question)" class="mr-2">
+          <b-button size="sm"  @click="info('Problem Description', row.item.problem_id, row.item.question, row.item)" class="mr-2">
             View Problem
           </b-button>
-          <b-button size="sm" :disabled="row.item.ProblemStatus === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2">
+          <b-button size="sm" :disabled="row.item.status === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2">
             Unpublish Problem
           </b-button>
           </div>
           <div class="sub-action">
-          <b-button size="sm" :disabled="!row.item.Solution" @click="info('Solution Code', row.item.Solution)" class="mr-2">
+          <b-button size="sm" :disabled="!row.item.solution_code" @click="info('Solution Code', row.item.problem_id, row.item.solution_code, row.item)" class="mr-2">
             View Solution
           </b-button>
-          <b-button size="sm" :disabled="!row.item.Solution" @click="showConfirmBox('broadcast', row.item)" class="mr-2">
+          <b-button size="sm" :disabled="!row.item.solution_id" @click="showConfirmBox('broadcast', row.item)" class="mr-2">
             Broadcast Solution
           </b-button>
           </div>
         </template>
       </b-table>
 
-      <b-modal size='xl' :id="infoModal.id" :title="infoModal.title" ok-only>
+      <b-modal size='xl' :id="infoModal.id" :title="infoModal.title" ok-only style="background-color: #eeeee4;!important">
         <pre>{{ infoModal.quesiton }}</pre>
+        <!-- Save Problem Tag [Footer] -->
+        <hr style="width:100%;text-align:left;margin-left:0">
+        <div v-if="infoModal.title=='Problem Description'">
+          <div class="row" style="margin: 5px;">
+            <h4 style="margin: 5px;">Tag: </h4>
+            <multiselect style="width: 50%;" v-model="select_tag" track-by="id" label="name" placeholder="Select one" :options="available_tags.data" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
+              <template slot="singleLabel" slot-scope="{ option }"><strong>{{ option.name }}</strong> </template>
+            </multiselect>
+            <b-button type="submit" variant="primary" @click="saveProblemTag(infoModal.pID)">Save Tag</b-button>
+          </div>
+          <!-- <pre class="language-json"><code>{{ select_tag  }}</code></pre> -->
+        </div>
       </b-modal>
 
       <b-modal size='xl' :id="watchlist.id" :title="watchlist.title" ok-only>
@@ -57,7 +69,7 @@
           </b-row>
 
       </b-modal>
-  </div>
+</div>
 </template>
 
 <script>
@@ -71,14 +83,16 @@ import 'codemirror/mode/python/python.js'
 // theme css
 import 'codemirror/theme/duotone-light.css'
 
+import Multiselect from 'vue-multiselect'
+
 export default {
   name: 'ProblemList',
   components: {
-    codemirror
+    codemirror,
+    Multiselect
   },
   data: () => ({
     message: '',
-    selectedProb: '',
     selectedSub: '',
     cmOptions: {
       autoRefresh: true,
@@ -93,7 +107,8 @@ export default {
     infoModal: {
       id: 'info-modal',
       title: '',
-      quesiton: ''
+      quesiton: '',
+      pID: ''
     },
     watchlist: {
       id: 'on-watch-modal',
@@ -101,41 +116,43 @@ export default {
       watch: ''
     },
     fields: [
-      { key: 'ProblemID', label: 'ProblemID' },
-      { key: 'Ungraded', label: 'Ungraded' },
-      { key: 'Correct', label: 'Correct' },
-      { key: 'Incorrect', label: 'InCorrect' },
-      { key: 'OnWatch', label: 'OnWatch' },
-      { key: 'PublishedDate',
+      { key: 'problem_id', label: 'ProblemID' },
+      { key: 'ungraded', label: 'Ungraded' },
+      { key: 'correct', label: 'Correct' },
+      { key: 'incorrect', label: 'InCorrect' },
+      { key: 'on_watch', label: 'OnWatch' },
+      { key: 'published_at',
         label: 'Published Date',
         formatter: value => {
           return moment(value, 'YYYY-MM-DD hh:mm').format('LLL')
         }
       },
-      { key: 'ProblemStatus',
+      { key: 'status',
         label: 'Active',
         formatter: value => {
           return value ? 'True' : 'False'
         }
       },
-      { key: 'LifeTime',
+      { key: 'lifetime',
         label: 'Deadline',
         formatter: value => {
           return moment(value, 'YYYY-MM-DD hh:mm').format('LLL')
         }
       },
       'actions'
-    ]
+    ],
+    available_tags: '',
+    select_tag: []
   }),
   methods: {
-    selectProblem (item) {
-      console.log(item)
-      this.selectedProb = item
-    },
-    info (title, block, button) {
+    info (title, pID, block, item, button) {
       this.infoModal.title = title
       this.infoModal.quesiton = block
+      this.infoModal.pID = pID
       this.$root.$emit('bv::show::modal', this.infoModal.id, button)
+      // this.getAvailableTags()
+      // this.select_tag = []
+      this.select_tag = item.tag
     },
     timeDiff (dbTimestamp) {
       return moment.duration(moment().diff(moment(dbTimestamp))).humanize()
@@ -194,12 +211,11 @@ export default {
         })
     },
     unpublish (item) {
-      this.$http.delete(Config.apiUrl + '/problems/delete', {
-        headers: { Authorization: 'Bearer ' + this.$route.query.token },
-        data: {problem_id: item.ProblemID}
+      this.$http.delete(Config.apiUrl + '/problems/' + item.problem_id, {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
       })
         .then(() => {
-          this.toast('Problem with id ' + item.ProblemID + ' is unpublished.')
+          this.toast('Problem with id ' + item.problem_id + ' is unpublished.')
         })
         .catch(function (error) {
           console.log(error)
@@ -210,7 +226,7 @@ export default {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
       }
       let postBody = {
-        'solution_id': item.SolutionID
+        'solution_id': item.solution_id
       }
       this.$http.post(Config.apiUrl + '/solution/broadcast', postBody, config)
         .then(() => {
@@ -269,10 +285,55 @@ export default {
           console.log('Error', error)
           this.toast('Unauthorized Access.')
         })
+    },
+    getAvailableTags () {
+      const config = {
+        headers: { Authorization: 'Bearer '.concat(this.$route.query.token) }
+      }
+      this.$http.get(Config.apiUrl + '/tags?mode=1', config)
+        .then((response) => {
+          this.available_tags = response.data
+          console.log('Available Tags: ' + JSON.stringify(this.available_tags))
+        })
+        .catch((error) => {
+          console.log('Error', error)
+          this.toast('Unauthorized Access.')
+        })
+    },
+    saveProblemTag (pID) {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      this.select_tag.forEach(i => {
+        let postBody = {
+          'problem_id': pID,
+          'tag_id': i.id
+        }
+        // console.log('Req body: ', postBody)
+        this.$http.post(Config.apiUrl + '/tags/problems/', postBody, config)
+          .then(data => {
+            // alert('Feedback sent to student.')
+            this.toast('Tag is saved.')
+          })
+      })
+    },
+    remove_tag ({ name, id }) {
+      this.$http.delete(Config.apiUrl + '/tags/' + id + '/problems/' + this.infoModal.pID, {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      })
+        .then((resp) => {
+          console.log(resp)
+          this.toast('Tag for problem with id ' + this.infoModal.pID + ' is removed.')
+        })
+        .catch(function (error) {
+          // console.log(error)
+          alert(error)
+        })
     }
   },
   created: function () {
     this.getProblemList()
+    this.getAvailableTags()
   }
 }
 </script>
@@ -282,4 +343,10 @@ export default {
   margin: 5px;
 }
 
+.CodeMirror {
+  height: 600px;
+}
+
 </style>
+
+<style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
