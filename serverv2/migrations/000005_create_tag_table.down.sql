@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS submission_tag;
+
+DROP TABLE IF EXISTS problem_tag;
+
+DROP TABLE IF EXISTS tags;
+
