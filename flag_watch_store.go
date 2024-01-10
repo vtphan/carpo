@@ -10,6 +10,7 @@ type FlagWatchStore interface {
 	GetFlagSubs(int, int) ([]FlagSubmission, error)
 	GetFlagWatchSubID(int, int) (int, error)
 	UnFlagWatchSubs(FlagSubmission) error
+	StudentAskForHelpWatch(Submission) (int, error)
 }
 
 type FlagSubmission struct {
@@ -66,6 +67,26 @@ func (db *Database) SaveFlagWatchSubs(fSub FlagSubmission) (id int, err error) {
 	sqlStatement := `INSERT into flag_watch (submission_id, problem_id, user_id, mode, reason, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`
 
 	err = db.DB.QueryRow(sqlStatement, fSub.SubmissionID, fSub.ProblemID, fSub.TeacherID, fSub.Mode, fSub.Reason, fSub.CreatedAt, fSub.UpdatedAt).Scan(&id)
+
+	if err != nil {
+		return id, err
+	}
+	return
+}
+
+func (db *Database) StudentAskForHelpWatch(s Submission) (id int, err error) {
+	subID := 0
+	sqlStatement := `INSERT into submissions (problem_id, user_id, message, code, is_snapshot, status, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`
+
+	err = db.DB.QueryRow(sqlStatement, s.ProblemID, s.StudentID, s.Message, s.Code, s.Snapshot, s.Status, s.CreatedAt, s.UpdatedAt).Scan(&subID)
+
+	if err != nil {
+		return id, err
+	}
+
+	sqlStatement = `INSERT into flag_watch (submission_id, problem_id, user_id, mode, reason, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`
+
+	err = db.DB.QueryRow(sqlStatement, subID, s.ProblemID, s.StudentID, 1, "StudentAskForHelp", s.CreatedAt, s.UpdatedAt).Scan(&id)
 
 	if err != nil {
 		return id, err

@@ -69,15 +69,39 @@ func (fwAPI *FlagWatchAPI) FlagSubHandler(c *gin.Context) {
 
 }
 
-func (fwAPI *FlagWatchAPI) StudentWatchHandler(c *gin.Context) {
+func (fwAPI *FlagWatchAPI) StudentAskForHelp(c *gin.Context) {
 	user := c.Param("user_id")
 	// string to int
 	user_id, err := strconv.Atoi(user)
 	if err != nil || user_id == 0 {
-		log.Infof("Error parsing request params in StudentWatchHandler. Err: %v", err)
+		log.Infof("Error parsing request params in StudentAskForHelp. Err: %v", err)
 		c.JSON(400, err.Error())
 		return
 	}
+
+	// Get the req body
+	var newSub Submission
+	if err := c.BindJSON(&newSub); err != nil {
+		log.Infof("Error parsing request body in StudentAskForHelp. Err: %v", err)
+		c.JSON(400, err.Error())
+		return
+	}
+
+	if user_id != newSub.StudentID {
+		log.Infof("Error Student Asking for Help. %v\n", newSub)
+		c.JSON(400, "Failed to put on Watch for student asking for help.")
+		return
+	}
+
+	// PUT the snapshot on watch
+	_, err = fwAPI.FlagWatchService.StudentAskForHelpWatch(newSub)
+	if err != nil {
+		log.Infof("Failed to put on Watch for student asking for help. %v Err. %v\n", newSub, err)
+		c.JSON(500, gin.H{"msg": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"msg": "Code is shared."})
 }
 
 func (fwAPI *FlagWatchAPI) GetFlagSubsHandler(c *gin.Context) {

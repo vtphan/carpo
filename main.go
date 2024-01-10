@@ -73,7 +73,7 @@ func main() {
 	r.POST("/submissions/students/:user_id", subAPI.SubmissionHandler)
 
 	// Student ask for help
-	r.POST("/students/:user_id/ask_for_help", flagAPI.StudentWatchHandler)
+	r.POST("/students/:user_id/ask_for_help", flagAPI.StudentAskForHelp)
 
 	// Student Status page
 	r.GET("students/status", viewStudentSubmissionStatus(db))
