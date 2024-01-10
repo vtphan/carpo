@@ -6,7 +6,7 @@
             <template #title>
               <div v-on:click="getSnapshotList()"> Snapshot <a v-if="message.data">({{ message.data.length}})</a> </div>
             </template>
-              <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
+              <!-- <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
                 <b-dropdown no-caret>
                   <template #button-content>
                     <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Order By
@@ -14,7 +14,7 @@
                   <b-dropdown-item href="#" @click="setSorting('creation_time')">LastActive At</b-dropdown-item>
                   <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
                 </b-dropdown>
-              </div>
+              </div> -->
               <div  v-if="isLoading">
                 <div>LOADING...</div>
               </div>

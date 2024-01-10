@@ -32,6 +32,7 @@ import { ToolbarButton,Dialog, showDialog,showErrorMessage } from '@jupyterlab/a
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 import { ShareCodeButton } from './share-code'
+import { RaiseHandHelpButton } from './raise-hand-help'
 // import { GetSolutionButton } from './get-solutions'
 
 
@@ -55,11 +56,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebookPanel = nbTrack.currentWidget;
       const notebook = nbTrack.currentWidget.content;
       const filename = notebookPanel.context.path
-
-      // Disable Code Share functionality if inside Feedback directory
-      if (filename.includes("Feedback")){
-        return 
-      }
 
       // Disable if not inside Exercises directory
       if (!filename.includes("Exercises")) {
@@ -105,7 +101,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
               if (question.includes("## PID ")){
 
                 const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
-
                 (cell.layout as PanelLayout).addWidget(newCheckButton);
                 currentCellCheckButton = newCheckButton;
 
@@ -154,7 +149,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
     app.docRegistry.addWidgetExtension('Notebook', new ShareCodeButton());
-    // app.docRegistry.addWidgetExtension('Notebook', new GetFeedbackButton());
+    app.docRegistry.addWidgetExtension('Notebook', new RaiseHandHelpButton());
     // app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
     // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());

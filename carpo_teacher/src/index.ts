@@ -176,7 +176,7 @@ export class RegisterButton
 
           showDialog({
             title:'',
-            body:  "Teacher "+ data.name + " has been registered.",
+            body:  "Instructor "+ data.name + " has been registered.",
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
          
@@ -184,7 +184,7 @@ export class RegisterButton
         .catch(reason => {
           showErrorMessage('Registration Error', reason);
           console.error(
-            `Failed to register user as Teacher.\n${reason}`
+            `Failed to register user as Instructor.\n${reason}`
           );
         });
 

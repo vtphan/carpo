@@ -60,7 +60,7 @@ const CodeCellButtonComponent = ({
             return
         }
         // clear message skeleton
-        info.message = info.message.replace("## Message to instructor: ", "") 
+        info.message = info.message.replace("## Message to instructor:", "") 
 
         let postBody = {
             "message": info.message,

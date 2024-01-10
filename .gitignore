@@ -1,7 +1,14 @@
 .vscode
 **/*.sqlite3
 
+**/.env
+**/gin.log
+
+
 
 **/*.log
 **/carpo
 **node_modules/
+
+server/README.md
+helper.txt

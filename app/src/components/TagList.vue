@@ -29,12 +29,29 @@
         <div class="table-view">
           <b-table striped hover :items="all_tags.data" :fields="fields" >
             <template #cell(actions)="row">
-              <b-button size="sm"  @click="deleteTag(row.item)" class="mr-2">
-                Delete
-              </b-button>
+              <div class="sub-action">
+                <b-button size="sm"  @click="deleteTag(row.item)" class="mr-2">
+                  Delete
+                </b-button>
+                <b-button size="sm" class="mr-2" v-b-modal = "'editTag'" @click="edit(row.item)">
+                  Edit
+                </b-button>
+              </div>
             </template>
           </b-table>
         </div>
+        <b-modal id="editTag" size='ml' :hide-footer="true">
+          <template #modal-title>
+            Edit Tag Name
+          </template>
+          <b-form-input v-model="edit_name"
+              id="inline-form-input-name"
+              class="mb-2 mr-sm-2 mb-sm-0 name-field"
+              placeholder="Tag Name"
+            ></b-form-input>
+            <br>
+          <b-button size='sm' @click="saveTag(); ">Update Name</b-button>
+        </b-modal>
     </div>
 </template>
 
@@ -47,6 +64,8 @@ export default {
       name: '',
       mode: 0
     },
+    edit_name: '',
+    id: '',
     options: [
       { value: 0, text: 'Select Usecase' },
       { value: 1, text: 'Problems' },
@@ -89,6 +108,28 @@ export default {
         autoHideDelay: 2000,
         solid: true
       })
+    },
+    edit (item) {
+      this.edit_name = item.name
+      this.id = item.tag_id
+    },
+    saveTag () {
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      if (this.edit_name === '' || this.id === 0) {
+        alert('Invalid input.', this.edit_name)
+        return
+      }
+      this.$http.post(Config.apiUrl + '/tags/' + this.id, JSON.stringify({'name': this.edit_name}), config)
+        .then((res) => {
+          this.toast('Tag Name Updated.')
+          console.log('Tag: ', res.data)
+        })
+        .catch(function (error) {
+          console.log(error)
+          this.toast('Failed to update tag.')
+        })
     },
     onSubmit (event) {
       event.preventDefault()

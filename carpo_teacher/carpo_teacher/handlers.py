@@ -38,6 +38,7 @@ def create_initial_files():
     if not os.path.isfile(config_path):
         config_data = {}
         config_data['name'] = "John Smith"
+        config_data['role'] = 1
         config_data['server'] = "http://delphinus.cs.memphis.edu:XXXX"
         config_data['carpo_version'] = "0.0.9"
         # Write default config
@@ -110,16 +111,17 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
             return
         
-        url = config_data['server'] + "/add_teacher"
+        url = config_data['server'] + "/users"
 
         body = {}
         body['name'] = config_data['name']
+        body['role'] = 1 # Role 1 is teacher/TA
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
        
         try:
             response = requests.post(url, data=json.dumps(body),headers=headers,timeout=5).json()
-            print(response)
+            # print(response)
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
@@ -127,6 +129,7 @@ class RegistrationHandler(APIHandler):
 
         config_data['id'] = response['id']
         config_data['uuid'] = response['uuid']
+        config_data['role'] = 1
         # Write id to the json file.
         with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -362,9 +365,9 @@ class ProblemHandler(APIHandler):
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
         
-        input_data['teacher_id'] = config_data['id']
+        input_data['user_id'] = config_data['id']
         
-        url = config_data['server'] + "/problem"
+        url = config_data['server'] + "/problems"
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         try:
@@ -388,7 +391,7 @@ class ProblemHandler(APIHandler):
             return
 
         input_data['teacher_id'] = config_data['id']
-        url = config_data['server'] + "/problem"
+        url = config_data['server'] + "/problems/" + str(input_data['problem_id'])
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         try:
@@ -465,7 +468,8 @@ class SolutionHandler(APIHandler):
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
         
-        url = config_data['server'] + "/solution" + "?problem_id="+str(input_data['problem_id'])
+        url = config_data['server'] + "/solution"
+        input_data['user_id'] = config_data['id']
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         try:

@@ -6,20 +6,20 @@
         </template>
         <template #cell(actions)="row">
           <div class="sub-action">
-          <b-button size="sm"  @click="info('Problem Description', row.item.problem_id, row.item.question, row.item)" class="mr-2">
-            View Problem
-          </b-button>
-          <b-button size="sm" :disabled="row.item.status === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2">
-            Unpublish Problem
-          </b-button>
-          </div>
-          <div class="sub-action">
-          <b-button size="sm" :disabled="!row.item.solution_code" @click="info('Solution Code', row.item.problem_id, row.item.solution_code, row.item)" class="mr-2">
-            View Solution
-          </b-button>
-          <b-button size="sm" :disabled="!row.item.solution_id" @click="showConfirmBox('broadcast', row.item)" class="mr-2">
-            Broadcast Solution
-          </b-button>
+            <b-button size="sm"  @click="info('Problem Description', row.item.problem_id, row.item.question, row.item)" class="mr-2">
+              View Problem
+            </b-button>
+            <b-button size="sm" :disabled="row.item.status === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2">
+              Unpublish Problem
+            </b-button>
+            </div>
+            <div class="sub-action">
+            <b-button size="sm" :disabled="!row.item.solution_code" @click="info('Solution Code', row.item.problem_id, row.item.solution_code, row.item)" class="mr-2">
+              View Solution
+            </b-button>
+            <b-button size="sm" :disabled="!row.item.solution_id" @click="showConfirmBox('broadcast', row.item)" class="mr-2">
+              Broadcast Solution
+            </b-button>
           </div>
         </template>
       </b-table>
@@ -31,10 +31,11 @@
         <div v-if="infoModal.title=='Problem Description'">
           <div class="row" style="margin: 5px;">
             <h4 style="margin: 5px;">Tag: </h4>
-            <multiselect style="width: 50%;" v-model="select_tag" track-by="id" label="name" placeholder="Select one" :options="available_tags.data" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
+            <multiselect style="width: 50%;" v-model="select_tag" track-by="id" label="name" placeholder="Select one" :options="available_tags.data" @select="saveProblemTag" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
               <template slot="singleLabel" slot-scope="{ option }"><strong>{{ option.name }}</strong> </template>
             </multiselect>
-            <b-button type="submit" variant="primary" @click="saveProblemTag(infoModal.pID)">Save Tag</b-button>
+            <h5 class="new-tag-link" v-on:click="newTag()" > Create New Tag </h5>
+            <!-- <b-button type="submit" variant="primary" @click="saveProblemTag(infoModal.pID)">Save Tag</b-button> -->
           </div>
           <!-- <pre class="language-json"><code>{{ select_tag  }}</code></pre> -->
         </div>
@@ -210,6 +211,12 @@ export default {
           console.log('Error: ', err)
         })
     },
+    newTag () {
+      var link = document.createElement('a')
+      link.href = window.location.origin + '/#/tags?token=' + this.$route.query.token
+      link.target = '_blank'
+      link.click()
+    },
     unpublish (item) {
       this.$http.delete(Config.apiUrl + '/problems/' + item.problem_id, {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
@@ -300,24 +307,34 @@ export default {
           this.toast('Unauthorized Access.')
         })
     },
-    saveProblemTag (pID) {
+    saveProblemTag ({ name, id }) {
       const config = {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
       }
-      this.select_tag.forEach(i => {
-        let postBody = {
-          'problem_id': pID,
-          'tag_id': i.id
-        }
-        // console.log('Req body: ', postBody)
-        this.$http.post(Config.apiUrl + '/tags/problems/', postBody, config)
-          .then(data => {
-            // alert('Feedback sent to student.')
-            this.toast('Tag is saved.')
-          })
-      })
+      let postBody = {
+        'problem_id': this.infoModal.pID,
+        'tag_id': id
+      }
+      // console.log('Req body: ', postBody)
+      this.$http.post(Config.apiUrl + '/tags/problems/', postBody, config)
+        .then(data => {
+          // alert('Feedback sent to student.')
+          this.toast('Tag is saved.')
+        })
+        .catch(function (error) {
+          alert(error)
+        })
+      // update the problem list with new tag
+      var subIndex
+      // console.log(this.infoModal.pID, this.message.data)
+      subIndex = this.message.data.findIndex(obj => obj.problem_id === this.infoModal.pID)
+      if (this.message.data[subIndex].tag === undefined) {
+        this.message.data[subIndex].tag = []
+      }
+      this.message.data[subIndex].tag.push({'id': id, 'name': name})
     },
     remove_tag ({ name, id }) {
+      // console.log('Removing: ', name, id, this.infoModal.pID)
       this.$http.delete(Config.apiUrl + '/tags/' + id + '/problems/' + this.infoModal.pID, {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
       })
@@ -329,6 +346,12 @@ export default {
           // console.log(error)
           alert(error)
         })
+      // update the problem list with removed tag
+      var subIndex
+      // console.log(this.message.data)
+      subIndex = this.message.data.findIndex(obj => obj.problem_id === this.infoModal.pID)
+      console.log('with Tag: ', this.message.data[subIndex])
+      this.message.data[subIndex].tag = this.message.data[subIndex].tag.filter(item => item.id !== id)
     }
   },
   created: function () {

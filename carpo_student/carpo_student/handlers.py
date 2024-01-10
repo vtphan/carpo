@@ -115,10 +115,11 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
             return
         
-        url = config_data['server'] + "/add_student"
+        url = config_data['server'] + "/users"
 
         body = {}
         body['name'] = config_data['name']
+        body['role'] = 2 # Role 2 is student
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
         
@@ -147,7 +148,8 @@ class QuestionRouteHandler(APIHandler):
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
 
-        url = config_data['server'] + "/problem?student_id="+str(config_data['id'])
+        # url = config_data['server'] + "/problem?student_id="+str(config_data['id'])
+        url = config_data['server'] + "/problems/students/"+str(config_data['id'])
         try:
             resp = requests.get(url,timeout=5).json()
         except requests.exceptions.RequestException as e:
@@ -442,7 +444,34 @@ class SubmissionRouteHandler(APIHandler):
             return
 
         input_data['student_id'] = config_data['id']
-        url = config_data['server'] + "/students/submissions"
+        url = config_data['server'] + "/submissions/students/" + str(config_data['id'] )
+
+
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        try:
+            response = requests.post(url, data=json.dumps(input_data),headers=headers).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
+
+        self.finish(response)
+
+class RaiseHandRouteHandler(APIHandler):
+    @tornado.web.authenticated
+    def post(self):
+        # input_data is a dictionary with a key "name"
+        input_data = self.get_json_body()
+
+        config_data = read_config_file()
+
+        if not {'id', 'name', 'server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        input_data['student_id'] = config_data['id']
+        url = config_data['server'] + "/students/" + str(input_data['student_id']) +"/ask_for_help"
 
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -526,3 +555,6 @@ def setup_handlers(web_app):
 
     route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "solution")
     web_app.add_handlers(host_pattern, [(route_pattern_problems_status, SolutionRouteHandler)])
+
+    route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "ask_for_help")
+    web_app.add_handlers(host_pattern, [(route_pattern_problems_status, RaiseHandRouteHandler)])
