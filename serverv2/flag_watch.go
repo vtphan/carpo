@@ -86,6 +86,8 @@ func (fwAPI *FlagWatchAPI) StudentAskForHelp(c *gin.Context) {
 		c.JSON(400, err.Error())
 		return
 	}
+	newSub.CreatedAt = time.Now()
+	newSub.UpdatedAt = time.Now()
 
 	if user_id != newSub.StudentID {
 		log.Infof("Error Student Asking for Help. %v\n", newSub)
