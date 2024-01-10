@@ -2,6 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"os"
+	"slices"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -44,6 +47,14 @@ func (u *UserAPI) RegisterUser(c *gin.Context) {
 	}
 
 	newUser.UUID = uuid.New().String()
+
+	// When newUser.Role == 1, make sure they are in the ENV variables:
+	if newUser.Role == 1 && !(slices.Contains(strings.Split(os.Getenv("TA"), ","), newUser.Name) || slices.Contains(strings.Split(os.Getenv("INS"), ","), newUser.Name)) {
+		log.Infof("Error registering user as INS or TA.")
+		c.JSON(500, gin.H{"msg": "Error registering user as INS or TA."})
+		return
+
+	}
 
 	if user.ID != 0 {
 		//update already existing user

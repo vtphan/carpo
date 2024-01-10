@@ -104,6 +104,32 @@ func (tag *TagAPI) DeleteTagHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": tagID, "msg": "Tag archived successfully."})
 }
 
+func (tag *TagAPI) UpdateTagHandler(c *gin.Context) {
+	id := c.Param("id")
+	// string to int
+	tagID, err := strconv.Atoi(id)
+	if err != nil || tagID == 0 {
+		log.Infof("Error parsing request body in UpdateTagHandler. Err: %v", err)
+		c.JSON(400, err)
+		return
+	}
+
+	var Tag Tag
+	if err := c.BindJSON(&Tag); err != nil {
+		log.Infof("Error parsing request body in UpdateTagHandler. Err: %v", err)
+		c.JSON(400, err.Error())
+		return
+	}
+
+	err = tag.TagService.UpdateTagName(Tag.Name, tagID)
+	if err != nil {
+		log.Printf("Failed to update tag name with ID: %v. Err: %v", tagID, err)
+		c.JSON(500, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"id": tagID, "msg": "Updated Tag successfully."})
+}
+
 func (tag *TagAPI) TagProblemHandler(c *gin.Context) {
 	var newTagP TagProblem
 

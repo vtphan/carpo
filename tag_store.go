@@ -45,6 +45,7 @@ type TagStore interface {
 	GetTags(int) ([]Tag, error)
 	CreateTag(Tag) (int, error)
 	DeleteTag(int) error
+	UpdateTagName(string, int) error
 	SaveProblemTag(TagProblem) error
 	DeleteProblemTag(int, int) error
 	SaveSubmissionTag(TagSubmission) error
@@ -138,6 +139,17 @@ func (db *Database) DeleteTag(tagID int) (err error) {
 	sqlStatement := `UPDATE tags SET status = 0 where id = $1`
 
 	_, err = db.DB.Exec(sqlStatement, tagID)
+
+	if err != nil {
+		return err
+	}
+	return
+}
+
+func (db *Database) UpdateTagName(name string, tagID int) (err error) {
+	sqlStatement := `UPDATE tags SET name = $1 where id = $2`
+
+	_, err = db.DB.Exec(sqlStatement, name, tagID)
 
 	if err != nil {
 		return err

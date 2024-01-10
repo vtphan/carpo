@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,7 @@ func (fwAPI *FlagWatchAPI) FlagSubHandler(c *gin.Context) {
 
 	sub.CreatedAt = time.Now()
 	sub.UpdatedAt = time.Now()
-	// sub.Mode = 2 // Mode 2 is for Flag Submissions
+	// sub.Mode = 2 // Mode 2 is for Watch from Submissions
 	if userID, ok := uID.(int); ok {
 		sub.TeacherID = userID
 	}
@@ -66,6 +67,17 @@ func (fwAPI *FlagWatchAPI) FlagSubHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, gin.H{"msg": "Submission flagged successfully."})
 
+}
+
+func (fwAPI *FlagWatchAPI) StudentWatchHandler(c *gin.Context) {
+	user := c.Param("user_id")
+	// string to int
+	user_id, err := strconv.Atoi(user)
+	if err != nil || user_id == 0 {
+		log.Infof("Error parsing request params in StudentWatchHandler. Err: %v", err)
+		c.JSON(400, err.Error())
+		return
+	}
 }
 
 func (fwAPI *FlagWatchAPI) GetFlagSubsHandler(c *gin.Context) {
@@ -110,6 +122,7 @@ func (fwAPI *FlagWatchAPI) GetWatchSubsHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"msg": err})
 		return
 	}
+	// fmt.Printf("WSubs: %v", fSubs)
 
 	// When there is new snapshot update from the students set on Watch,
 	// Update the code block on Watch

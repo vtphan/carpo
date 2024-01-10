@@ -24,7 +24,7 @@ type Submission struct {
 	Code      string    `json:"code" db:"code"`
 	Snapshot  int       `json:"snapshot" db:"is_snapshot"`
 	Status    int       `json:"status" db:"status"`
-	Tag       []Tag     `json:"tag,omitempty"`
+	Tag       []Tag     `json:"tag"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -91,13 +91,14 @@ func (db *Database) GetSubmissions() ([]Submission, error) {
 
 	if len(subs) == 0 {
 		log.Printf("No new submissions found.\n")
+		return subs, err
 	}
 
 	// convert id from []int to []string
 	stringIDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
 	// Get Tags associated with the submissions.
 	sql = "select st.tag_id, st.submission_id, t.name from submission_tag as st inner join tags as t on st.tag_id = t.id where st.submission_id in (" + stringIDs + ")"
-	fmt.Printf("Sql: ", sql)
+	// fmt.Printf("Sql: ", sql)
 
 	rows, err = db.DB.Query(sql)
 	if err != nil {

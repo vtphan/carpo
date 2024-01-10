@@ -29,6 +29,8 @@ func main() {
 	config.AllowCredentials = true
 	r.Use(cors.New(config))
 
+	r.LoadHTMLGlob("templates/*")
+
 	// load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -70,6 +72,12 @@ func main() {
 	// Submissions & Snapshots
 	r.POST("/submissions/students/:user_id", subAPI.SubmissionHandler)
 
+	// Student ask for help
+	r.POST("/students/:user_id/ask_for_help", flagAPI.StudentWatchHandler)
+
+	// Student Status page
+	r.GET("students/status", viewStudentSubmissionStatus(db))
+
 	// Use Middleware for app APIs
 	r.Use(appMiddleware(db))
 	r.GET("/submissions/teachers", subAPI.GetSubmissionsHandler)
@@ -80,10 +88,10 @@ func main() {
 	r.OPTIONS("/submissions/grades")
 
 	// Flag Submissions
-	r.GET("/submissions/flag", flagAPI.GetFlagSubsHandler)
-	r.POST("/submissions/flag", flagAPI.FlagSubHandler)
-	r.DELETE("/submissions/flag", flagAPI.DelFlagSubHandler)
-	r.OPTIONS("/submissions/flag")
+	// r.GET("/submissions/flag", flagAPI.GetFlagSubsHandler)
+	// r.POST("/submissions/flag", flagAPI.FlagSubHandler)
+	// r.DELETE("/submissions/flag", flagAPI.DelFlagSubHandler)
+	// r.OPTIONS("/submissions/flag")
 
 	// Watch Snapshot
 	r.GET("/snapshots/teachers", subAPI.GetSnapshotsHandler)
@@ -94,6 +102,7 @@ func main() {
 	// Tag
 	r.GET("/tags", tagAPI.GetTagHandler)
 	r.POST("/tags", tagAPI.SaveTagHandler)
+	r.POST("/tags/:id", tagAPI.UpdateTagHandler)
 	r.OPTIONS("/tags")
 	r.DELETE("/tags/:id", tagAPI.DeleteTagHandler)
 
