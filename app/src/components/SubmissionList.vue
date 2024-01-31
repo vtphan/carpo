@@ -52,10 +52,13 @@
                     v-for="items in message.data" :key="items.id"
                     @click="sendInfo(items)">
                       <template #header>
-                        {{ items.id }} : {{ items.problem_id }}
+                        <div class="box-header d-flex justify-content-between align-items-center">
+                          {{ items.id }} : {{ items.problem_id }}
+                          <font-awesome-icon v-if="items.snapshot==3" icon="hand" size="2x"/>
+                        </div>
                       </template>
                       <b-card-text >
-                          {{ items.student_name }}
+                          {{ items.student_name }} 
                       </b-card-text>
                       <template #footer>
                           <small>
@@ -69,7 +72,8 @@
 
             <b-modal id="myModal" size="xl" :hide-footer="true">
                 <template #modal-title>
-                  Submission
+                  Submission 
+                  <font-awesome-icon v-if="selectedSub.snapshot==3" icon="hand" />
                   <b-badge v-if="selectedSub.score==1" variant="success">correct</b-badge>
                   <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
                   <b-badge v-if="!selectedSub.score" variant="secondary">ungraded</b-badge>
@@ -583,6 +587,12 @@ input:placeholder-shown {
   margin: 10px;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.box-header {
+  margin: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 </style>

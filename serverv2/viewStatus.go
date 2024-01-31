@@ -70,7 +70,7 @@ func viewStudentSubmissionStatus(db *sql.DB) gin.HandlerFunc {
 		// Get Submission status
 		subStats := make([]StudentSubmissionStatus, 0)
 
-		rows, err = db.Query("select s.problem_id, s.id, s.is_snapshot, s.code, s.created_at as created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code, grade.feedback_at from submissions as s LEFT JOIN grades as grade on grade.submission_id = s.id where s.is_snapshot=2 and s.user_id = $1 Union select s.problem_id, s.id, s.is_snapshot, s.code, s.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code, grade.feedback_at from submissions as s INNER JOIN grades as grade on grade.submission_id = s.id where s.is_snapshot=1 and s.user_id = $2 order by created_at desc", student_id, student_id)
+		rows, err = db.Query("select s.problem_id, s.id, s.is_snapshot, s.code, s.created_at as created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code, grade.feedback_at from submissions as s LEFT JOIN grades as grade on grade.submission_id = s.id where s.is_snapshot=2 and s.user_id = $1 Union select s.problem_id, s.id, s.is_snapshot, s.code, s.created_at, grade.score, grade.updated_at, grade.has_feedback, grade.code, grade.feedback_at from submissions as s INNER JOIN grades as grade on grade.submission_id = s.id where ( s.is_snapshot=1 or s.is_snapshot=3) and s.user_id = $2 order by created_at desc", student_id, student_id)
 		if err != nil {
 			log.Printf("Error quering db viewStudentSubmissionStatus. Err: %v", err)
 			log.Fatal(err)

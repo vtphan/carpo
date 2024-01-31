@@ -75,7 +75,7 @@ func (db *Database) GetSubmissions() ([]Submission, error) {
 	// sorting := "lower(users.name) ASC"
 	sorting := "submissions.created_at ASC"
 
-	sql := "SELECT submissions.id, message, code, submissions.user_id, users.name, problem_id, problems.format, submissions.created_at, submissions.updated_at from submissions inner join users on submissions.user_id = users.id and submissions.status = 0 and submissions.is_snapshot = 2 inner join problems on submissions.problem_id = problems.id where problems.status = 1"
+	sql := "SELECT submissions.id, message, code, is_snapshot, submissions.user_id, users.name, problem_id, problems.format, submissions.created_at, submissions.updated_at from submissions inner join users on submissions.user_id = users.id and submissions.status = 0 and (submissions.is_snapshot = 2 or submissions.is_snapshot = 3) inner join problems on submissions.problem_id = problems.id where problems.status = 1"
 
 	// combine the sorting option:
 	sql = fmt.Sprintf("%s ORDER BY %s", sql, sorting)
@@ -87,7 +87,7 @@ func (db *Database) GetSubmissions() ([]Submission, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		rows.Scan(&s.ID, &s.Message, &s.Code, &s.StudentID, &s.Name, &s.ProblemID, &s.Format, &s.CreatedAt, &s.UpdatedAt)
+		rows.Scan(&s.ID, &s.Message, &s.Code, &s.Snapshot, &s.StudentID, &s.Name, &s.ProblemID, &s.Format, &s.CreatedAt, &s.UpdatedAt)
 		subs = append(subs, s)
 		ids = append(ids, s.ID)
 	}

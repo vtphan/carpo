@@ -84,13 +84,6 @@ func (db *Database) StudentAskForHelpWatch(s Submission) (id int, err error) {
 		return id, err
 	}
 
-	sqlStatement = `INSERT into flag_watch (submission_id, problem_id, user_id, mode, reason, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`
-
-	err = db.DB.QueryRow(sqlStatement, subID, s.ProblemID, s.StudentID, 1, "StudentAskForHelp", s.CreatedAt, s.UpdatedAt).Scan(&id)
-
-	if err != nil {
-		return id, err
-	}
 	return
 }
 

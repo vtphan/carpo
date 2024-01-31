@@ -89,13 +89,16 @@ func (fwAPI *FlagWatchAPI) StudentAskForHelp(c *gin.Context) {
 	newSub.CreatedAt = time.Now()
 	newSub.UpdatedAt = time.Now()
 
+	// Ask for help is a submission:
+	newSub.Snapshot = 3
+
 	if user_id != newSub.StudentID {
 		log.Infof("Error Student Asking for Help. %v\n", newSub)
 		c.JSON(400, "Failed to put on Watch for student asking for help.")
 		return
 	}
 
-	// PUT the snapshot on watch
+	// PUT the submission on watch
 	_, err = fwAPI.FlagWatchService.StudentAskForHelpWatch(newSub)
 	if err != nil {
 		log.Infof("Failed to put on Watch for student asking for help. %v Err. %v\n", newSub, err)
