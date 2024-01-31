@@ -27,7 +27,7 @@
       <b-tabs card>
         <b-tab active>
           <template #title>
-            <div v-on:click="getSubmissionList()">Submission <a v-if="message.data">({{ message.data.length}})</a></div>
+            <div v-on:click="getSubmissionList()"> <a v-if="message.data">({{ message.data.length}})</a></div>
           </template>
           <!-- <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
             <b-dropdown no-caret>
@@ -85,7 +85,7 @@
                       </div> -->
                       <div class="row" style="margin: 5px;">
                         <h4 style="margin: 5px;">Tag: </h4>
-                        <multiselect style="width: 50%;" v-model="assign_tags" track-by="id" label="name" placeholder="Select one" :options="available_tags.data" @select="saveSubmissionTag" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
+                        <multiselect style="width: 50%;" v-model="assign_tags" track-by="id" label="name" placeholder="Select one" :show-labels="false" :options="available_tags.data" @select="saveSubmissionTag" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
                           <template slot="singleLabel" slot-scope="{ option }"><strong>{{ option.name }}</strong> </template>
                         </multiselect>
                         <h5 class="new-tag-link" v-on:click="newTag()" > Create New Tag </h5>
@@ -418,6 +418,7 @@ export default {
         })
     },
     saveSubmissionTag ({ name, id }) {
+      console.log(this.message.data)
       //  console.log("Select: ", name, id, this.selectedSub.id)
       const config = {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
@@ -438,7 +439,7 @@ export default {
       var subIndex
       // console.log(this.message.data)
       subIndex = this.message.data.findIndex(obj => obj.id === this.selectedSub.id)
-      if (this.message.data[subIndex].tag === undefined) {
+      if (this.message.data[subIndex].tag === null || this.message.data[subIndex].tag === undefined) {
         this.message.data[subIndex].tag = []
       }
       this.message.data[subIndex].tag.push({'id': id, 'name': name})

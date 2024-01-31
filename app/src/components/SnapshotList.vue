@@ -4,7 +4,7 @@
         <b-tabs card>
           <b-tab active>
             <template #title>
-              <div v-on:click="getSnapshotList()"> Snapshot <a v-if="message.data">({{ message.data.length}})</a> </div>
+              <div v-on:click="getSnapshotList()">  <a v-if="message.data">({{ message.data.length}})</a> </div>
             </template>
               <!-- <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
                 <b-dropdown no-caret>
@@ -15,7 +15,7 @@
                   <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
                 </b-dropdown>
               </div> -->
-              <div  v-if="isLoading">
+              <div v-if="isLoading">
                 <div>LOADING...</div>
               </div>
               <b-card-text v-else>
@@ -29,7 +29,10 @@
                       v-for="items in message.data" :key="items.id"
                       @click="sendInfo(items)">
                         <template #header>
-                          {{ items.id }} : {{ items.problem_id }}
+                          <div class="box-header d-flex justify-content-between align-items-center">
+                            {{ items.id }} : {{ items.problem_id }}
+                            <b-icon v-if="items.on_watch" icon="flag-fill" scale="2"></b-icon>
+                          </div>
                         </template>
                         <b-card-text >
                            {{ items.student_name }}
@@ -45,13 +48,19 @@
               </div>
               <b-modal id="myModal2" size="xl" :hide-footer="true">
                 <template #modal-title>
-                  Snapshot {{ timeDiff(selectedSub.created_at) }} ago
+                  <div class="box-header d-flex justify-content-between align-items-center">
+                    <div style="margin-right: 20px;"> Snapshot {{ timeDiff(selectedSub.created_at) }} ago </div>
+                    <b-icon v-if="selectedSub.on_watch" icon="flag-fill" scale="2"></b-icon>
+                  </div>
                 </template>
                 <codemirror v-model="selectedSub.code" :options="cmOptions" />
                 <b-row>
                   <b-col cols="6" >
                     <div style="text-align: left">
-                      <div class="row">
+                      <div v-if="selectedSub.on_watch" class="row">
+                          <b-button class="btn-secondary" @click="unwatchSub(selectedSub);">Unwatch</b-button>
+                      </div>
+                      <div v-else class="row">
                         <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
                         <b-form-input style="width: 60%; height: auto;" v-model="reason" placeholder="Reason to set on Watch (Optional)"></b-form-input>
                       </div>
@@ -65,64 +74,6 @@
                     </div>
                   </b-col>
                 </b-row>
-              </b-modal>
-            </b-card-text>
-          </b-tab>
-          <b-tab >
-            <template #title>
-              <div v-on:click="getWatchedSubsList()"> Watched <a v-if="watchSubs.data">({{ watchSubs.data.length}})</a>
-              </div>
-            </template>
-            <div v-if="isLoading">
-              <p>LOADING...</p>
-            </div>
-            <b-card-text v-else>
-              <div>
-                <!-- <div class="items" > -->
-                <v-row class="five-cols">
-                    <b-card
-                      class="item"
-                      v-b-modal = "'watchModal'"
-                      :style="{'border-color': setborderColor(items.created_at)}"
-                      v-for="items in watchSubs.data" :key="items.id"
-                      @click="sendInfo(items)">
-                        <template #header >
-                          {{ items.submission_id }} : {{ items.problem_id }}
-                        </template>
-                        <b-card-text >
-                            From: {{ items.student_name }}
-                        </b-card-text>
-                        <template #footer>
-                          <small>
-                            Active {{ timeDiff(items.created_at) }} ago
-                            <br>
-                            {{ items.reason }}
-                          </small>
-                        </template>
-                    </b-card>
-                <!-- </div> -->
-                </v-row>
-              </div>
-              <b-modal id="watchModal" title="On Watch Snapshot" size="xl" :hide-footer="true" >
-                  <template #modal-title>
-                    On Watch Snapshot {{ timeDiff(selectedSub.created_at) }} ago
-                    <b-badge v-if="selectedSub.reason" variant="info">Tag: {{ selectedSub.reason }}</b-badge>
-                  </template>
-                  <codemirror v-model="selectedSub.code" :options="cmOptions" />
-                  <b-row>
-                    <b-col cols="6" >
-                      <div style="text-align: left">
-                        <div class="row">
-                          <b-button class="btn-secondary" @click="unwatchSub(selectedSub);">Unwatch</b-button>
-                        </div>
-                      </div>
-                    </b-col>
-                    <b-col cols="6" >
-                      <div style="text-align: right">
-                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.submission_id)">Send Feedback</b-button>
-                      </div>
-                    </b-col>
-                  </b-row>
               </b-modal>
             </b-card-text>
           </b-tab>
@@ -219,6 +170,13 @@ export default {
         .then(() => {
           // alert('Snapshot  with id ' + sub.student_id + ' is on watch list.')
           this.toast('Snapshot of student with id ' + sub.student_id + ' is on watch list.')
+          this.message.data = this.message.data.map(obj => {
+            if (obj.id === sub.id) {
+              return { ...obj, on_watch: 1 }
+            }
+            return obj
+          })
+          this.selectedSub.on_watch = 1
         })
         .catch(function (error) {
           console.log(error)
@@ -226,14 +184,21 @@ export default {
         })
     },
     unwatchSub (sub) {
+      console.log(sub)
       this.$http.delete(Config.apiUrl + '/snapshots/watch', {
         headers: { Authorization: 'Bearer ' + this.$route.query.token },
-        data: {id: sub.id}
+        data: {id: sub.watch_id}
       })
         .then(() => {
           // alert('Snapshot  with id ' + sub.student_id + ' is removed from the watch list.')
           this.toast('Snapshot of student with id ' + sub.student_id + ' is removed from the watch list.')
-          this.watchSubs.data = this.watchSubs.data.filter(item => item.id !== sub.id)
+          this.message.data = this.message.data.map(obj => {
+            if (obj.id === sub.id) {
+              return { ...obj, on_watch: 0 }
+            }
+            return obj
+          })
+          this.selectedSub.on_watch = 0
         })
         .catch(function (error) {
           console.log(error)
@@ -248,7 +213,6 @@ export default {
         'student_id': submission.student_id,
         'submission_id': id,
         'problem_id': submission.problem_id,
-        // 'teacher_id': this.$route.query.id,
         'code': submission.code
       }
 
@@ -374,5 +338,11 @@ input:placeholder-shown {
 
 .CodeMirror {
   height: 600px;
+}
+
+.box-header {
+  margin: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 </style>

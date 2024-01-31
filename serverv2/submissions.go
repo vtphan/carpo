@@ -115,6 +115,14 @@ func (sub *SubmissionAPI) GetSubmissionsHandler(c *gin.Context) {
 func (sub *SubmissionAPI) GetSnapshotsHandler(c *gin.Context) {
 	snapshots := make([]Submission, 0)
 
+	// Get the OnWatch from the DB
+	watchSnap, err := sub.SubService.GetOnWatchSnapshots()
+	if err != nil && err != sql.ErrNoRows {
+		log.Infof("Failed to Get OnWatch submissions. Err. %v\n", err)
+		c.JSON(500, gin.H{"msg": err})
+		return
+	}
+
 	for _, value := range studentWorkSnapshot {
 		s := Submission{}
 
@@ -132,6 +140,14 @@ func (sub *SubmissionAPI) GetSnapshotsHandler(c *gin.Context) {
 		s.Name = user.Name
 		s.ProblemID = value.ProblemID
 		s.CreatedAt = value.CreatedAt
+
+		// Set OnWatch
+		for _, obj := range watchSnap {
+			if obj.StudentID == s.StudentID {
+				s.OnWatch = 1
+				s.WatchID = obj.ID
+			}
+		}
 
 		snapshots = append(snapshots, s)
 	}

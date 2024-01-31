@@ -12,6 +12,7 @@ type SubStore interface {
 	GetSubmissions() ([]Submission, error)
 	GetUserNameByID(int) (User, error)
 	IsExpired(int) (bool, error)
+	GetOnWatchSnapshots() ([]FlagSubmission, error)
 }
 
 type Submission struct {
@@ -23,6 +24,8 @@ type Submission struct {
 	Message   string    `json:"message" db:"message"`
 	Code      string    `json:"code" db:"code"`
 	Snapshot  int       `json:"snapshot" db:"is_snapshot"`
+	OnWatch   int       `json:"on_watch"`
+	WatchID   int       `json:"watch_id"`
 	Status    int       `json:"status" db:"status"`
 	Tag       []Tag     `json:"tag"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
@@ -118,4 +121,23 @@ func (db *Database) GetSubmissions() ([]Submission, error) {
 	}
 
 	return subs, err
+}
+
+func (db *Database) GetOnWatchSnapshots() ([]FlagSubmission, error) {
+	fSubs := make([]FlagSubmission, 0)
+	sql := "SELECT fw.id, fw.submission_id, fw.problem_id, subs.user_id, fw.user_id, fw.reason, subs.code, subs.message, u.name, fw.created_at, fw.updated_at, g.score from flag_watch as fw  left join grades as g on fw.submission_id = g.submission_id inner join submissions as subs on fw.submission_id = subs.id INNER join  users as u on  subs.user_id = u.id inner join problems as p on p.id=subs.problem_id where fw.soft_delete = 0 and p.status = 1;"
+
+	rows, err := db.DB.Query(sql)
+	if err != nil {
+		return fSubs, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		fsub := FlagSubmission{}
+		rows.Scan(&fsub.ID, &fsub.SubmissionID, &fsub.ProblemID, &fsub.StudentID, &fsub.TeacherID, &fsub.Reason, &fsub.Code, &fsub.Message, &fsub.StudentName, &fsub.CreatedAt, &fsub.UpdatedAt, &fsub.Score)
+		fSubs = append(fSubs, fsub)
+	}
+
+	return fSubs, err
 }

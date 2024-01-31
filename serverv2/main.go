@@ -24,7 +24,7 @@ func main() {
 	// - No origin allowed by default
 	// - GET,POST, PUT, HEAD methods
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://127.0.0.1:8080", "http://localhost:8080"}
+	config.AllowOrigins = []string{"http://127.0.0.1:8080", "http://localhost:8080", "http://141.225.10.71:8000"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	config.AllowCredentials = true
 	r.Use(cors.New(config))
