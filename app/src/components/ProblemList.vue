@@ -232,17 +232,12 @@ export default {
       const config = {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
       }
-      let postBody = {
-        'solution_id': item.solution_id
-      }
-      this.$http.post(Config.apiUrl + '/solution/broadcast', postBody, config)
+      this.$http.put(Config.apiUrl + '/solutions/' + item.solution_id + '/broadcast', '', config)
         .then(() => {
-          // alert('Snapshot  with id ' + sub.student_id + ' is on watch list.')
-          this.toast('Solution for problem with id ' + item.ProblemID + ' is broadcasted.')
+          this.toast('Solution for problem with id ' + item.problem_id + ' is broadcasted.')
         })
         .catch(function (error) {
           console.log(error)
-          // alert(error)
         })
     },
     sendFeedback (submission, id) {

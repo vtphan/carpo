@@ -264,7 +264,7 @@ export default {
   },
   created: function () {
     this.getSnapshotList()
-    this.getWatchedSubsList()
+    // this.getWatchedSubsList()
     // setInterval(() => this.getSnapshotList(), 10000)
   }
 }

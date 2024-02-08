@@ -9,6 +9,7 @@ type SolStore interface {
 	GetSolution(int) (Solutions, error)
 	SaveSolution(Solutions) (int, error)
 	UpdateSolution(Solutions) (err error)
+	BroadcastSolution(int) error
 	IsExpired(int) (bool, error)
 }
 
@@ -54,6 +55,18 @@ func (db *Database) UpdateSolution(s Solutions) (err error) {
 	sqlStatement := `UPDATE solutions set code=$1, broadcast=$2, updated_at=$3 where problem_id=$4`
 
 	_, err = db.DB.Exec(sqlStatement, s.Code, s.Broadcast, s.UpdatedAt, s.ProblemID)
+
+	if err != nil {
+		return err
+	}
+	return
+}
+
+// Set broadcast to 1
+func (db *Database) BroadcastSolution(sID int) (err error) {
+	sqlStatement := `UPDATE solutions set broadcast=1 where id=$1`
+
+	_, err = db.DB.Exec(sqlStatement, sID)
 
 	if err != nil {
 		return err

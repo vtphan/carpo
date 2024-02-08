@@ -120,5 +120,9 @@ func main() {
 	r.GET("/problems/status", pAPI.ViewProblemStatus)
 	r.OPTIONS("/problems/status")
 
+	// Broadcast solution
+	r.PUT("/solutions/:id/broadcast", solAPI.BroadcastSolHandler)
+	r.OPTIONS("/solutions")
+
 	r.Run(":8081")
 }

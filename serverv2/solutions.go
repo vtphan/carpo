@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -57,5 +58,26 @@ func (s *SolutionAPI) SolutionHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"msg": "Solution successfully uploaded."})
+
+}
+
+func (s *SolutionAPI) BroadcastSolHandler(c *gin.Context) {
+	sID := c.Param("id")
+
+	// string to int
+	solID, err := strconv.Atoi(sID)
+	if err != nil || solID == 0 {
+		log.Infof("Error parsing solution id in BroadcastSolHandler. Err: %v", err)
+		c.JSON(400, err)
+		return
+	}
+	err = s.SolService.BroadcastSolution(solID)
+	if err != nil {
+		log.Infof("Failed to broadcast solution. %v Err. %v\n", solID, err)
+		c.JSON(500, gin.H{"msg": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"msg": "Solution broadcasted successfully."})
 
 }
