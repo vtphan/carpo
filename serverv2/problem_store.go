@@ -201,25 +201,28 @@ func (db *Database) ListProblemGradeStatus() ([]ProblemGradeStatus, error) {
 		ids = append(ids, pGradeStat.ProblemID)
 	}
 
-	// convert id from []int to []string
-	stringIDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
-	// Get Tags associated with the submissions.
-	sql := "select pt.tag_id, pt.problem_id, t.name from problem_tag as pt inner join tags as t on pt.tag_id = t.id where pt.problem_id in (" + stringIDs + ")"
-	fmt.Printf("Sql: ", sql)
+	if len(ids) > 0 {
 
-	rows, err = db.DB.Query(sql)
-	if err != nil {
-		return pGradeStats, err
-	}
-	defer rows.Close()
+		// convert id from []int to []string
+		stringIDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
+		// Get Tags associated with the submissions.
+		sql := "select pt.tag_id, pt.problem_id, t.name from problem_tag as pt inner join tags as t on pt.tag_id = t.id where pt.problem_id in (" + stringIDs + ")"
+		fmt.Printf("Sql: ", sql)
 
-	for rows.Next() {
-		t := Tag{}
-		pID := 0
-		rows.Scan(&t.ID, &pID, &t.Name)
-		for idx, prob := range pGradeStats {
-			if prob.ProblemID == pID {
-				pGradeStats[idx].Tag = append(pGradeStats[idx].Tag, t)
+		rows, err = db.DB.Query(sql)
+		if err != nil {
+			return pGradeStats, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			t := Tag{}
+			pID := 0
+			rows.Scan(&t.ID, &pID, &t.Name)
+			for idx, prob := range pGradeStats {
+				if prob.ProblemID == pID {
+					pGradeStats[idx].Tag = append(pGradeStats[idx].Tag, t)
+				}
 			}
 		}
 	}
