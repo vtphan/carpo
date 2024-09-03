@@ -13,6 +13,7 @@ type SubStore interface {
 	GetUserNameByID(int) (User, error)
 	IsExpired(int) (bool, error)
 	GetOnWatchSnapshots() ([]FlagSubmission, error)
+	GetSnapTags() ([]TagSnapName, error)
 }
 
 type Submission struct {
@@ -30,6 +31,13 @@ type Submission struct {
 	Tag       []Tag     `json:"tag"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type TagSnapName struct {
+	TagID        int    `json:"id"`
+	TagName      string `json:"name"`
+	SubmissionID int    `json:"submission_id"`
+	UserID       int    `json:"user_id"`
 }
 
 func (s *Submission) IsAllowed() bool {
@@ -121,6 +129,25 @@ func (db *Database) GetSubmissions() ([]Submission, error) {
 	}
 
 	return subs, err
+}
+
+func (db *Database) GetSnapTags() ([]TagSnapName, error) {
+	tags := make([]TagSnapName, 0)
+	sql := "select t.id, t.name, sub.id, sub.user_id from submission_tag as sub_tag inner join submissions as sub on sub_tag.submission_id = sub.id inner join tags as t on sub_tag.tag_id = t.id  inner join problems as p on p.id = sub.problem_id where sub.is_snapshot=1 and p.status=1;"
+
+	rows, err := db.DB.Query(sql)
+	if err != nil {
+		return tags, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		t := TagSnapName{}
+		rows.Scan(&t.TagID, &t.TagName, &t.SubmissionID, &t.UserID)
+		tags = append(tags, t)
+	}
+
+	return tags, err
 }
 
 func (db *Database) GetOnWatchSnapshots() ([]FlagSubmission, error) {

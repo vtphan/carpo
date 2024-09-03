@@ -123,6 +123,13 @@ func (sub *SubmissionAPI) GetSnapshotsHandler(c *gin.Context) {
 		return
 	}
 
+	// tags, err := sub.SubService.GetSnapTags()
+	// if err != nil && err != sql.ErrNoRows {
+	// 	log.Infof("Failed to Get OnWatch Tags. Err. %v\n", err)
+	// 	c.JSON(500, gin.H{"msg": err})
+	// 	return
+	// }
+
 	for _, value := range studentWorkSnapshot {
 		s := Submission{}
 
@@ -148,6 +155,12 @@ func (sub *SubmissionAPI) GetSnapshotsHandler(c *gin.Context) {
 				s.WatchID = obj.ID
 			}
 		}
+
+		// for _, obj := range tags {
+		// 	if obj.UserID == s.StudentID {
+		// 		s.Tag = append(s.Tag, Tag{ID: obj.TagID, Name: obj.TagName})
+		// 	}
+		// }
 
 		snapshots = append(snapshots, s)
 	}

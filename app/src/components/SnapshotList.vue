@@ -270,11 +270,18 @@ export default {
 }
 </script>
 <style>
+/* https://gist.github.com/gokulkrishh/242e68d1ee94ad05f488 */
+@media (min-width: 700px) {
+  /* CSS */
+  .five-cols {
+    grid-template-columns: repeat(10, 1fr);
+    column-gap: 8px;
+    gap: 10px;
+  }
+}
 
 .five-cols {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  column-gap: 8px;
   background-color: rgb(206, 209, 212);
   padding: 5px;
   /* text-align: left; */
@@ -344,5 +351,13 @@ input:placeholder-shown {
   margin: 5px;
   padding-left: 10px;
   padding-right: 10px;
+}
+
+.btn-group, .btn-group-vertical {
+    position: relative;
+    display: -ms-inline-flexbox;
+    display: -webkit-inline-box;
+    /* display: inline-flex; */
+    vertical-align: middle;
 }
 </style>

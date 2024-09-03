@@ -58,7 +58,7 @@
                         </div>
                       </template>
                       <b-card-text >
-                          {{ items.student_name }} 
+                          {{ items.student_name }}
                       </b-card-text>
                       <template #footer>
                           <small>
@@ -72,7 +72,7 @@
 
             <b-modal id="myModal" size="xl" :hide-footer="true">
                 <template #modal-title>
-                  Submission 
+                  Submission
                   <font-awesome-icon v-if="selectedSub.snapshot==3" icon="hand" />
                   <b-badge v-if="selectedSub.score==1" variant="success">correct</b-badge>
                   <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
@@ -513,11 +513,18 @@ export default {
 </script>
 
 <style>
+/* https://gist.github.com/gokulkrishh/242e68d1ee94ad05f488 */
+@media (min-width: 700px) {
+/* CSS */
+  .five-cols {
+    grid-template-columns: repeat(10, 1fr);
+    column-gap: 8px;
+    gap: 10px;
+  }
+}
 
 .five-cols {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  column-gap: 8px;
   background-color: rgb(206, 209, 212);
   padding: 5px;
   /* text-align: left; */
@@ -595,6 +602,13 @@ input:placeholder-shown {
   padding-right: 10px;
 }
 
+.btn-group, .btn-group-vertical {
+    position: relative;
+    display: -ms-inline-flexbox;
+    display: -webkit-inline-box;
+    /* display: inline-flex; */
+    vertical-align: middle;
+}
 </style>
 
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
