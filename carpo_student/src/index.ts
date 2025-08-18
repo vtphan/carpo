@@ -98,7 +98,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
             //   info.message = c.model.value.text;
             // }
             if (index === activeIndex) {
-              question = c.model.toJSON().source[0];
+              question = c.model.sharedModel.getSource()
               if (question.includes('## PID ')) {
                 const newCheckButton: CellCheckButton = new CellCheckButton(
                   cell,
@@ -112,7 +112,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
                   setInterval(() => {
                     const postBody = {
                       message: '',
-                      code: c.model.toJSON().source[0],
+                      code: c.model.sharedModel.getSource(),
                       problem_id: info.problem_id,
                       snapshot: 1
                     };

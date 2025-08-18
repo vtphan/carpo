@@ -1,4 +1,4 @@
-import { ReactWidget } from '@jupyterlab/apputils';
+import { ReactWidget } from '@jupyterlab/ui-components';
 
 import { Cell, CodeCell } from '@jupyterlab/cells';
 
@@ -52,12 +52,10 @@ const CodeCellButtonComponent = ({
       );
       return;
     }
-    // clear message skeleton
-    info.message = info.message.replace('## Message to instructor:', '');
 
     const postBody = {
       message: info.message,
-      code: cell.model.toJSON().source[0],
+      code: cell.model.sharedModel.getSource(),
       problem_id: info.problem_id,
       snapshot: 2
     };
@@ -68,49 +66,13 @@ const CodeCellButtonComponent = ({
     })
       .then(data => {
         if (data.msg === 'Submission saved successfully.') {
-          if (info.message.length > 27) {
-            data.msg = 'Code & message is sent to the instructor.';
-          } else {
-            data.msg = 'Code is sent to the instructor.';
-          }
+          data.msg = 'Code is sent to the instructor.';
         }
         showDialog({
           title: '',
           body: data.msg,
           buttons: [Dialog.okButton({ label: 'Ok' })]
         });
-
-        // Keep checking for new feedback.
-        // This setInterval will be cleared once the feedback is downloaded (after reload())
-        // setInterval(function(){
-        //     // console.log("Checking for feedback...")
-        //     requestAPI<any>('feedback',{
-        //     method: 'GET'
-        //     })
-        //     .then(data => {
-        //         // console.log(data);
-        //         if (data['hard-reload'] != -1) {
-        //         showDialog({
-        //             title:'',
-        //             body: data.msg,
-        //             buttons: [Dialog.okButton({ label: 'Ok' })]
-        //         }).then( result => {
-        //             if (result.button.accept ) {
-        //                 window.location.reload();
-        //             }
-        //         })
-
-        //         }
-
-        //     })
-        //     .catch(reason => {
-        //         showErrorMessage('Get Feedback Error', reason);
-        //         console.error(
-        //         `Failed to fetch recent feedbacks.\n${reason}`
-        //         );
-        //     });
-
-        // }, 60000);
       })
       .catch(reason => {
         showErrorMessage('Code Share Error', reason);

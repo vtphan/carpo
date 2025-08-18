@@ -210,7 +210,7 @@ class QuestionRouteHandler(APIHandler):
                                 "cell_type": "markdown",
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
-                                "source": [ "## Message to instructor: \n" ],
+                                "source": [ "### In-class Exercises \n" ],
                                 "outputs": []
                                 })
                 problem_block = ["## PID {}\n## Expires at {}\n".format(res['id'], res['lifetime'])]

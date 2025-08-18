@@ -124,7 +124,7 @@ export class ShareCodeButton
 
     const button = new ToolbarButton({
       className: 'share-code-button',
-      label: 'ShareCode3',
+      label: 'ShareCode',
       onClick: shareCode,
       tooltip: 'Share your code to the instructor.'
     });
