@@ -135,7 +135,7 @@ class RegistrationHandler(APIHandler):
         with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
 
-        self.finish(response)
+        self.finish(json.dumps(response))
 
 class QuestionRouteHandler(APIHandler):
     @tornado.web.authenticated
