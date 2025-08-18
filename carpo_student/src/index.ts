@@ -14,7 +14,7 @@ import { Cell } from '@jupyterlab/cells';
 
 import { PanelLayout } from '@lumino/widgets';
 
-import { CellCheckButton } from './widget';
+import { CellCheckButton, FloatingFeedbackWidget } from './widget';
 
 import { CellInfo } from './model';
 
@@ -153,9 +153,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
       'Notebook',
       new ViewSubmissionStatusButton()
     );
+    app.docRegistry.addWidgetExtension('Notebook', new ViewFeedbacksButton());
     // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
   }
 };
+
 export class RegisterButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
@@ -350,6 +352,79 @@ export class ViewSubmissionStatusButton
 }
 
 // Currently disabled
+export class ViewFeedbacksButton
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+{
+  private static feedbackWidgets = new Map<string, FloatingFeedbackWidget>();
+
+  /**
+   * Create a new extension for the notebook panel widget.
+   *
+   * @param panel Notebook panel
+   * @param context Notebook context
+   * @returns Disposable on the added button
+   */
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const viewFeedbacks = () => {
+      // Get the notebook filename as unique identifier
+      const filename = context.path;
+      
+      // Check if feedback widget already exists for this filename
+      let floatingFeedback = ViewFeedbacksButton.feedbackWidgets.get(filename);
+      
+      if (!floatingFeedback) {
+        // Create new feedback widget if it doesn't exist
+        floatingFeedback = new FloatingFeedbackWidget(filename);
+        ViewFeedbacksButton.feedbackWidgets.set(filename, floatingFeedback);
+        
+        // Add cleanup when widget is closed
+        const originalClose = floatingFeedback.close.bind(floatingFeedback);
+        floatingFeedback.close = () => {
+          originalClose();
+          ViewFeedbacksButton.feedbackWidgets.delete(filename);
+        };
+      }
+      
+      floatingFeedback.show();
+    };
+
+    // Setup cleanup when notebook panel is disposed
+    const cleanupFeedback = () => {
+      const filename = context.path;
+      const widget = ViewFeedbacksButton.feedbackWidgets.get(filename);
+      if (widget) {
+        widget.close();
+        ViewFeedbacksButton.feedbackWidgets.delete(filename);
+      }
+    };
+
+    // Listen for panel disposal
+    panel.disposed.connect(cleanupFeedback);
+
+    const button = new ToolbarButton({
+      className: 'view-feedbacks-button',
+      label: 'ViewFeedbacks',
+      onClick: viewFeedbacks,
+      tooltip: 'View feedback widget'
+    });
+
+    panel.toolbar.insertItem(14, 'viewFeedbacks', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+      // Clean up feedback widget when button is disposed
+      const filename = context.path;
+      const widget = ViewFeedbacksButton.feedbackWidgets.get(filename);
+      if (widget) {
+        widget.close();
+        ViewFeedbacksButton.feedbackWidgets.delete(filename);
+      }
+    });
+  }
+}
+
 export class viewProblemStatusExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
