@@ -527,6 +527,38 @@ class ViewProblemStatusRouteHandler(APIHandler):
         problems_status_url = config_data['server'] + "/problems/status"
 
         self.finish({"url":problems_status_url })
+
+class WidgetFeedbackHandler(APIHandler):
+    """Handler for the floating feedback widget to get feedback content as JSON"""
+    
+    @tornado.web.authenticated
+    def get(self):
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        # url = config_data['server'] + "/students/get_submission_feedbacks?student_id="+str(config_data['id'])
+        url = config_data['server'] + "/feedback"
+        
+        try:
+            response = requests.get(url,timeout=5).json()
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
+            return
+
+        if len(response['data']) == 0:
+            self.finish(json.dumps({
+                "msg": "No feedback available yet. Your submissions are being reviewed."
+            }))
+            return
+        
+        else:
+            self.finish(json.dumps(response))
+
  
 
 def setup_handlers(web_app):
@@ -558,3 +590,7 @@ def setup_handlers(web_app):
 
     route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-student", "ask_for_help")
     web_app.add_handlers(host_pattern, [(route_pattern_problems_status, RaiseHandRouteHandler)])
+
+    # Widget feedback endpoint for floating feedback widget
+    route_pattern_widget_feedback =  url_path_join(web_app.settings['base_url'], "carpo-student", "widget-feedback")
+    web_app.add_handlers(host_pattern, [(route_pattern_widget_feedback, WidgetFeedbackHandler)])

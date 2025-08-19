@@ -96,6 +96,8 @@ export class FloatingFeedbackWidget {
   private size = { width: 300, height: 400 };
   private panelId: string;
   private filename: string;
+  private contentElement: HTMLDivElement;
+  private isLoading = false;
 
   constructor(filename?: string) {
     this.panelId = filename || `feedback-${Date.now()}`;
@@ -104,6 +106,7 @@ export class FloatingFeedbackWidget {
     this.setupContainer();
     this.setupEventListeners();
     this.createContent();
+    this.fetchFeedbackContent();
   }
 
   private setupContainer(): void {
@@ -193,20 +196,167 @@ export class FloatingFeedbackWidget {
     const content = document.createElement('div');
     content.classList.add('feedback-content');
     content.style.flex = '1';
-    content.style.padding = '16px';
+    content.style.padding = '4px';
     content.style.overflow = 'auto';
-    content.style.backgroundColor = '#f8f9fa';
+    content.style.backgroundColor = '#ffffff';
 
-    const feedbackText = document.createElement('p');
-    feedbackText.textContent = 'Your feedback will appear here...';
-    feedbackText.style.margin = '0 0 12px 0';
-    feedbackText.style.fontSize = '14px';
-    feedbackText.style.color = '#333';
-
-    content.appendChild(feedbackText);
+    this.contentElement = content;
 
     this.node.appendChild(header);
     this.node.appendChild(content);
+  }
+
+  private async fetchFeedbackContent(): Promise<void> {
+    this.isLoading = true;
+    this.showLoadingState();
+
+    try {
+      const resp = await requestAPI<any>('widget-feedback', {
+        method: 'GET'
+      });
+      
+      this.showFeedbackContent(resp.data || 'No feedback available');
+    } catch (error) {
+      console.error('Failed to fetch feedback:', error);
+      this.showErrorState(error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private showLoadingState(): void {
+    this.contentElement.innerHTML = '';
+    const loadingDiv = document.createElement('div');
+    loadingDiv.style.textAlign = 'center';
+    loadingDiv.style.color = '#666';
+    loadingDiv.style.fontSize = '13px';
+    loadingDiv.style.padding = '20px';
+    loadingDiv.innerHTML = '🔄 Loading feedback...';
+    this.contentElement.appendChild(loadingDiv);
+  }
+
+  private showFeedbackContent(data: any): void {
+    this.contentElement.innerHTML = '';
+    
+    // Handle string content (fallback)
+    if (typeof data === 'string') {
+      const feedbackDiv = document.createElement('div');
+      feedbackDiv.style.fontSize = '14px';
+      feedbackDiv.style.color = '#333';
+      feedbackDiv.style.lineHeight = '1.4';
+      feedbackDiv.textContent = data;
+      this.contentElement.appendChild(feedbackDiv);
+      return;
+    }
+    
+    // Handle array of feedback objects
+    if (Array.isArray(data)) {
+      this.createChatMessages(data);
+    } else {
+      // Handle single feedback object or no data
+      const feedbackDiv = document.createElement('div');
+      feedbackDiv.style.fontSize = '14px';
+      feedbackDiv.style.color = '#666';
+      feedbackDiv.style.textAlign = 'center';
+      feedbackDiv.style.padding = '20px';
+      feedbackDiv.textContent = 'No feedback available';
+      this.contentElement.appendChild(feedbackDiv);
+    }
+  }
+
+  private createChatMessages(feedbackArray: any[]): void {
+    const chatContainer = document.createElement('div');
+    chatContainer.style.display = 'flex';
+    chatContainer.style.flexDirection = 'column';
+    chatContainer.style.gap = '12px';
+    chatContainer.style.padding = '8px';
+    
+    feedbackArray.forEach((feedback, index) => {
+      const messageDiv = this.createChatMessage(feedback, index);
+      chatContainer.appendChild(messageDiv);
+    });
+    
+    this.contentElement.appendChild(chatContainer);
+  }
+
+  private createChatMessage(feedback: any, index: number): HTMLDivElement {
+    const messageContainer = document.createElement('div');
+    messageContainer.style.display = 'flex';
+    messageContainer.style.flexDirection = 'column';
+    messageContainer.style.marginBottom = '8px';
+    
+    // Message bubble
+    const messageBubble = document.createElement('div');
+    messageBubble.style.backgroundColor = '#e3f2fd';
+    messageBubble.style.border = '1px solid #2196f3';
+    messageBubble.style.borderRadius = '12px';
+    messageBubble.style.padding = '12px';
+    messageBubble.style.fontSize = '13px';
+    messageBubble.style.lineHeight = '1.4';
+    messageBubble.style.wordWrap = 'break-word';
+    messageBubble.style.maxWidth = '100%';
+    messageBubble.style.position = 'relative';
+
+    // Feedback content
+    if (feedback.feedback) {
+      const feedbackContent = document.createElement('div');
+      feedbackContent.style.marginBottom = '12px';
+      feedbackContent.style.fontSize = '13px';
+      feedbackContent.style.lineHeight = '1.4';
+      feedbackContent.style.color = '#333';
+      
+      feedbackContent.innerHTML = feedback.feedback;
+      messageBubble.appendChild(feedbackContent);
+    }
+    
+    // Timestamp (if available)
+    const timestamp = document.createElement('div');
+    timestamp.style.fontSize = '11px';
+    timestamp.style.color = '#666';
+    timestamp.style.textAlign = 'right';
+    timestamp.style.marginTop = '4px';
+    timestamp.style.opacity = '0.7';
+    
+    if (feedback.timestamp) {
+      // Format timestamp nicely
+      const date = new Date(feedback.timestamp);
+      const timeString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      timestamp.textContent = timeString;
+    } else {
+      timestamp.textContent = `Message ${index + 1}`;
+    }
+    
+    messageBubble.appendChild(timestamp);
+    messageContainer.appendChild(messageBubble);
+    return messageContainer;
+  }
+
+  private showErrorState(error: any): void {
+    this.contentElement.innerHTML = '';
+    const errorDiv = document.createElement('div');
+    errorDiv.style.color = '#d73a49';
+    errorDiv.style.fontSize = '13px';
+    errorDiv.style.padding = '20px';
+    errorDiv.style.textAlign = 'center';
+    
+    const errorMessage = error?.message || error || 'Failed to load feedback';
+    errorDiv.innerHTML = `⚠️ Error loading feedback<br><small>${errorMessage}</small>`;
+    
+    const retryButton = document.createElement('button');
+    retryButton.textContent = '🔄 Retry';
+    retryButton.style.marginTop = '10px';
+    retryButton.style.padding = '5px 10px';
+    retryButton.style.backgroundColor = '#0078d4';
+    retryButton.style.color = 'white';
+    retryButton.style.border = 'none';
+    retryButton.style.borderRadius = '4px';
+    retryButton.style.cursor = 'pointer';
+    retryButton.style.fontSize = '12px';
+    retryButton.addEventListener('click', () => this.fetchFeedbackContent());
+    
+    errorDiv.appendChild(document.createElement('br'));
+    errorDiv.appendChild(retryButton);
+    this.contentElement.appendChild(errorDiv);
   }
 
   private setupEventListeners(): void {
@@ -267,6 +417,11 @@ export class FloatingFeedbackWidget {
       this.node.style.left = `${this.position.x}px`;
     }
     this.node.style.display = 'flex';
+    
+    // Refresh feedback content when shown
+    if (!this.isLoading) {
+      this.fetchFeedbackContent();
+    }
   }
 
   public close(): void {

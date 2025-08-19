@@ -78,6 +78,23 @@ func main() {
 	// Student Status page
 	r.GET("students/status", viewStudentSubmissionStatus(db))
 
+	r.GET("/feedback", func(c *gin.Context) {
+
+		c.JSON(http.StatusOK, gin.H{
+			"data": []map[string]interface{}{
+				{
+					"timestamp": "2025-08-01",
+					"feedback":  "test feedback 1",
+				},
+				// You can add more entries here
+				{
+					"timestamp": "2025-08-02",
+					"feedback":  "test feedback 2",
+				},
+			},
+		})
+	})
+
 	// Use Middleware for app APIs
 	r.Use(appMiddleware(db))
 	r.GET("/submissions/teachers", subAPI.GetSubmissionsHandler)
