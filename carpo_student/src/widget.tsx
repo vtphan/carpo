@@ -119,10 +119,11 @@ export class FloatingFeedbackWidget {
       this.container = document.body;
     }
 
-    // Calculate top-right position
+    // Calculate bottom-right position
     const containerWidth = this.container.clientWidth || window.innerWidth;
+    const containerHeight = this.container.clientHeight || window.innerHeight;
     this.position.x = containerWidth - this.size.width - 20; // 20px margin from right edge
-    this.position.y = 50; // 50px from top
+    this.position.y = containerHeight - this.size.height - 40;; // 20px from bottom
 
     // Setup the floating window styles
     this.node.classList.add('floating-feedback-window');
@@ -167,6 +168,36 @@ export class FloatingFeedbackWidget {
     title.style.fontWeight = '600';
     title.style.fontSize = '14px';
 
+    // Create button container for refresh and close buttons
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.gap = '4px';
+
+    // Refresh button
+    const refreshButton = document.createElement('button');
+    refreshButton.textContent = '🔄';
+    refreshButton.style.background = 'none';
+    refreshButton.style.border = 'none';
+    refreshButton.style.color = 'white';
+    refreshButton.style.fontSize = '14px';
+    refreshButton.style.cursor = 'pointer';
+    refreshButton.style.padding = '0';
+    refreshButton.style.width = '20px';
+    refreshButton.style.height = '20px';
+    refreshButton.style.borderRadius = '50%';
+    refreshButton.style.display = 'flex';
+    refreshButton.style.alignItems = 'center';
+    refreshButton.style.justifyContent = 'center';
+    refreshButton.title = 'Refresh feedback';
+    refreshButton.addEventListener('click', () => this.refreshFeedback());
+    refreshButton.addEventListener('mouseenter', () => {
+      refreshButton.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+    });
+    refreshButton.addEventListener('mouseleave', () => {
+      refreshButton.style.backgroundColor = 'transparent';
+    });
+
+    // Close button
     const closeButton = document.createElement('button');
     closeButton.textContent = '×';
     closeButton.style.background = 'none';
@@ -181,6 +212,7 @@ export class FloatingFeedbackWidget {
     closeButton.style.display = 'flex';
     closeButton.style.alignItems = 'center';
     closeButton.style.justifyContent = 'center';
+    closeButton.title = 'Close feedback';
     closeButton.addEventListener('click', () => this.close());
     closeButton.addEventListener('mouseenter', () => {
       closeButton.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
@@ -189,8 +221,11 @@ export class FloatingFeedbackWidget {
       closeButton.style.backgroundColor = 'transparent';
     });
 
+    buttonContainer.appendChild(refreshButton);
+    buttonContainer.appendChild(closeButton);
+
     header.appendChild(title);
-    header.appendChild(closeButton);
+    header.appendChild(buttonContainer);
 
     // Create content area
     const content = document.createElement('div');
@@ -211,7 +246,10 @@ export class FloatingFeedbackWidget {
     this.showLoadingState();
 
     try {
-      const resp = await requestAPI<any>('widget-feedback', {
+      // Extract problem ID from filename (e.g., "ex001.ipynb" -> "1")
+      const problemId = this.extractProblemId(this.filename);
+      
+      const resp = await requestAPI<any>(`widget-feedback?problem_id=${problemId}`, {
         method: 'GET'
       });
       
@@ -222,6 +260,20 @@ export class FloatingFeedbackWidget {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private extractProblemId(filename: string): number {
+    // Extract filename from path (e.g., "Exercises/ex001.ipynb" -> "ex001.ipynb")
+    const basename = filename.split('/').pop() || '';
+    
+    // Extract number from filename (e.g., "ex001.ipynb" -> "001")
+    const match = basename.match(/ex(\d+)\.ipynb$/);
+    if (match) {
+      return parseInt(match[1], 10); // Convert "001" to 1
+    }
+    
+    // Fallback to 1 if no match found
+    return 1;
   }
 
   private showLoadingState(): void {
@@ -237,17 +289,6 @@ export class FloatingFeedbackWidget {
 
   private showFeedbackContent(data: any): void {
     this.contentElement.innerHTML = '';
-    
-    // Handle string content (fallback)
-    if (typeof data === 'string') {
-      const feedbackDiv = document.createElement('div');
-      feedbackDiv.style.fontSize = '14px';
-      feedbackDiv.style.color = '#333';
-      feedbackDiv.style.lineHeight = '1.4';
-      feedbackDiv.textContent = data;
-      this.contentElement.appendChild(feedbackDiv);
-      return;
-    }
     
     // Handle array of feedback objects
     if (Array.isArray(data)) {
@@ -298,14 +339,14 @@ export class FloatingFeedbackWidget {
     messageBubble.style.position = 'relative';
 
     // Feedback content
-    if (feedback.feedback) {
-      const feedbackContent = document.createElement('div');
+    if (feedback.code) {
+      const feedbackContent = document.createElement('pre');
       feedbackContent.style.marginBottom = '12px';
       feedbackContent.style.fontSize = '13px';
       feedbackContent.style.lineHeight = '1.4';
       feedbackContent.style.color = '#333';
       
-      feedbackContent.innerHTML = feedback.feedback;
+      feedbackContent.innerHTML = feedback.code;
       messageBubble.appendChild(feedbackContent);
     }
     
@@ -317,9 +358,9 @@ export class FloatingFeedbackWidget {
     timestamp.style.marginTop = '4px';
     timestamp.style.opacity = '0.7';
     
-    if (feedback.timestamp) {
+    if (feedback.feedback_at) {
       // Format timestamp nicely
-      const date = new Date(feedback.timestamp);
+      const date = new Date(feedback.feedback_at);
       const timeString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       timestamp.textContent = timeString;
     } else {
@@ -432,6 +473,12 @@ export class FloatingFeedbackWidget {
 
   public hide(): void {
     this.node.style.display = 'none';
+  }
+
+  public refreshFeedback(): void {
+    if (!this.isLoading) {
+      this.fetchFeedbackContent();
+    }
   }
 }
 

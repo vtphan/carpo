@@ -540,9 +540,16 @@ class WidgetFeedbackHandler(APIHandler):
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
 
-        # url = config_data['server'] + "/students/get_submission_feedbacks?student_id="+str(config_data['id'])
-        url = config_data['server'] + "/feedback"
+        # Get problem_id from query parameter, default to 1 if not provided
+        problem_id = self.get_argument('problem_id', '1')
         
+        try:
+            problem_id = int(problem_id)
+        except ValueError:
+            problem_id = 1
+
+        url = config_data['server'] + "/students/"+ str(config_data['id'])+ "/problems/"+ str(problem_id) + "/feedbacks"
+
         try:
             response = requests.get(url,timeout=5).json()
         except requests.exceptions.RequestException as e:

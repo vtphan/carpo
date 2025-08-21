@@ -259,56 +259,6 @@ export class GetQuestionButton
     });
   }
 }
-export class GetFeedbackButton
-  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-{
-  /**
-   * Create a new extension for the notebook panel widget.
-   *
-   * @param panel Notebook panel
-   * @param context Notebook context
-   * @returns Disposable on the added button
-   */
-  createNew(
-    panel: NotebookPanel,
-    context: DocumentRegistry.IContext<INotebookModel>
-  ): IDisposable {
-    const getFeedback = () => {
-      requestAPI<any>('feedback', {
-        method: 'GET'
-      })
-        .then(data => {
-          console.log(data);
-          showDialog({
-            title: '',
-            body: data.msg,
-            buttons: [Dialog.okButton({ label: 'Ok' })]
-          }).then(result => {
-            if (result.button.accept && data['hard-reload'] === 1) {
-              window.location.reload();
-            }
-          });
-        })
-        .catch(reason => {
-          showErrorMessage('Get Feedback Error', reason);
-          console.error(`Failed to fetch recent feedbacks.\n${reason}`);
-        });
-    };
-
-    const button = new ToolbarButton({
-      className: 'get-feedback-button',
-      label: 'GetFeedback',
-      onClick: getFeedback,
-      tooltip: 'Get Feedback to your Submission'
-    });
-
-    panel.toolbar.insertItem(13, 'getFeedback', button);
-    return new DisposableDelegate(() => {
-      button.dispose();
-    });
-  }
-}
-
 export class ViewSubmissionStatusButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
@@ -368,10 +318,17 @@ export class ViewFeedbacksButton
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
+    // Get the notebook filename as unique identifier
+    const filename = context.path;
+    const notebookName = filename.split('/').pop() || '';
+    
+    // Only show the feedback button for notebooks starting with 'ex'
+    if (!notebookName.startsWith('ex')) {
+      // Return an empty disposable for non-exercise notebooks
+      return new DisposableDelegate(() => {});
+    }
+
     const viewFeedbacks = () => {
-      // Get the notebook filename as unique identifier
-      const filename = context.path;
-      
       // Check if feedback widget already exists for this filename
       let floatingFeedback = ViewFeedbacksButton.feedbackWidgets.get(filename);
       

@@ -31,9 +31,9 @@ export class RaiseHandHelpButton
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
     const raiseHand = () => {
-      // const notebook = panel.content;
+      const notebook = panel.content;
       const filename = panel.context.path;
-      // const activeIndex = notebook.activeCellIndex;
+      const activeIndex = notebook.activeCellIndex;
 
       let codeBlock: string;
 
@@ -43,14 +43,11 @@ export class RaiseHandHelpButton
         )
       };
 
-      // notebook.widgets.map((c, index) => {
-      //   if (c.model.value.text.startsWith('## Message to instructor:')) {
-      //     info.message = c.model.value.text;
-      //   }
-      //   if (index === activeIndex) {
-      //     codeBlock = c.model.value.text;
-      //   }
-      // });
+      notebook.widgets.map((c, index) => {
+        if (index === activeIndex) {
+          codeBlock = c.model.sharedModel.getSource();
+        }
+      });
 
       if (!codeBlock.startsWith('## PID ')) {
         showErrorMessage(
@@ -74,11 +71,7 @@ export class RaiseHandHelpButton
       })
         .then(data => {
           if (data.msg === 'Submission saved successfully.') {
-            if (info.message.length > 27) {
-              data.msg = 'Code & message is sent to the instructor.';
-            } else {
               data.msg = 'Code is sent to the instructor.';
-            }
           }
           showDialog({
             title: '',
@@ -91,7 +84,6 @@ export class RaiseHandHelpButton
           console.error(`Failed to share code to server.\n${reason}`);
         });
 
-      // Put on watch list
     };
 
     const button = new ToolbarButton({
