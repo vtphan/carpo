@@ -91,9 +91,13 @@ export class FloatingFeedbackWidget {
   public node: HTMLDivElement;
   private container: HTMLElement;
   private isDragging = false;
+  private isResizing = false;
+  private resizeCorner: 'nw' | 'ne' | 'sw' | 'se' | null = null;
   private dragOffset = { x: 0, y: 0 };
+  private resizeOffset = { x: 0, y: 0 };
   private position = { x: 0, y: 50 }; // Will be calculated in setupContainer
   private size = { width: 300, height: 400 };
+  private minSize = { width: 250, height: 200 };
   private panelId: string;
   private filename: string;
   private contentElement: HTMLDivElement;
@@ -145,6 +149,10 @@ export class FloatingFeedbackWidget {
     this.node.style.overflow = 'hidden';
     this.node.style.fontFamily = 'var(--jp-ui-font-family)';
     this.node.style.fontSize = '13px';
+    this.node.style.resize = 'none'; // Disable browser default resize
+    
+    // Add resize handle
+    this.createResizeHandle();
   }
 
   private createContent(): void {
@@ -239,6 +247,56 @@ export class FloatingFeedbackWidget {
 
     this.node.appendChild(header);
     this.node.appendChild(content);
+  }
+
+  private createResizeHandle(): void {
+    const corners = [
+      { corner: 'nw', top: '0', left: '0', cursor: 'nw-resize', title: 'Resize from top-left' },
+      { corner: 'ne', top: '0', right: '0', cursor: 'ne-resize', title: 'Resize from top-right' },
+      { corner: 'sw', bottom: '0', left: '0', cursor: 'sw-resize', title: 'Resize from bottom-left' },
+      { corner: 'se', bottom: '0', right: '0', cursor: 'se-resize', title: 'Resize from bottom-right' }
+    ];
+
+    corners.forEach(({ corner, cursor, title, ...position }) => {
+      const resizeHandle = document.createElement('div');
+      resizeHandle.classList.add('feedback-resize-handle', `resize-${corner}`);
+      resizeHandle.dataset.corner = corner;
+      resizeHandle.style.position = 'absolute';
+      resizeHandle.style.width = '15px';
+      resizeHandle.style.height = '15px';
+      resizeHandle.style.cursor = cursor;
+      resizeHandle.style.opacity = '0.7';
+      resizeHandle.style.zIndex = '10';
+      resizeHandle.title = title;
+
+      // Set position based on corner
+      Object.entries(position).forEach(([key, value]) => {
+        if (value !== undefined) {
+          (resizeHandle.style as any)[key] = value;
+        }
+      });
+
+      // Corner-specific styling
+      const gradientMap = {
+        'nw': 'linear-gradient(315deg, transparent 30%, #0078d4 30%, #0078d4 60%, transparent 60%)',
+        'ne': 'linear-gradient(225deg, transparent 30%, #0078d4 30%, #0078d4 60%, transparent 60%)',
+        'sw': 'linear-gradient(45deg, transparent 30%, #0078d4 30%, #0078d4 60%, transparent 60%)',
+        'se': 'linear-gradient(135deg, transparent 30%, #0078d4 30%, #0078d4 60%, transparent 60%)'
+      };
+      
+      resizeHandle.style.background = gradientMap[corner as keyof typeof gradientMap];
+      resizeHandle.style.backgroundSize = '8px 8px';
+      
+      // Add hover effect
+      resizeHandle.addEventListener('mouseenter', () => {
+        resizeHandle.style.opacity = '1';
+      });
+      resizeHandle.addEventListener('mouseleave', () => {
+        resizeHandle.style.opacity = '0.7';
+      });
+
+      this.node.appendChild(resizeHandle);
+    });
   }
 
   private async fetchFeedbackContent(): Promise<void> {
@@ -408,6 +466,35 @@ export class FloatingFeedbackWidget {
 
   private handleMouseDown(e: MouseEvent): void {
     const target = e.target as HTMLElement;
+    
+    // Check for resize handle
+    if (target.classList.contains('feedback-resize-handle')) {
+      this.isResizing = true;
+      this.resizeCorner = target.dataset.corner as 'nw' | 'ne' | 'sw' | 'se';
+      const rect = this.node.getBoundingClientRect();
+      
+      // Set resize offset based on corner
+      switch (this.resizeCorner) {
+        case 'nw':
+          this.resizeOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          break;
+        case 'ne':
+          this.resizeOffset = { x: e.clientX - (rect.left + rect.width), y: e.clientY - rect.top };
+          break;
+        case 'sw':
+          this.resizeOffset = { x: e.clientX - rect.left, y: e.clientY - (rect.top + rect.height) };
+          break;
+        case 'se':
+          this.resizeOffset = { x: e.clientX - (rect.left + rect.width), y: e.clientY - (rect.top + rect.height) };
+          break;
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    
+    // Check for header (drag functionality)
     if (target.classList.contains('feedback-header') || target.closest('.feedback-header')) {
       this.isDragging = true;
       const rect = this.node.getBoundingClientRect();
@@ -422,21 +509,76 @@ export class FloatingFeedbackWidget {
   }
 
   private handleMouseMove(e: MouseEvent): void {
-    if (!this.isDragging) return;
+    if (this.isResizing && this.resizeCorner) {
+      const containerRect = this.container.getBoundingClientRect();
+      const mouseX = e.clientX - containerRect.left;
+      const mouseY = e.clientY - containerRect.top;
+      
+      let newX = this.position.x;
+      let newY = this.position.y;
+      let newWidth = this.size.width;
+      let newHeight = this.size.height;
 
-    const containerRect = this.container.getBoundingClientRect();
-    const newX = Math.max(0, Math.min(
-      this.container.clientWidth - this.size.width,
-      e.clientX - containerRect.left - this.dragOffset.x
-    ));
-    const newY = Math.max(0, Math.min(
-      this.container.clientHeight - this.size.height,
-      e.clientY - containerRect.top - this.dragOffset.y
-    ));
+      switch (this.resizeCorner) {
+        case 'nw':
+          // Top-left corner: resize from top-left
+          newWidth = Math.max(this.minSize.width, this.position.x + this.size.width - (mouseX - this.resizeOffset.x));
+          newHeight = Math.max(this.minSize.height, this.position.y + this.size.height - (mouseY - this.resizeOffset.y));
+          newX = Math.min(this.position.x + this.size.width - this.minSize.width, mouseX - this.resizeOffset.x);
+          newY = Math.min(this.position.y + this.size.height - this.minSize.height, mouseY - this.resizeOffset.y);
+          break;
+          
+        case 'ne':
+          // Top-right corner: resize from top-right
+          newWidth = Math.max(this.minSize.width, mouseX - this.position.x - this.resizeOffset.x);
+          newHeight = Math.max(this.minSize.height, this.position.y + this.size.height - (mouseY - this.resizeOffset.y));
+          newY = Math.min(this.position.y + this.size.height - this.minSize.height, mouseY - this.resizeOffset.y);
+          break;
+          
+        case 'sw':
+          // Bottom-left corner: resize from bottom-left
+          newWidth = Math.max(this.minSize.width, this.position.x + this.size.width - (mouseX - this.resizeOffset.x));
+          newHeight = Math.max(this.minSize.height, mouseY - this.position.y - this.resizeOffset.y);
+          newX = Math.min(this.position.x + this.size.width - this.minSize.width, mouseX - this.resizeOffset.x);
+          break;
+          
+        case 'se':
+          // Bottom-right corner: resize from bottom-right
+          newWidth = Math.max(this.minSize.width, mouseX - this.position.x - this.resizeOffset.x);
+          newHeight = Math.max(this.minSize.height, mouseY - this.position.y - this.resizeOffset.y);
+          break;
+      }
 
-    this.position = { x: newX, y: newY };
-    this.node.style.left = `${newX}px`;
-    this.node.style.top = `${newY}px`;
+      // Apply boundary constraints
+      newX = Math.max(0, Math.min(newX, this.container.clientWidth - newWidth));
+      newY = Math.max(0, Math.min(newY, this.container.clientHeight - newHeight));
+      newWidth = Math.min(newWidth, this.container.clientWidth - newX);
+      newHeight = Math.min(newHeight, this.container.clientHeight - newY);
+
+      this.position = { x: newX, y: newY };
+      this.size = { width: newWidth, height: newHeight };
+      this.node.style.left = `${newX}px`;
+      this.node.style.top = `${newY}px`;
+      this.node.style.width = `${newWidth}px`;
+      this.node.style.height = `${newHeight}px`;
+      return;
+    }
+
+    if (this.isDragging) {
+      const containerRect = this.container.getBoundingClientRect();
+      const newX = Math.max(0, Math.min(
+        this.container.clientWidth - this.size.width,
+        e.clientX - containerRect.left - this.dragOffset.x
+      ));
+      const newY = Math.max(0, Math.min(
+        this.container.clientHeight - this.size.height,
+        e.clientY - containerRect.top - this.dragOffset.y
+      ));
+
+      this.position = { x: newX, y: newY };
+      this.node.style.left = `${newX}px`;
+      this.node.style.top = `${newY}px`;
+    }
   }
 
   private handleMouseUp(): void {
@@ -445,6 +587,11 @@ export class FloatingFeedbackWidget {
       this.node.style.cursor = 'default';
       const header = this.node.querySelector('.feedback-header') as HTMLElement;
       if (header) header.style.cursor = 'grab';
+    }
+    
+    if (this.isResizing) {
+      this.isResizing = false;
+      this.resizeCorner = null;
     }
   }
 

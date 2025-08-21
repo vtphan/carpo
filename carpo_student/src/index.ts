@@ -52,6 +52,36 @@ const plugin: JupyterFrontEndPlugin<void> = {
   ) => {
     console.log('JupyterLab extension carpo-student is activated!');
     const cronTracker: Array<string> = [];
+    const debounceTimers: Map<string, number> = new Map();
+    const DEBOUNCE_DELAY = 5000; // 5 seconds delay after user stops typing
+
+    // Debounced function to send code snapshot
+    const sendDebouncedSnapshot = (cell: Cell, filename: string, problemId: number) => {
+      const timerId = debounceTimers.get(filename);
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+
+      const newTimerId = window.setTimeout(() => {
+        const postBody = {
+          message: '',
+          code: cell.model.sharedModel.getSource(),
+          problem_id: problemId,
+          snapshot: 1
+        };
+        requestAPI<any>('submissions', {
+          method: 'POST',
+          body: JSON.stringify(postBody)
+        }).then(data => {
+          console.log('Snapshot sent (debounced).', data);
+        }).catch(error => {
+          console.error('Failed to send snapshot:', error);
+        });
+      }, DEBOUNCE_DELAY);
+
+      debounceTimers.set(filename, newTimerId);
+    };
+
     nbTrack.currentChanged.connect(() => {
       // console.log("my tracker: ", tracker);
       const notebookPanel = nbTrack.currentWidget;
@@ -107,37 +137,19 @@ const plugin: JupyterFrontEndPlugin<void> = {
                 (cell.layout as PanelLayout).addWidget(newCheckButton);
                 currentCellCheckButton = newCheckButton;
 
-                // Send code snapshot to the server:
+                // Setup debounced snapshot sending when cell content changes
                 if (cronTracker.indexOf(filename) === -1) {
-                  setInterval(() => {
-                    const postBody = {
-                      message: '',
-                      code: c.model.sharedModel.getSource(),
-                      problem_id: info.problem_id,
-                      snapshot: 1
-                    };
-                    requestAPI<any>('submissions', {
-                      method: 'POST',
-                      body: JSON.stringify(postBody)
-                    }).then(data => {
-                      console.log('Snapshot sent.', data);
-                    });
-                  }, 20000);
+                  // Listen for changes to cell content
+                  c.model.sharedModel.changed.connect(() => {
+                    sendDebouncedSnapshot(c, filename, info.problem_id);
+                  });
                   cronTracker.push(filename);
+                  console.log('Debounced snapshot listener added for', filename);
                 }
               }
             }
           });
 
-          // const newCheckButton: CellCheckButton = new CellCheckButton(cell,info);
-
-          // if (question.includes("## PID ")){
-          //   (cell.layout as PanelLayout).addWidget(newCheckButton);
-          //   currentCellCheckButton = newCheckButton;
-          // }
-
-          // Set the current cell and button for future
-          // reference
           currentCell = cell;
         });
       });
