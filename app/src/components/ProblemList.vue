@@ -1,24 +1,24 @@
 <template>
   <div>
-      <b-table striped hover :items="message.data" :fields="fields" responsive="sm">
+      <b-table striped hover :items="message.data" :fields="fields" responsive="sm" :tbody-tr-class="rowClass">
         <template #cell(OnWatch)="data" >
           <a href="javascript:;" @click="fetchWatch(data.item.problem_id)">{{ data.item.on_watch }}</a>
         </template>
         <template #cell(actions)="row">
           <div class="sub-action">
-            <b-button size="sm"  @click="info('Problem Description', row.item.problem_id, row.item.question, row.item)" class="mr-2">
-              View Problem
+            <b-button size="sm"  @click="info('Problem Description', row.item.problem_id, row.item.question, row.item)" class="mr-2" v-b-tooltip.hover title="View Problem">
+              <font-awesome-icon icon="eye" />
             </b-button>
-            <b-button size="sm" :disabled="row.item.status === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2">
-              Unpublish Problem
+            <b-button size="sm" :disabled="row.item.status === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2" v-b-tooltip.hover title="Unpublish Problem">
+              <font-awesome-icon icon="stop" />
             </b-button>
             </div>
             <div class="sub-action">
-            <b-button size="sm" :disabled="!row.item.solution_code" @click="info('Solution Code', row.item.problem_id, row.item.solution_code, row.item)" class="mr-2">
-              View Solution
+            <b-button size="sm" :disabled="!row.item.solution_code" @click="info('Solution Code', row.item.problem_id, row.item.solution_code, row.item)" class="mr-2" v-b-tooltip.hover title="View Solution">
+              <font-awesome-icon icon="file-text" />
             </b-button>
-            <b-button size="sm" :disabled="!row.item.solution_id" @click="showConfirmBox('broadcast', row.item)" class="mr-2">
-              Broadcast Solution
+            <b-button size="sm" :disabled="!row.item.solution_id" @click="showConfirmBox('broadcast', row.item)" class="mr-2" v-b-tooltip.hover title="Broadcast Solution">
+              <font-awesome-icon icon="broadcast-tower" />
             </b-button>
           </div>
         </template>
@@ -45,8 +45,8 @@
         <b-table striped hover :items="watchlist.watch.data" responsive="sm" :fields="['SubmissionID', 'Reason', 'Action']">
         <template #cell(Action)="row">
           <div class="sub-action">
-            <b-button size="sm" v-b-modal.modal-multi-3 @click="getWatchedSub(row.item.SubmissionID)" class="mr-2">
-              See Code
+            <b-button size="sm" v-b-modal.modal-multi-3 @click="getWatchedSub(row.item.SubmissionID)" class="mr-2" v-b-tooltip.hover title="See Code">
+              <font-awesome-icon icon="code" />
             </b-button>
           </div>
         </template>
@@ -117,30 +117,19 @@ export default {
       watch: ''
     },
     fields: [
-      { key: 'problem_id', label: 'ProblemID' },
-      { key: 'ungraded', label: 'Ungraded' },
-      { key: 'correct', label: 'Correct' },
-      { key: 'incorrect', label: 'InCorrect' },
-      { key: 'on_watch', label: 'OnWatch' },
+      { key: 'problem_id', label: 'Problem', sortable: true },
+      { key: 'ungraded', label: 'Ungraded', sortable: true },
+      { key: 'correct', label: 'Correct', sortable: true },
+      { key: 'incorrect', label: 'InCorrect', sortable: true },
+      { key: 'on_watch', label: 'OnWatch', sortable: true },
       { key: 'published_at',
         label: 'Published Date',
+        sortable: true,
         formatter: value => {
           return moment(value, 'YYYY-MM-DD hh:mm').format('LLL')
         }
       },
-      { key: 'status',
-        label: 'Active',
-        formatter: value => {
-          return value ? 'True' : 'False'
-        }
-      },
-      { key: 'lifetime',
-        label: 'Deadline',
-        formatter: value => {
-          return moment(value, 'YYYY-MM-DD hh:mm').format('LLL')
-        }
-      },
-      'actions'
+      { key: 'actions', label: 'Actions', sortable: false }
     ],
     available_tags: '',
     select_tag: []
@@ -347,6 +336,10 @@ export default {
       subIndex = this.message.data.findIndex(obj => obj.problem_id === this.infoModal.pID)
       console.log('with Tag: ', this.message.data[subIndex])
       this.message.data[subIndex].tag = this.message.data[subIndex].tag.filter(item => item.id !== id)
+    },
+    rowClass (item, type) {
+      if (!item || type !== 'row') return
+      return item.status ? 'table-success' : ''
     }
   },
   created: function () {

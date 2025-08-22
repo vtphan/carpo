@@ -46,31 +46,61 @@
                   <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="myModal2" size="xl" :hide-footer="true">
+              <b-modal id="myModal2" size="xl" modal-class="custom-modal-size" :hide-footer="true">
                 <template #modal-title>
                   <div class="box-header d-flex justify-content-between align-items-center">
                     <div style="margin-right: 20px;"> Snapshot {{ timeDiff(selectedSub.created_at) }} ago </div>
                     <b-icon v-if="selectedSub.on_watch" icon="flag-fill" scale="2"></b-icon>
                   </div>
                 </template>
-                <codemirror v-model="selectedSub.code" :options="cmOptions" />
                 <b-row>
-                  <b-col cols="6" >
-                    <div style="text-align: left">
-                      <div v-if="selectedSub.on_watch" class="row">
-                          <b-button class="btn-secondary" @click="unwatchSub(selectedSub);">Unwatch</b-button>
-                      </div>
-                      <div v-else class="row">
-                        <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
-                        <b-form-input style="width: 60%; height: auto;" v-model="reason" placeholder="Reason to set on Watch (Optional)"></b-form-input>
-                      </div>
-                    </div>
+                  <b-col cols="6">
+                    <h5>Code Snapshot</h5>
+                    <codemirror v-model="selectedSub.code" :options="cmOptions" />
+                    <b-row class="mt-3">
+                      <b-col cols="6">
+                        <div style="text-align: left">
+                          <div v-if="selectedSub.on_watch" class="row">
+                              <b-button class="btn-secondary" @click="unwatchSub(selectedSub);">Unwatch</b-button>
+                          </div>
+                          <div v-else class="row">
+                            <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
+                            <b-form-input style="width: 60%; height: auto;" v-model="reason" placeholder="Reason to set on Watch (Optional)"></b-form-input>
+                          </div>
+                        </div>
+                      </b-col>
+                      <b-col cols="6">
+                        <div style="text-align: right">
+                          <b-button-group>
+                            <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id)">Send Feedback</b-button>
+                          </b-button-group>
+                        </div>
+                      </b-col>
+                    </b-row>
                   </b-col>
-                  <b-col cols="6" >
-                    <div style="text-align: right">
-                      <b-button-group>
-                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id)">Send Feedback</b-button>
-                      </b-button-group>
+                  <b-col cols="6">
+                    <h5>Model Feedbacks</h5>
+                    <div v-if="isLoadingSecondColumn" class="text-center">
+                      <b-spinner variant="primary"></b-spinner>
+                      <p>Loading additional information...</p>
+                    </div>
+                    <div v-else-if="secondColumnError" class="alert alert-warning">
+                      {{ secondColumnError }}
+                    </div>
+                    <div v-else class="second-column-content">
+                      <div v-if="feedbackList && feedbackList.length > 0">
+                        <div v-for="(feedback, index) in feedbackList" :key="index" class="feedback-box">
+                          <div class="feedback-header">
+                            <strong>Feedback {{ index + 1 }} ({{feedback.model}})</strong>
+                          </div>
+                          <div class="feedback-content">
+                            <div v-if="feedback.feedback" class="feedback-message">{{ feedback.feedback }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="no-feedback">
+                        <p>No feedback available</p>
+                      </div>
                     </div>
                   </b-col>
                 </b-row>
@@ -107,6 +137,10 @@ export default {
     sorting: 'creation_time',
     watchedSub: '',
     isLoading: true,
+    secondColumnData: '',
+    feedbackList: [],
+    isLoadingSecondColumn: false,
+    secondColumnError: '',
     cmOptions: {
       autoRefresh: true,
       tabSize: 4,
@@ -120,9 +154,10 @@ export default {
   }),
   methods: {
     sendInfo (item) {
-      // console.log('SendInfo:', item)
       this.selectedSub = item
       this.reason = ''
+      // Fetch second column data when modal opens
+      this.fetchSecondColumnData()
     },
     getImagePath () {
       return require('../assets/code-block-1.png')
@@ -260,6 +295,30 @@ export default {
       this.sorting = params
       this.getSnapshotList()
       this.getWatchedSubsList()
+    },
+    fetchSecondColumnData () {
+      this.isLoadingSecondColumn = true
+      this.secondColumnError = ''
+      this.secondColumnData = ''
+      this.feedbackList = []
+      this.$http.get('https://mocki.io/v1/b2c9db6b-872b-485e-b9db-c5726de5a2e7')
+        .then((response) => {
+          this.secondColumnData = response.data
+          // Extract feedbacks array from response
+          if (response.data && response.data.feedbacks && Array.isArray(response.data.feedbacks)) {
+            this.feedbackList = response.data.feedbacks
+          }
+          this.isLoadingSecondColumn = false
+        })
+        .catch((error) => {
+          console.log('Error fetching second column data:', error)
+          this.secondColumnError = 'Failed to load additional information'
+          this.isLoadingSecondColumn = false
+        })
+    },
+    formatTimestamp (timestamp) {
+      if (!timestamp) return ''
+      return moment(timestamp).format('MMM DD, YYYY HH:mm')
     }
   },
   created: function () {
@@ -359,5 +418,94 @@ input:placeholder-shown {
     display: -webkit-inline-box;
     /* display: inline-flex; */
     vertical-align: middle;
+}
+
+.custom-modal-size .modal-dialog {
+    max-width: 95vw;
+    width: 95vw;
+}
+
+.second-column-content {
+    max-height: 600px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.feedback-box {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.feedback-box:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.feedback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.feedback-header strong {
+    color: #343a40;
+    font-size: 16px;
+}
+
+.feedback-timestamp {
+    color: #6c757d;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.feedback-content {
+    color: #495057;
+}
+
+.feedback-message {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.feedback-score {
+    background-color: #e7f3ff;
+    padding: 5px 10px;
+    border-radius: 15px;
+    display: inline-block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #0066cc;
+    margin-bottom: 10px;
+}
+
+.feedback-suggestions {
+    margin-top: 10px;
+}
+
+.feedback-suggestions ul {
+    margin-left: 0;
+    padding-left: 20px;
+}
+
+.feedback-suggestions li {
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.no-feedback {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 40px 20px;
 }
 </style>
