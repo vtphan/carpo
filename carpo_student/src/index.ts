@@ -36,6 +36,7 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { ShareCodeButton } from './share-code';
 import { RaiseHandHelpButton } from './raise-hand-help';
 // import { GetSolutionButton } from './get-solutions'
+import { initializeNotifications, cleanupNotifications } from './sse-notifications';
 
 /**
  * Initialization data for the carpo-student extension.
@@ -51,6 +52,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
     settingRegistry: ISettingRegistry | null
   ) => {
     console.log('JupyterLab extension carpo-student is activated!');
+    
+    // Initialize SSE notifications
+    // initializeNotifications();
+    
     const cronTracker: Array<string> = [];
     const debounceTimers: Map<string, number> = new Map();
     const DEBOUNCE_DELAY = 5000; // 5 seconds delay after user stops typing
@@ -80,6 +85,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       }, DEBOUNCE_DELAY);
 
       debounceTimers.set(filename, newTimerId);
+
+      initializeNotifications()
     };
 
     nbTrack.currentChanged.connect(() => {
@@ -144,7 +151,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
                     sendDebouncedSnapshot(c, filename, info.problem_id);
                   });
                   cronTracker.push(filename);
-                  console.log('Debounced snapshot listener added for', filename);
                 }
               }
             }
@@ -167,6 +173,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
     );
     app.docRegistry.addWidgetExtension('Notebook', new ViewFeedbacksButton());
     // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
+    
+    // Add cleanup for notifications when the extension is deactivated
+    // Note: JupyterFrontEnd doesn't have a disposed signal, so we'll handle cleanup
+    // when the window is unloaded
+    window.addEventListener('beforeunload', () => {
+      cleanupNotifications();
+    });
   }
 };
 

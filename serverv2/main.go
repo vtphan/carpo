@@ -7,12 +7,106 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
+
+type SSEClient struct {
+	Channel chan string
+	UserID  int
+}
+
+type SSEHub struct {
+	clients map[int]*SSEClient
+	mutex   sync.RWMutex
+}
+
+func NewSSEHub() *SSEHub {
+	return &SSEHub{
+		clients: make(map[int]*SSEClient),
+	}
+}
+
+func (h *SSEHub) AddClient(userID int, client *SSEClient) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+	h.clients[userID] = client
+}
+
+func (h *SSEHub) RemoveClient(userID int) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+	if client, exists := h.clients[userID]; exists {
+		close(client.Channel)
+		delete(h.clients, userID)
+	}
+}
+
+func (h *SSEHub) BroadcastToUser(userID int, message string) {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+	fmt.Printf("Message Sent: %v", message)
+	if client, exists := h.clients[userID]; exists {
+		select {
+		case client.Channel <- message:
+		default:
+		}
+	}
+}
+
+type FeedbackMessage struct {
+	EventType    string    `json:"event_type"`
+	SubmissionID int       `json:"submission_id"`
+	StudentID    int       `json:"student_id"`
+	ProblemID    int       `json:"problem_id"`
+	Timestamp    time.Time `json:"timestamp"`
+}
+
+var sseHub = NewSSEHub()
+
+func eventsHandler(c *gin.Context) {
+	userIDParam := c.Query("user_id")
+	if userIDParam == "" {
+		c.JSON(400, gin.H{"error": "user_id parameter is required"})
+		return
+	}
+
+	userID := 0
+	if _, err := fmt.Sscanf(userIDParam, "%d", &userID); err != nil {
+		c.JSON(400, gin.H{"error": "invalid user_id parameter"})
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("Access-Control-Allow-Origin", "*")
+
+	client := &SSEClient{
+		Channel: make(chan string, 100),
+		UserID:  userID,
+	}
+
+	sseHub.AddClient(userID, client)
+	defer sseHub.RemoveClient(userID)
+
+	clientGone := c.Request.Context().Done()
+
+	for {
+		select {
+		case message := <-client.Channel:
+			c.SSEvent("message", message)
+			c.Writer.Flush()
+		case <-clientGone:
+			return
+		}
+	}
+}
 
 func main() {
 
@@ -49,6 +143,9 @@ func main() {
 			"message": "pong",
 		})
 	})
+
+	// SSE endpoint for real-time events
+	r.GET("/events", eventsHandler)
 
 	uAPI := UserAPI{&Database{DB: db}}
 	pAPI := ProblemAPI{&Database{DB: db}}

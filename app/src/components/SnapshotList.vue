@@ -46,7 +46,7 @@
                   <!-- </div> -->
                 </v-row>
               </div>
-              <b-modal id="myModal2" size="xl" modal-class="custom-modal-size" :hide-footer="true">
+              <b-modal id="myModal2" size="xl" modal-class="custom-modal-size" :hide-footer="true" @shown="onModalShown">
                 <template #modal-title>
                   <div class="box-header d-flex justify-content-between align-items-center">
                     <div style="margin-right: 20px;"> Snapshot {{ timeDiff(selectedSub.created_at) }} ago </div>
@@ -56,7 +56,7 @@
                 <b-row>
                   <b-col cols="6">
                     <h5>Code Snapshot</h5>
-                    <codemirror v-model="selectedSub.code" :options="cmOptions" />
+                    <codemirror ref="cmEditor" v-model="selectedSub.code" :options="cmOptions" />
                     <b-row class="mt-3">
                       <b-col cols="6">
                         <div style="text-align: left">
@@ -319,6 +319,14 @@ export default {
     formatTimestamp (timestamp) {
       if (!timestamp) return ''
       return moment(timestamp).format('MMM DD, YYYY HH:mm')
+    },
+    onModalShown () {
+      // Refresh CodeMirror when modal is shown to fix display issue
+      this.$nextTick(() => {
+        if (this.$refs.cmEditor && this.$refs.cmEditor.codemirror) {
+          this.$refs.cmEditor.codemirror.refresh()
+        }
+      })
     }
   },
   created: function () {

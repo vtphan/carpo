@@ -566,6 +566,20 @@ class WidgetFeedbackHandler(APIHandler):
         else:
             self.finish(json.dumps(response))
 
+class ConfigHandler(APIHandler):
+    """Handler to serve the config.json file"""
+    
+    @tornado.web.authenticated
+    def get(self):
+        config_data = read_config_file()
+        
+        if not config_data:
+            self.set_status(404)
+            self.finish(json.dumps({'message': "Config file not found"}))
+            return
+        
+        self.finish(json.dumps(config_data))
+
  
 
 def setup_handlers(web_app):
@@ -601,3 +615,7 @@ def setup_handlers(web_app):
     # Widget feedback endpoint for floating feedback widget
     route_pattern_widget_feedback =  url_path_join(web_app.settings['base_url'], "carpo-student", "widget-feedback")
     web_app.add_handlers(host_pattern, [(route_pattern_widget_feedback, WidgetFeedbackHandler)])
+
+    # Config endpoint to serve config.json
+    route_pattern_config =  url_path_join(web_app.settings['base_url'], "carpo-student", "config")
+    web_app.add_handlers(host_pattern, [(route_pattern_config, ConfigHandler)])

@@ -3,13 +3,21 @@ package main
 import (
 	"database/sql"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
 
 type UserAPI struct {
 	UserService UserStore
@@ -49,7 +57,7 @@ func (u *UserAPI) RegisterUser(c *gin.Context) {
 	newUser.UUID = uuid.New().String()
 
 	// When newUser.Role == 1, make sure they are in the ENV variables:
-	if newUser.Role == 1 && !(slices.Contains(strings.Split(os.Getenv("TA"), ","), newUser.Name) || slices.Contains(strings.Split(os.Getenv("INS"), ","), newUser.Name)) {
+	if newUser.Role == 1 && !(contains(strings.Split(os.Getenv("TA"), ","), newUser.Name) || contains(strings.Split(os.Getenv("INS"), ","), newUser.Name)) {
 		log.Infof("Error registering user as INS or TA.")
 		c.JSON(500, gin.H{"msg": "Error registering user as INS or TA."})
 		return

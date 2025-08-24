@@ -1,12 +1,16 @@
 package main
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type GradeStore interface {
 	SaveGradeFeedback(GradeFeedback) (int, error)
 	UpdateGradeFeedback(GradeFeedback) error
 	GetSubCodeFromID(int) (string, error)
 	GetSubGrade(int) (GradeFeedback, error)
+	GetStudentIDFromSubmission(int) (int, int, error)
 }
 
 type GradeFeedback struct {
@@ -53,6 +57,21 @@ func (db *Database) SaveGradeFeedback(g GradeFeedback) (id int, err error) {
 		return id, err
 	}
 
+	// Send SSE message for new feedback
+	studentID, problemID, err := db.GetStudentIDFromSubmission(g.SubmissionID)
+	if err == nil {
+		message := FeedbackMessage{
+			EventType:    "feedback",
+			SubmissionID: g.SubmissionID,
+			StudentID:    studentID,
+			ProblemID:    problemID,
+			Timestamp:    g.CreatedAt,
+		}
+		if msgBytes, err := json.Marshal(message); err == nil {
+			sseHub.BroadcastToUser(studentID, string(msgBytes))
+		}
+	}
+
 	return
 }
 
@@ -72,5 +91,25 @@ func (db *Database) UpdateGradeFeedback(g GradeFeedback) (err error) {
 		return err
 	}
 
+	// Send SSE message for updated feedback
+	studentID, problemID, err := db.GetStudentIDFromSubmission(g.SubmissionID)
+	if err == nil {
+		message := FeedbackMessage{
+			EventType:    "feedback",
+			SubmissionID: g.SubmissionID,
+			StudentID:    studentID,
+			ProblemID:    problemID,
+			Timestamp:    g.CreatedAt,
+		}
+		if msgBytes, err := json.Marshal(message); err == nil {
+			sseHub.BroadcastToUser(studentID, string(msgBytes))
+		}
+	}
+
+	return
+}
+
+func (db *Database) GetStudentIDFromSubmission(subID int) (studentID int, problemID int, err error) {
+	err = db.DB.QueryRow("SELECT user_id, problem_id FROM submissions WHERE id = $1", subID).Scan(&studentID, &problemID)
 	return
 }

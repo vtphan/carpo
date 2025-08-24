@@ -16,6 +16,9 @@ import {
 import { requestAPI } from './handler';
 import { CellInfo } from './model';
 
+import { initializeNotifications } from './sse-notifications';
+
+
 export class ShareCodeButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
@@ -69,7 +72,7 @@ export class ShareCodeButton
         snapshot: 2
       };
 
-      console.log('Req body: ', postBody);
+      // console.log('Req body: ', postBody);
       requestAPI<any>('submissions', {
         method: 'POST',
         body: JSON.stringify(postBody)
@@ -83,43 +86,14 @@ export class ShareCodeButton
             body: data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
-
-          // Keep checking for new feedback.
-          // This setInterval will be cleared once the feedback is downloaded (after reload())
-          // setInterval(function(){
-          //     // console.log("Checking for feedback...")
-          //     requestAPI<any>('feedback',{
-          //     method: 'GET'
-          //     })
-          //     .then(data => {
-          //         // console.log(data);
-          //         if (data['hard-reload'] != -1) {
-          //         showDialog({
-          //             title:'',
-          //             body: data.msg,
-          //             buttons: [Dialog.okButton({ label: 'Ok' })]
-          //         }).then( result => {
-          //             if (result.button.accept ) {
-          //                 window.location.reload();
-          //             }
-          //         })
-
-          //         }
-
-          //     })
-          //     .catch(reason => {
-          //         showErrorMessage('Get Feedback Error', reason);
-          //         console.error(
-          //         `Failed to fetch recent feedbacks.\n${reason}`
-          //         );
-          //     });
-
-          // }, 60000);
+          
         })
         .catch(reason => {
           showErrorMessage('Code Share Error', reason);
           console.error(`Failed to share code to server.\n${reason}`);
         });
+
+        initializeNotifications()
     };
 
     const button = new ToolbarButton({

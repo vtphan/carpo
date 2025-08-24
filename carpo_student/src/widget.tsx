@@ -9,6 +9,7 @@ import { fileUploadIcon, LabIcon } from '@jupyterlab/ui-components';
 import React from 'react';
 import { requestAPI } from './handler';
 import { Dialog, showDialog, showErrorMessage } from '@jupyterlab/apputils';
+import { initializeNotifications } from './sse-notifications';
 
 /**
  *
@@ -59,7 +60,7 @@ const CodeCellButtonComponent = ({
       problem_id: info.problem_id,
       snapshot: 2
     };
-    console.log('From widget: ', postBody);
+    // console.log('From widget: ', postBody);
     requestAPI<any>('submissions', {
       method: 'POST',
       body: JSON.stringify(postBody)
@@ -78,6 +79,8 @@ const CodeCellButtonComponent = ({
         showErrorMessage('Code Share Error', reason);
         console.error(`Failed to share code to server.\n${reason}`);
       });
+
+      initializeNotifications()
   };
 
   return (
@@ -403,6 +406,7 @@ export class FloatingFeedbackWidget {
       feedbackContent.style.fontSize = '13px';
       feedbackContent.style.lineHeight = '1.4';
       feedbackContent.style.color = '#333';
+      feedbackContent.style.whiteSpace = "pre-wrap";
       
       feedbackContent.innerHTML = feedback.code;
       messageBubble.appendChild(feedbackContent);

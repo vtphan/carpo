@@ -70,7 +70,7 @@
               </v-row>
             </div>
 
-            <b-modal id="myModal" size="xl" :hide-footer="true">
+            <b-modal id="myModal" size="xl" :hide-footer="true" @shown="onModalShown">
                 <template #modal-title>
                   Submission
                   <font-awesome-icon v-if="selectedSub.snapshot==3" icon="hand" />
@@ -78,7 +78,7 @@
                   <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
                   <b-badge v-if="!selectedSub.score" variant="secondary">ungraded</b-badge>
                 </template>
-                <codemirror v-model="selectedSub.code" :options="cmOptions" :style="{ height: '600px' }" ref="focusThis" />
+                <codemirror ref="cmEditor" v-model="selectedSub.code" :options="cmOptions" :style="{ height: '600px' }" />
                 <!-- <a> Message: {{ selectedSub.message }} </a> -->
                 <b-row>
                   <b-col cols="6" >
@@ -232,6 +232,14 @@ export default {
     close (sub) {
       this.$bvModal.hide()
       this.message.data = this.message.data.filter(item => item.id !== sub.id)
+    },
+    onModalShown () {
+      // Refresh CodeMirror when modal is shown to fix display issue
+      this.$nextTick(() => {
+        if (this.$refs.cmEditor && this.$refs.cmEditor.codemirror) {
+          this.$refs.cmEditor.codemirror.refresh()
+        }
+      })
     },
     getImagePath () {
       return require('../assets/code-block-1.png')
