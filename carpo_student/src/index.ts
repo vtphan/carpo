@@ -5,7 +5,7 @@ import {
 
 import {
   INotebookTracker,
-  // NotebookActions,
+  NotebookActions,
   NotebookPanel,
   INotebookModel
 } from '@jupyterlab/notebook';
@@ -164,14 +164,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
     //  tell the document registry about your widget extension:
     app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
-    app.docRegistry.addWidgetExtension('Notebook', new ShareCodeButton());
     app.docRegistry.addWidgetExtension('Notebook', new RaiseHandHelpButton());
-    // app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
-    app.docRegistry.addWidgetExtension(
-      'Notebook',
-      new ViewSubmissionStatusButton()
-    );
+    // app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewFeedbacksButton());
+    app.docRegistry.addWidgetExtension('Notebook', new DownloadSolutionButton());
+    app.docRegistry.addWidgetExtension('Notebook', new ShareCodeButton());
     // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
     
     // Add cleanup for notifications when the extension is deactivated
@@ -393,7 +390,7 @@ export class ViewFeedbacksButton
       tooltip: 'View feedback widget'
     });
 
-    panel.toolbar.insertItem(14, 'viewFeedbacks', button);
+    panel.toolbar.insertItem(13, 'viewFeedbacks', button);
     return new DisposableDelegate(() => {
       button.dispose();
       // Clean up feedback widget when button is disposed
@@ -407,7 +404,49 @@ export class ViewFeedbacksButton
   }
 }
 
-export class viewProblemStatusExtension
+// export class viewProblemStatusExtension
+//   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
+// {
+//   /**
+//    * Create a new extension for the notebook panel widget.
+//    *
+//    * @param panel Notebook panel
+//    * @param context Notebook context
+//    * @returns Disposable on the added button
+//    */
+//   createNew(
+//     panel: NotebookPanel,
+//     context: DocumentRegistry.IContext<INotebookModel>
+//   ): IDisposable {
+//     const viewProblemStatus = () => {
+//       requestAPI<any>('view_problem_list', {
+//         method: 'GET'
+//       })
+//         .then(data => {
+//           console.log(data);
+//           window.open(data.url, '_blank');
+//         })
+//         .catch(reason => {
+//           showErrorMessage('View Problem Status Error', reason);
+//           console.error(`Failed to view problem status.\n${reason}`);
+//         });
+//     };
+
+//     const button = new ToolbarButton({
+//       className: 'get-status-button',
+//       label: 'Problems',
+//       onClick: viewProblemStatus,
+//       tooltip: 'View all problem status'
+//     });
+
+//     panel.toolbar.insertItem(15, 'viewProblemStatus', button);
+//     return new DisposableDelegate(() => {
+//       button.dispose();
+//     });
+//   }
+// }
+
+export class DownloadSolutionButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
   /**
@@ -421,28 +460,77 @@ export class viewProblemStatusExtension
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
-    const viewProblemStatus = () => {
-      requestAPI<any>('view_problem_list', {
+    const downloadSolution = () => {
+      const notebook = panel.content;
+      const filename = context.path;
+      
+      // Only show for exercise notebooks
+      if (!filename.includes('Exercises') || !filename.includes('ex')) {
+        showErrorMessage('Invalid Notebook', 'Solution download is only available for exercise notebooks.');
+        return;
+      }
+
+      // Extract problem_id from filename (e.g., ex001.ipynb -> 1)
+      const match = filename.match(/ex(\d+)\.ipynb/);
+      if (!match) {
+        showErrorMessage('Invalid Filename', 'Cannot extract problem ID from notebook filename.');
+        return;
+      }
+
+      const problemId = parseInt(match[1]);
+      
+      requestAPI<any>(`solutions/problem/${problemId}`, {
         method: 'GET'
       })
         .then(data => {
-          console.log(data);
-          window.open(data.url, '_blank');
+          
+          if (data.data.code) {
+            // Create a new code cell with the solution
+            const solutionCode = `# Solution for Problem ${problemId}\n${data.data.code}`;
+            
+            // Move to the last cell first
+            notebook.activeCellIndex = notebook.widgets.length - 1;
+            
+            // Insert a new code cell at the end of the notebook
+            NotebookActions.insertBelow(notebook);
+            
+            // Get the newly created cell (should be the last cell now)
+            const activeCell = notebook.activeCell;
+            if (activeCell && activeCell.model.type === 'code') {
+              // Set the source code
+              activeCell.model.sharedModel.setSource(solutionCode);
+            }
+            
+            // Scroll to the new cell
+            notebook.scrollToItem(notebook.widgets.length - 1);
+            
+            showDialog({
+              title: 'Solution Downloaded',
+              body: `Solution for Problem ${problemId} has been added to your notebook.`,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          } else {
+            showDialog({
+              title: 'No Solution', 
+              body: 'No solution available for this problem.',
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          }
         })
         .catch(reason => {
-          showErrorMessage('View Problem Status Error', reason);
-          console.error(`Failed to view problem status.\n${reason}`);
+          showErrorMessage('Download Solution Error', reason);
+          console.error(`Failed to download solution.\n${reason}`);
         });
     };
 
     const button = new ToolbarButton({
-      className: 'get-status-button',
-      label: 'Problems',
-      onClick: viewProblemStatus,
-      tooltip: 'View all problem status'
+      className: 'download-solution-button',
+      label: 'GetSolution',
+      onClick: downloadSolution,
+      tooltip: 'Download solution for this exercise'
     });
 
-    panel.toolbar.insertItem(15, 'viewProblemStatus', button);
+    panel.toolbar.insertItem(14, 'downloadSolution', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

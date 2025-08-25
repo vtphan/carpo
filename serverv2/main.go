@@ -183,6 +183,7 @@ func main() {
 
 	// Student Status page
 	r.GET("students/status", viewStudentSubmissionStatus(db))
+	r.GET("/solutions/problem/:id", solAPI.GetSolutionByProblemIDHandler)
 
 	// Student Feedback on Problems
 	r.GET("/students/:user_id/problems/:problem_id/feedbacks", feedbackAPI.GetFeedbackHandler)

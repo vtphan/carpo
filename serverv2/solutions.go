@@ -23,7 +23,7 @@ func (s *SolutionAPI) SolutionHandler(c *gin.Context) {
 		return
 	}
 
-	// If the problem is unpublished, the solution should should broadcast.
+	// If the problem is unpublished, the solution should broadcast.
 	expiredProblem, _ := s.SolService.IsExpired(newSol.ProblemID)
 	if expiredProblem {
 		newSol.Broadcast = 1
@@ -79,5 +79,35 @@ func (s *SolutionAPI) BroadcastSolHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"msg": "Solution broadcasted successfully."})
+
+}
+
+func (s *SolutionAPI) GetSolutionByProblemIDHandler(c *gin.Context) {
+	id := c.Param("id")
+	problemID, err := strconv.Atoi(id)
+	if err != nil || problemID == 0 {
+		log.Infof("Error parsing problem ID in GetSolutionByProblemIDHandler. Err: %v", err)
+		c.JSON(400, gin.H{"msg": "Invalid problem ID"})
+		return
+	}
+
+	solution, err := s.SolService.GetSolution(problemID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Infof("Solution not found for problem ID: %v", problemID)
+			c.JSON(404, gin.H{"msg": "Solution not found"})
+			return
+		}
+		log.Infof("Failed to get solution by problem ID in GetSolutionByProblemIDHandler. Err: %v", err)
+		c.JSON(500, gin.H{"msg": err.Error()})
+		return
+	}
+
+	if solution.Broadcast == 1 {
+		c.JSON(http.StatusOK, gin.H{"data": solution})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": "Solution yet not available."})
 
 }

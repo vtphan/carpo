@@ -103,7 +103,7 @@ export class ShareCodeButton
       tooltip: 'Share your code to the instructor.'
     });
 
-    panel.toolbar.insertItem(12, 'shareCode', button);
+    panel.toolbar.insertItem(15, 'shareCode', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

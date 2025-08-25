@@ -632,6 +632,46 @@ class FeedbackRatingHandler(APIHandler):
             self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
             return
 
+class SolutionDownloadHandler(APIHandler):
+    """Handler for downloading solutions - GET /solutions/problem/:problem_id"""
+    
+    @tornado.web.authenticated
+    def get(self, problem_id):
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        # Validate problem_id
+        try:
+            problem_id = int(problem_id)
+        except ValueError:
+            self.set_status(400)
+            self.finish(json.dumps({'message': "Invalid problem_id. Must be a number."}))
+            return
+
+        url = config_data['server'] + f"/solutions/problem/{problem_id}"
+        
+        try:
+            response = requests.get(url, timeout=5)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                self.finish(json.dumps(response_data))
+            elif response.status_code == 404:
+                self.set_status(404)
+                self.finish(json.dumps({'message': f"No solution available for problem {problem_id}"}))
+            else:
+                self.set_status(response.status_code)
+                self.finish(json.dumps({'message': f"Server returned status {response.status_code}"}))
+                
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
+            return
+
  
 
 def setup_handlers(web_app):
@@ -675,3 +715,7 @@ def setup_handlers(web_app):
     # Feedback ratings endpoint
     route_pattern_ratings =  url_path_join(web_app.settings['base_url'], "carpo-student", "feedback-ratings")
     web_app.add_handlers(host_pattern, [(route_pattern_ratings, FeedbackRatingHandler)])
+
+    # Solution download endpoint
+    route_pattern_solutions =  url_path_join(web_app.settings['base_url'], "carpo-student", "solutions", "problem", r"(\d+)")
+    web_app.add_handlers(host_pattern, [(route_pattern_solutions, SolutionDownloadHandler)])
