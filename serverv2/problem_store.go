@@ -18,12 +18,13 @@ type ProblemStore interface {
 }
 
 type Problem struct {
-	ID       int       `json:"id"`
-	Question string    `json:"question"`
-	Format   string    `json:"format"`
-	Lifetime time.Time `json:"lifetime"`
-	Status   int       `json:"status"`
-	UserID   int       `json:"user_id"`
+	ID        int       `json:"id"`
+	Question  string    `json:"question"`
+	Format    string    `json:"format"`
+	Lifetime  time.Time `json:"lifetime"`
+	Status    int       `json:"status"`
+	UserID    int       `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type ProblemGradeStatus struct {
@@ -119,24 +120,24 @@ func (db *Database) GetProblems(StudentID int) ([]Problem, error) {
 
 func (db *Database) GetProblemByID(problemID int) (Problem, error) {
 	var problem Problem
-	
-	sql := `SELECT id, user_id, question, format, lifetime, status FROM problems WHERE id = $1`
-	
+
+	sql := `SELECT id, user_id, question, format, lifetime, status, created_at FROM problems WHERE id = $1`
+
 	var lifeTimeStr string
 	err := db.DB.QueryRow(sql, problemID).Scan(
-		&problem.ID, &problem.UserID, &problem.Question, 
-		&problem.Format, &lifeTimeStr, &problem.Status)
-	
+		&problem.ID, &problem.UserID, &problem.Question,
+		&problem.Format, &lifeTimeStr, &problem.Status, &problem.CreatedAt)
+
 	if err != nil {
 		return problem, err
 	}
-	
+
 	// Parse lifetime
 	problem.Lifetime, err = time.Parse(time.RFC3339, lifeTimeStr)
 	if err != nil {
 		return problem, err
 	}
-	
+
 	return problem, nil
 }
 

@@ -1,15 +1,5 @@
 <template>
   <div>
-    <!-- <div>
-      <h2 style="float: left;"> Available Tags: </h2>
-      <br clear="all"/>
-      <b-list-group horizontal>
-        <b-list-group-item v-for="items in available_tags.data" :key="items.id">
-          <label><input type="checkbox" :value="items.id" v-model="filter_tag" v-on:click="filterList()"> <span class="checkbox-label"> {{items.name}} </span></label> <br>
-        </b-list-group-item>
-      </b-list-group>
-      <span> Filter Tags: {{ filter_tag }}</span>
-    </div> -->
     <div class="row" style="margin: 5px;">
       <div>
         <h4 style="margin: 5px;">Filter By Tag: </h4>
@@ -29,15 +19,6 @@
           <template #title>
             <div v-on:click="getSubmissionList()"> <a v-if="message.data">({{ message.data.length}})</a></div>
           </template>
-          <!-- <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
-            <b-dropdown no-caret>
-              <template #button-content>
-                <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Order By
-              </template>
-              <b-dropdown-item href="#" @click="setSorting('creation_time')">Creation Time</b-dropdown-item>
-              <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
-            </b-dropdown>
-          </div> -->
           <div v-if="isLoading">
                 <p>LOADING...</p>
           </div>
@@ -70,40 +51,84 @@
               </v-row>
             </div>
 
-            <b-modal id="myModal" size="xl" :hide-footer="true" @shown="onModalShown">
+            <b-modal id="myModal" size="xl" modal-class="custom-modal-size" :hide-footer="true" @shown="onModalShown">
                 <template #modal-title>
-                  Submission
+                  Submission {{ timeDiff(selectedSub.created_at) }} ago
                   <font-awesome-icon v-if="selectedSub.snapshot==3" icon="hand" />
                   <b-badge v-if="selectedSub.score==1" variant="success">correct</b-badge>
                   <b-badge v-if="selectedSub.score==2" variant="danger">incorrect</b-badge>
                   <b-badge v-if="!selectedSub.score" variant="secondary">ungraded</b-badge>
                 </template>
-                <codemirror ref="cmEditor" v-model="selectedSub.code" :options="cmOptions" :style="{ height: '600px' }" />
-                <!-- <a> Message: {{ selectedSub.message }} </a> -->
                 <b-row>
-                  <b-col cols="6" >
-                    <div style="text-align: left">
-                      <!-- <div class="row">
-                        <b-button class="btn-secondary" @click="flagSubmission(selectedSub);">Flag</b-button>
-                        <b-form-input style="width: 60%; height: auto;" v-model="reason" placeholder="Reason to flag (Optional)"></b-form-input>
-                      </div> -->
-                      <div class="row" style="margin: 5px;">
-                        <h4 style="margin: 5px;">Tag: </h4>
-                        <multiselect style="width: 50%;" v-model="assign_tags" track-by="id" label="name" placeholder="Select one" :show-labels="false" :options="available_tags.data" @select="saveSubmissionTag" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
-                          <template slot="singleLabel" slot-scope="{ option }"><strong>{{ option.name }}</strong> </template>
-                        </multiselect>
-                        <h5 class="new-tag-link" v-on:click="newTag()" > Create New Tag </h5>
-                      </div>
-                    </div>
+                  <b-col cols="6">
+                    <h5>Code Submission</h5>
+                    <codemirror ref="cmEditor" v-model="selectedSub.code" :options="cmOptions" />
+                    <b-row class="mt-3">
+                      <b-col cols="6">
+                        <div style="text-align: left">
+                          <div class="row" style="margin: 5px;">
+                            <h4 style="margin: 5px;">Tag: </h4>
+                            <multiselect style="width: 50%;" v-model="assign_tags" track-by="id" label="name" placeholder="Select one" :show-labels="false" :options="available_tags.data" @select="saveSubmissionTag" @remove="remove_tag" :multiple="true" :close-on-select="false" :clear-on-select="false" :searchable="false">
+                              <template slot="singleLabel" slot-scope="{ option }"><strong>{{ option.name }}</strong> </template>
+                            </multiselect>
+                            <h5 class="new-tag-link" v-on:click="newTag()" > Create New Tag </h5>
+                          </div>
+                        </div>
+                      </b-col>
+                      <b-col cols="6">
+                        <div style="text-align: right">
+                          <b-button-group>
+                            <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); ">Correct</b-button>
+                            <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); ">Incorrect</b-button>
+                            <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id);">Send Feedback</b-button>
+                            <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
+                          </b-button-group>
+                        </div>
+                      </b-col>
+                    </b-row>
                   </b-col>
-                  <b-col cols="6" >
-                    <div style="text-align: right">
-                      <b-button-group>
-                        <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); ">Correct</b-button>
-                        <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); ">Incorrect</b-button>
-                        <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id);">Send Feedback</b-button>
-                        <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
-                      </b-button-group>
+                  <b-col cols="6">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                      <h5>Model Feedbacks</h5>
+                      <b-button
+                        variant="primary"
+                        size="sm"
+                        @click="fetchSecondColumnData"
+                        :disabled="isLoadingSecondColumn"
+                      >
+                        {{ isLoadingSecondColumn ? 'Loading...' : 'Get AI Feedback' }}
+                      </b-button>
+                    </div>
+                    <div v-if="isLoadingSecondColumn" class="text-center">
+                      <b-spinner variant="primary"></b-spinner>
+                      <p>Loading additional information...</p>
+                    </div>
+                    <div v-else-if="secondColumnError" class="alert alert-warning">
+                      {{ secondColumnError }}
+                    </div>
+                    <div v-else class="second-column-content">
+                      <div v-if="feedbackList && feedbackList.length > 0">
+                        <div v-for="(feedback, index) in feedbackList" :key="index" class="feedback-box">
+                          <div class="feedback-header" style="display: flex; align-items: center; justify-content: flex-start; gap: 10px;">
+                            <b-button
+                              size="sm"
+                              variant="outline-primary"
+                              @click="appendFeedbackToCode(feedback.feedback)"
+                              v-b-tooltip.hover
+                              title="Append to Code"
+                            >
+                            <font-awesome-icon icon="arrow-rotate-left" />
+                            </b-button>
+                            <strong>Feedback {{ index + 1 }} ({{feedback.model}})</strong>
+                          </div>
+                          <div class="feedback-content">
+                            <div v-if="feedback.feedback" class="feedback-message">{{ feedback.feedback }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="no-feedback">
+                        <p>No feedback available</p>
+                      </div>
                     </div>
                   </b-col>
                 </b-row>
@@ -206,6 +231,10 @@ export default {
     sorting: 'creation_time',
     selectedSub: '',
     isLoading: true,
+    secondColumnData: '',
+    feedbackList: [],
+    isLoadingSecondColumn: false,
+    secondColumnError: '',
     cmOptions: {
       autoRefresh: true,
       tabSize: 4,
@@ -485,6 +514,58 @@ export default {
       this.sorting = params
       // this.getSubmissionList()
       // this.getFlaggedSubsList()
+    },
+    fetchSecondColumnData () {
+      this.isLoadingSecondColumn = true
+      this.secondColumnError = ''
+      this.secondColumnData = ''
+      this.feedbackList = []
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      this.$http.get(Config.apiUrl + '/submissions/' + this.selectedSub.id + '/agent-feedback', config)
+        .then((response) => {
+          this.secondColumnData = response.data
+          // Handle API response structure: {"data": [{"model": "name", "feedbacks": ["feedback": "my feedback"]}]}
+          if (response.data && response.data.data && Array.isArray(response.data.data)) {
+            const agentFeedbacks = response.data.data
+            this.feedbackList = []
+            // Process each agent's feedback
+            agentFeedbacks.forEach(agentData => {
+              if (agentData.feedbacks && Array.isArray(agentData.feedbacks)) {
+                agentData.feedbacks.forEach(feedbackItem => {
+                  this.feedbackList.push({
+                    feedback: feedbackItem.feedback || feedbackItem,
+                    model: agentData.model || 'Unknown Model'
+                  })
+                })
+              }
+            })
+          } else {
+            this.feedbackList = []
+            this.secondColumnError = 'No feedback data available'
+          }
+          this.isLoadingSecondColumn = false
+        })
+        .catch((error) => {
+          console.log('Error fetching agent feedback:', error)
+          this.secondColumnError = 'Failed to load agent feedback'
+          this.isLoadingSecondColumn = false
+        })
+    },
+    appendFeedbackToCode (feedback) {
+      if (feedback && this.selectedSub) {
+        // Add feedback as a comment to the end of the code
+        const feedbackComment = `\n\n# ${feedback.split('\n').join('\n# ')}`
+        this.selectedSub.code = this.selectedSub.code + feedbackComment
+        // Refresh CodeMirror to show the updated content
+        this.$nextTick(() => {
+          if (this.$refs.cmEditor && this.$refs.cmEditor.codemirror) {
+            this.$refs.cmEditor.codemirror.refresh()
+          }
+        })
+        this.toast('Feedback appended to code')
+      }
     }
   },
   created: function () {
@@ -616,6 +697,64 @@ input:placeholder-shown {
     display: -webkit-inline-box;
     /* display: inline-flex; */
     vertical-align: middle;
+}
+
+.custom-modal-size .modal-dialog {
+    max-width: 95vw;
+    width: 95vw;
+}
+
+.second-column-content {
+    max-height: 600px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.feedback-box {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.feedback-box:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.feedback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.feedback-header strong {
+    color: #343a40;
+    font-size: 16px;
+}
+
+.feedback-content {
+    color: #495057;
+}
+
+.feedback-message {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.no-feedback {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 40px 20px;
 }
 </style>
 

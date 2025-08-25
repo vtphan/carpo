@@ -6,15 +6,6 @@
             <template #title>
               <div v-on:click="getSnapshotList()">  <a v-if="message.data">({{ message.data.length}})</a> </div>
             </template>
-              <!-- <div style="float:right; position: absolute; top: 6px; left: calc(100% - 165px);">
-                <b-dropdown no-caret>
-                  <template #button-content>
-                    <b-icon icon="gear-fill" aria-hidden="true"></b-icon> Order By
-                  </template>
-                  <b-dropdown-item href="#" @click="setSorting('creation_time')">LastActive At</b-dropdown-item>
-                  <b-dropdown-item href="#" @click="setSorting('name')">Name</b-dropdown-item>
-                </b-dropdown>
-              </div> -->
               <div v-if="isLoading">
                 <div>LOADING...</div>
               </div>
@@ -79,10 +70,20 @@
                     </b-row>
                   </b-col>
                   <b-col cols="6">
-                    <h5>Model Feedbacks</h5>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                      <h5>Model Feedbacks</h5>
+                      <b-button
+                        variant="primary"
+                        size="sm"
+                        @click="fetchSecondColumnData"
+                        :disabled="isLoadingSecondColumn"
+                      >
+                        {{ isLoadingSecondColumn ? 'Loading...' : 'Get AI Feedback' }}
+                      </b-button>
+                    </div>
                     <div v-if="isLoadingSecondColumn" class="text-center">
                       <b-spinner variant="primary"></b-spinner>
-                      <p>Loading additional information...</p>
+                      <p>Fetching AI feedbacks...</p>
                     </div>
                     <div v-else-if="secondColumnError" class="alert alert-warning">
                       {{ secondColumnError }}
@@ -165,8 +166,6 @@ export default {
     sendInfo (item) {
       this.selectedSub = item
       this.reason = ''
-      // Fetch second column data when modal opens
-      this.fetchSecondColumnData()
     },
     getImagePath () {
       return require('../assets/code-block-1.png')

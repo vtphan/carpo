@@ -42,7 +42,7 @@
     </b-table>
 
     <!-- Create/Edit Modal -->
-    <b-modal :id="agentModal.id" :title="agentModal.title" size="xl" @ok="saveAgent" @hidden="resetForm" ok-title="Save">
+    <b-modal :id="agentModal.id" :title="agentModal.title" size="xl" @ok="saveAgent" @hidden="resetForm">
       <b-form>
         <b-form-group label="Name" label-for="agent-name">
           <b-form-input
@@ -93,6 +93,17 @@
           </b-form-checkbox>
         </b-form-group>
       </b-form>
+      <template #modal-footer="{ ok, cancel }">
+        <div class="w-100 d-flex justify-content-between align-items-center">
+          <small class="text-muted">
+            <strong>Tip:</strong> Use $INITIAL_SCAFFOLD, $CODE_SNAPSHOT in prompt to populate values from DB.
+          </small>
+          <div>
+            <b-button variant="secondary" @click="cancel()">Cancel</b-button>
+            <b-button variant="primary" @click="ok()">Save</b-button>
+          </div>
+        </div>
+      </template>
     </b-modal>
 
     <!-- View Modal -->
@@ -147,11 +158,31 @@ export default {
     ],
     modelOptions: [
       { value: '', text: 'Select a model' },
-      { value: 'gpt-4', text: 'GPT-4' },
-      { value: 'gpt-4.1-mini', text: 'GPT-4 Mini' },
-      { value: 'claude-3-opus', text: 'Claude 3 Opus' },
-      { value: 'claude-3-sonnet', text: 'Claude 3 Sonnet' },
-      { value: 'claude-3-haiku', text: 'Claude 3 Haiku' }
+      {
+        label: 'OpenAI Models',
+        options: [
+          { value: 'gpt-5', text: 'GPT-5' },
+          { value: 'gpt-5-mini', text: 'GPT-5 Mini' },
+          { value: 'gpt-5-nano', text: 'GPT-5 Nano' },
+          { value: 'gpt-4.1-mini', text: 'GPT-4.1 Mini' }
+        ]
+      },
+      {
+        label: 'Anthropic Claude Models',
+        options: [
+          { value: 'claude-opus-4-20250514', text: 'Claude Opus 4' },
+          { value: 'claude-sonnet-4-20250514', text: 'Claude Sonnet 4' },
+          { value: 'claude-3-5-haiku-20241022', text: 'Claude Haiku 3.5' }
+        ]
+      },
+      {
+        label: 'Google Gemini Models',
+        options: [
+          { value: 'gemini-2.5-pro', text: 'Gemini 2.5 Pro' },
+          { value: 'gemini-2.5-flash', text: 'Gemini 2.5 Flash' },
+          { value: 'gemini-2.5-flash-lite', text: 'Gemini 2.5 Flash-Lite' }
+        ]
+      }
     ]
   }),
   methods: {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -115,7 +116,7 @@ func (fa *FeedbackAgentAPI) CallExternalFeedbackService(submission Submission, p
 	data := map[string]interface{}{
 		"INITIAL_SCAFFOLD": problem.Question,
 		"CODE_SNAPSHOT":    submission.Code,
-		"TIME_ON_TASK":     "1 min",
+		"TIME_ON_TASK":     time.Now().Sub(problem.CreatedAt).Minutes(),
 	}
 
 	// Prepare request payload
