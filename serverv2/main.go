@@ -118,7 +118,8 @@ func main() {
 	// - No origin allowed by default
 	// - GET,POST, PUT, HEAD methods
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://127.0.0.1:8080", "http://localhost:8080", "http://141.225.10.71:8000"}
+	config.AllowAllOrigins = true
+	// config.AllowOrigins = []string{"http://127.0.0.1:8080", "http://localhost:8080", "http://141.225.10.71:8000"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	config.AllowCredentials = true
 	r.Use(cors.New(config))
@@ -154,6 +155,7 @@ func main() {
 	flagAPI := FlagWatchAPI{&Database{DB: db}}
 	solAPI := SolutionAPI{&Database{DB: db}}
 	tagAPI := TagAPI{&Database{DB: db}}
+	agentAPI := AgentAPI{&Database{DB: db}}
 	feedbackAPI := FeedbackAPI{&Database{DB: db}}
 
 	// Register Users
@@ -216,6 +218,13 @@ func main() {
 	r.DELETE("/tags/:id/problems/:pid", tagAPI.TagProblemDelHandler)
 
 	r.GET("/tags/tagged", tagAPI.GetAllTagHandler)
+
+	// Agents
+	r.GET("/agents", agentAPI.GetAgentHandler)
+	r.POST("/agents", agentAPI.SaveAgentHandler)
+	r.PUT("/agents/:id", agentAPI.UpdateAgentHandler)
+	r.DELETE("/agents/:id", agentAPI.DeleteAgentHandler)
+	r.OPTIONS("/agents")
 
 	// Problem Status Page
 	r.GET("/problems/status", pAPI.ViewProblemStatus)

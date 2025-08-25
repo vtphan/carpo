@@ -4,6 +4,7 @@ import ProblemList from '@/components/ProblemList.vue'
 import SubmissionList from '@/components/SubmissionList.vue'
 import SnapshotList from '@/components/SnapshotList.vue'
 import TagList from '@/components/TagList.vue'
+import AIAgents from '@/components/AIAgents.vue'
 
 Vue.use(Router)
 
@@ -37,6 +38,12 @@ export default new Router({
       path: '/tags',
       name: 'Tags',
       component: TagList
+
+    },
+    {
+      path: '/ai-agents',
+      name: 'AIAgents',
+      component: AIAgents
 
     }
   ]

@@ -12,8 +12,6 @@
             <b-button size="sm" :disabled="row.item.status === 0" @click="showConfirmBox('unpublish', row.item)" class="mr-2" v-b-tooltip.hover title="Unpublish Problem">
               <font-awesome-icon icon="stop" />
             </b-button>
-            </div>
-            <div class="sub-action">
             <b-button size="sm" :disabled="!row.item.solution_code" @click="info('Solution Code', row.item.problem_id, row.item.solution_code, row.item)" class="mr-2" v-b-tooltip.hover title="View Solution">
               <font-awesome-icon icon="file-text" />
             </b-button>

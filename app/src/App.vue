@@ -17,6 +17,11 @@
               <router-link class="nav-link" active-class="active" :to="{name: 'Tags' ,query: {token: $route.query.token }}">Tags</router-link>
             </li>
           </ul>
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{name: 'AIAgents' ,query: {token: $route.query.token }}">Agent Settings</router-link>
+            </li>
+          </ul>
         </div>
         </div>
       </nav>
