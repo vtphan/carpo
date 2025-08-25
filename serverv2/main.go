@@ -186,11 +186,14 @@ func main() {
 
 	// Student Feedback on Problems
 	r.GET("/students/:user_id/problems/:problem_id/feedbacks", feedbackAPI.GetFeedbackHandler)
+	// Student Rate on feedbacks
+	r.PUT("/feedback-ratings", feedbackAgentAPI.UpdateFeedbackRatingHandler)
 
 	// Use Middleware for app APIs
 	r.Use(appMiddleware(db))
 	r.GET("/submissions/teachers", subAPI.GetSubmissionsHandler)
 	r.GET("/submissions/:id/agent-feedback", feedbackAgentAPI.GetAgentFeedbackByIDHandler)
+
 	r.OPTIONS("/submissions/teachers")
 
 	// Grades and Feedbacks

@@ -58,7 +58,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     
     const cronTracker: Array<string> = [];
     const debounceTimers: Map<string, number> = new Map();
-    const DEBOUNCE_DELAY = 5000; // 5 seconds delay after user stops typing
+    const DEBOUNCE_DELAY = 10000; // 10 seconds delay after user stops typing
 
     // Debounced function to send code snapshot
     const sendDebouncedSnapshot = (cell: Cell, filename: string, problemId: number) => {

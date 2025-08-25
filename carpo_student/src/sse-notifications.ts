@@ -166,7 +166,7 @@ export class ToastNotification {
       if (document.getElementById(toastId)) {
         this.remove(toastId);
       }
-    }, 5000);
+    }, 30000);
   }
 
   private static getBackgroundColor(type: string): string {

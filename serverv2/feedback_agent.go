@@ -20,8 +20,9 @@ type FeedbackAgentAPI struct {
 }
 
 type AgentFeedback struct {
-	Model     string        `json:"model"`
-	Feedbacks []interface{} `json:"feedbacks"`
+	SubmissionID int           `json:"submission_id"`
+	Model        string        `json:"model"`
+	Feedbacks    []interface{} `json:"feedbacks"`
 }
 
 func (fa *FeedbackAgentAPI) GetAgentFeedbackByIDHandler(c *gin.Context) {
@@ -76,8 +77,9 @@ func (fa *FeedbackAgentAPI) GetAgentFeedbackByIDHandler(c *gin.Context) {
 				log.Errorf("Failed to call external feedback service for agent %d: %v", agent.ID, err)
 				// Add error response to feedback
 				response := AgentFeedback{
-					Model:     agent.Model,
-					Feedbacks: []interface{}{"Failed to fetch AI feedback"},
+					SubmissionID: submission.ID,
+					Model:        agent.Model,
+					Feedbacks:    []interface{}{"Failed to fetch AI feedback"},
 				}
 				feedback_resp = append(feedback_resp, response)
 				continue
@@ -86,8 +88,9 @@ func (fa *FeedbackAgentAPI) GetAgentFeedbackByIDHandler(c *gin.Context) {
 			// Only process successful responses
 			if resp != nil {
 				response := AgentFeedback{
-					Model:     agent.Model,
-					Feedbacks: resp.Feedbacks,
+					SubmissionID: submission.ID,
+					Model:        agent.Model,
+					Feedbacks:    resp.Feedbacks,
 				}
 				feedback_resp = append(feedback_resp, response)
 			}
@@ -156,4 +159,46 @@ func (fa *FeedbackAgentAPI) CallExternalFeedbackService(submission Submission, p
 	}
 
 	return &processResp, nil
+}
+
+type FeedbackRating struct {
+	GradeID int `json:"id"`
+	Rating  int `json:"rating"`
+}
+
+func (fa *FeedbackAgentAPI) UpdateFeedbackRatingHandler(c *gin.Context) {
+
+	var rating FeedbackRating
+	if err := c.BindJSON(&rating); err != nil {
+		log.Infof("Error parsing request body in UpdateFeedbackRatingHandler. Err: %v", err)
+		c.JSON(400, gin.H{"msg": "Invalid request body"})
+		return
+	}
+
+	err := fa.UpdateFeedbackRating(rating)
+	if err != nil {
+		log.Infof("Failed to update feedback rating for submission %d. Err: %v", rating.GradeID, err)
+		c.JSON(500, gin.H{"msg": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "Feedback rating updated successfully",
+		"id":  rating.GradeID,
+	})
+}
+
+func (fa *FeedbackAgentAPI) UpdateFeedbackRating(rating FeedbackRating) error {
+	sqlStatement := `UPDATE grades SET rating=$1, updated_at = $2 WHERE id = $3`
+
+	_, err := fa.DB.DB.Exec(sqlStatement,
+		rating.Rating,
+		time.Now(),
+		rating.GradeID)
+
+	if err != nil {
+		return fmt.Errorf("failed to update feedback rating: %v", err)
+	}
+
+	return nil
 }

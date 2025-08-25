@@ -1,0 +1,1 @@
+ALTER TABLE grades DROP COLUMN rating;

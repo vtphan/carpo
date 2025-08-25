@@ -99,7 +99,7 @@ export class FloatingFeedbackWidget {
   private dragOffset = { x: 0, y: 0 };
   private resizeOffset = { x: 0, y: 0 };
   private position = { x: 0, y: 50 }; // Will be calculated in setupContainer
-  private size = { width: 300, height: 400 };
+  private size = { width: 550, height: 400 };
   private minSize = { width: 250, height: 200 };
   private panelId: string;
   private filename: string;
@@ -412,12 +412,23 @@ export class FloatingFeedbackWidget {
       messageBubble.appendChild(feedbackContent);
     }
     
-    // Timestamp (if available)
+    // Footer with star rating and timestamp
+    const footer = document.createElement('div');
+    footer.style.display = 'flex';
+    footer.style.justifyContent = 'space-between';
+    footer.style.alignItems = 'center';
+    footer.style.marginTop = '8px';
+    footer.style.paddingTop = '4px';
+    footer.style.borderTop = '1px solid #eee';
+
+    // Upvote/Downvote on the left
+    const votingButtons = this.createVotingButtons(feedback.id || `${index}`);
+    footer.appendChild(votingButtons);
+
+    // Timestamp on the right
     const timestamp = document.createElement('div');
     timestamp.style.fontSize = '11px';
     timestamp.style.color = '#666';
-    timestamp.style.textAlign = 'right';
-    timestamp.style.marginTop = '4px';
     timestamp.style.opacity = '0.7';
     
     if (feedback.feedback_at) {
@@ -429,7 +440,8 @@ export class FloatingFeedbackWidget {
       timestamp.textContent = `Message ${index + 1}`;
     }
     
-    messageBubble.appendChild(timestamp);
+    footer.appendChild(timestamp);
+    messageBubble.appendChild(footer);
     messageContainer.appendChild(messageBubble);
     return messageContainer;
   }
@@ -629,6 +641,142 @@ export class FloatingFeedbackWidget {
   public refreshFeedback(): void {
     if (!this.isLoading) {
       this.fetchFeedbackContent();
+    }
+  }
+
+  private createVotingButtons(feedbackId: string): HTMLElement {
+    const voteContainer = document.createElement('div');
+    voteContainer.style.display = 'flex';
+    voteContainer.style.gap = '8px';
+    voteContainer.style.alignItems = 'center';
+    voteContainer.dataset.feedbackId = feedbackId;
+
+    // Create upvote button
+    const upvoteBtn = document.createElement('button');
+    upvoteBtn.textContent = '👍';
+    upvoteBtn.style.fontSize = '16px';
+    upvoteBtn.style.cursor = 'pointer';
+    upvoteBtn.style.border = 'none';
+    upvoteBtn.style.background = 'none';
+    upvoteBtn.style.padding = '2px 4px';
+    upvoteBtn.style.borderRadius = '4px';
+    upvoteBtn.style.transition = 'background-color 0.2s ease';
+    upvoteBtn.dataset.vote = '1';
+
+    // Create downvote button
+    const downvoteBtn = document.createElement('button');
+    downvoteBtn.textContent = '👎';
+    downvoteBtn.style.fontSize = '16px';
+    downvoteBtn.style.cursor = 'pointer';
+    downvoteBtn.style.border = 'none';
+    downvoteBtn.style.background = 'none';
+    downvoteBtn.style.padding = '2px 4px';
+    downvoteBtn.style.borderRadius = '4px';
+    downvoteBtn.style.transition = 'background-color 0.2s ease';
+    downvoteBtn.dataset.vote = '-1';
+
+    // Add hover effects
+    upvoteBtn.addEventListener('mouseenter', () => {
+      upvoteBtn.style.backgroundColor = 'rgba(34, 197, 94, 0.2)'; // Light green
+    });
+    upvoteBtn.addEventListener('mouseleave', () => {
+      if (voteContainer.dataset.currentVote !== '1') {
+        upvoteBtn.style.backgroundColor = 'transparent';
+      }
+    });
+
+    downvoteBtn.addEventListener('mouseenter', () => {
+      downvoteBtn.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'; // Light red
+    });
+    downvoteBtn.addEventListener('mouseleave', () => {
+      if (voteContainer.dataset.currentVote !== '-1') {
+        downvoteBtn.style.backgroundColor = 'transparent';
+      }
+    });
+
+    // Add click handlers
+    upvoteBtn.addEventListener('click', () => {
+      this.setVote(voteContainer, 1, feedbackId);
+    });
+
+    downvoteBtn.addEventListener('click', () => {
+      this.setVote(voteContainer, -1, feedbackId);
+    });
+
+    voteContainer.appendChild(upvoteBtn);
+    voteContainer.appendChild(downvoteBtn);
+
+    // Load existing vote if any
+    this.loadExistingVote(voteContainer, feedbackId);
+
+    return voteContainer;
+  }
+
+  private updateVoteButtons(container: HTMLElement, vote: number): void {
+    const upvoteBtn = container.querySelector('[data-vote="1"]') as HTMLElement;
+    const downvoteBtn = container.querySelector('[data-vote="-1"]') as HTMLElement;
+    
+    // Reset both buttons
+    upvoteBtn.style.backgroundColor = 'transparent';
+    downvoteBtn.style.backgroundColor = 'transparent';
+    
+    // Highlight the selected vote
+    if (vote === 1) {
+      upvoteBtn.style.backgroundColor = 'rgba(34, 197, 94, 0.3)'; // Green for upvote
+    } else if (vote === -1) {
+      downvoteBtn.style.backgroundColor = 'rgba(239, 68, 68, 0.3)'; // Red for downvote
+    }
+  }
+
+  private setVote(container: HTMLElement, vote: number, feedbackId: string): void {
+    const currentVote = parseInt(container.dataset.currentVote || '0');
+    
+    // If clicking the same vote, remove it (toggle off)
+    if (currentVote === vote) {
+      container.dataset.currentVote = '0';
+      this.updateVoteButtons(container, 0);
+      localStorage.removeItem(`feedback_vote_${feedbackId}`);
+      console.log(`Removed vote for feedback ${feedbackId}`);
+      
+      // Save removal to server (vote = 0)
+      this.saveVoteToServer(feedbackId, 0);
+    } else {
+      // Set new vote
+      container.dataset.currentVote = vote.toString();
+      this.updateVoteButtons(container, vote);
+      
+      // Store vote in localStorage for persistence
+      const storageKey = `feedback_vote_${feedbackId}`;
+      localStorage.setItem(storageKey, vote.toString());
+      
+      console.log(`${vote === 1 ? 'Upvoted' : 'Downvoted'} feedback ${feedbackId}`);
+      
+      // Save vote to server
+      this.saveVoteToServer(feedbackId, vote);
+    }
+  }
+
+  private loadExistingVote(container: HTMLElement, feedbackId: string): void {
+    const storageKey = `feedback_vote_${feedbackId}`;
+    const existingVote = localStorage.getItem(storageKey);
+    
+    if (existingVote) {
+      const vote = parseInt(existingVote);
+      container.dataset.currentVote = vote.toString();
+      this.updateVoteButtons(container, vote);
+    }
+  }
+
+  private async saveVoteToServer(feedbackId: string, vote: number): Promise<void> {
+    try {
+      const response = await requestAPI<any>(`feedback-ratings`, {
+        method: 'PUT',
+        body: JSON.stringify({ id: feedbackId, rating: vote })
+      });
+      console.log('Vote saved to server:', response);
+    } catch (error) {
+      console.error('Failed to save vote to server:', error);
+      // Could show a toast notification here if needed
     }
   }
 }

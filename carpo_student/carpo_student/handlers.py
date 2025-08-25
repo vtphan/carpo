@@ -580,6 +580,58 @@ class ConfigHandler(APIHandler):
         
         self.finish(json.dumps(config_data))
 
+class FeedbackRatingHandler(APIHandler):
+    """Handler for feedback ratings - PUT /feedback-ratings"""
+    
+    @tornado.web.authenticated
+    def put(self):
+        # Get the rating from request body
+        input_data = self.get_json_body()
+        
+        if 'id' not in input_data:
+            self.set_status(400)
+            self.finish(json.dumps({'message': "Missing id field in request body"}))
+            return
+            
+        rating = input_data['rating']
+        
+        # Validate rating value
+        if rating not in [-1, 0, 1]:
+            self.set_status(400)
+            self.finish(json.dumps({'message': "Rating must be -1, 0, or 1"}))
+            return
+        
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        # Prepare the request body for the backend server
+        body = {
+            'rating': rating,
+            'id': input_data['id']
+        }
+
+        url = config_data['server'] + "/feedback-ratings"
+        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+        
+        try:
+            response = requests.put(url, data=json.dumps(body), headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                self.finish(json.dumps(response_data))
+            else:
+                self.set_status(response.status_code)
+                self.finish(json.dumps({'message': f"Server returned status {response.status_code}"}))
+                
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
+            return
+
  
 
 def setup_handlers(web_app):
@@ -619,3 +671,7 @@ def setup_handlers(web_app):
     # Config endpoint to serve config.json
     route_pattern_config =  url_path_join(web_app.settings['base_url'], "carpo-student", "config")
     web_app.add_handlers(host_pattern, [(route_pattern_config, ConfigHandler)])
+
+    # Feedback ratings endpoint
+    route_pattern_ratings =  url_path_join(web_app.settings['base_url'], "carpo-student", "feedback-ratings")
+    web_app.add_handlers(host_pattern, [(route_pattern_ratings, FeedbackRatingHandler)])

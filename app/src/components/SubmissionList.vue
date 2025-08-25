@@ -107,8 +107,8 @@
                       {{ secondColumnError }}
                     </div>
                     <div v-else class="second-column-content">
-                      <div v-if="feedbackList && feedbackList.length > 0">
-                        <div v-for="(feedback, index) in feedbackList" :key="index" class="feedback-box">
+                      <div v-if="feedbackList && feedbackList[selectedSub.id] && feedbackList[selectedSub.id].length > 0">
+                        <div v-for="(feedback, index) in feedbackList[selectedSub.id]" :key="index" class="feedback-box">
                           <div class="feedback-header" style="display: flex; align-items: center; justify-content: flex-start; gap: 10px;">
                             <b-button
                               size="sm"
@@ -232,7 +232,7 @@ export default {
     selectedSub: '',
     isLoading: true,
     secondColumnData: '',
-    feedbackList: [],
+    feedbackList: {},
     isLoadingSecondColumn: false,
     secondColumnError: '',
     cmOptions: {
@@ -516,33 +516,39 @@ export default {
       // this.getFlaggedSubsList()
     },
     fetchSecondColumnData () {
+      // Check if feedback already exists for this submission
+      if (this.feedbackList[this.selectedSub.id] && this.feedbackList[this.selectedSub.id].length > 0) {
+        return
+      }
       this.isLoadingSecondColumn = true
       this.secondColumnError = ''
       this.secondColumnData = ''
-      this.feedbackList = []
       const config = {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
       }
       this.$http.get(Config.apiUrl + '/submissions/' + this.selectedSub.id + '/agent-feedback', config)
         .then((response) => {
           this.secondColumnData = response.data
-          // Handle API response structure: {"data": [{"model": "name", "feedbacks": ["feedback": "my feedback"]}]}
           if (response.data && response.data.data && Array.isArray(response.data.data)) {
             const agentFeedbacks = response.data.data
-            this.feedbackList = []
             // Process each agent's feedback
             agentFeedbacks.forEach(agentData => {
               if (agentData.feedbacks && Array.isArray(agentData.feedbacks)) {
+                const submissionId = agentData.submission_id || this.selectedSub.id
+                if (!this.feedbackList[submissionId]) {
+                  this.feedbackList[submissionId] = []
+                }
                 agentData.feedbacks.forEach(feedbackItem => {
-                  this.feedbackList.push({
+                  this.feedbackList[submissionId].push({
                     feedback: feedbackItem.feedback || feedbackItem,
-                    model: agentData.model || 'Unknown Model'
+                    model: agentData.model || 'Unknown Model',
+                    submission_id: submissionId
                   })
                 })
               }
             })
           } else {
-            this.feedbackList = []
+            this.feedbackList = {}
             this.secondColumnError = 'No feedback data available'
           }
           this.isLoadingSecondColumn = false
