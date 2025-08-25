@@ -50,7 +50,6 @@ func (h *SSEHub) RemoveClient(userID int) {
 func (h *SSEHub) BroadcastToUser(userID int, message string) {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
-	fmt.Printf("Message Sent: %v", message)
 	if client, exists := h.clients[userID]; exists {
 		select {
 		case client.Channel <- message:
@@ -157,6 +156,13 @@ func main() {
 	tagAPI := TagAPI{&Database{DB: db}}
 	agentAPI := AgentAPI{&Database{DB: db}}
 	feedbackAPI := FeedbackAPI{&Database{DB: db}}
+	feedbackAgentAPI := FeedbackAgentAPI{
+		DB: &Database{DB: db},
+		HTTPClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		BaseURL: os.Getenv("FEEDBACK_AGENT"),
+	}
 
 	// Register Users
 	r.POST("/users", uAPI.RegisterUser)
@@ -184,6 +190,7 @@ func main() {
 	// Use Middleware for app APIs
 	r.Use(appMiddleware(db))
 	r.GET("/submissions/teachers", subAPI.GetSubmissionsHandler)
+	r.GET("/submissions/:id/agent-feedback", feedbackAgentAPI.GetAgentFeedbackByIDHandler)
 	r.OPTIONS("/submissions/teachers")
 
 	// Grades and Feedbacks

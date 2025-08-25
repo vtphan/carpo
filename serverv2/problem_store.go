@@ -11,6 +11,7 @@ import (
 type ProblemStore interface {
 	SaveProblem(int, string, string, time.Time) (int, error)
 	GetProblems(int) ([]Problem, error)
+	GetProblemByID(int) (Problem, error)
 	ArchiveProblem(int) error
 	IsExpired(int) (bool, error)
 	ListProblemGradeStatus() ([]ProblemGradeStatus, error)
@@ -114,6 +115,29 @@ func (db *Database) GetProblems(StudentID int) ([]Problem, error) {
 	}
 
 	return activeQuestions, err
+}
+
+func (db *Database) GetProblemByID(problemID int) (Problem, error) {
+	var problem Problem
+	
+	sql := `SELECT id, user_id, question, format, lifetime, status FROM problems WHERE id = $1`
+	
+	var lifeTimeStr string
+	err := db.DB.QueryRow(sql, problemID).Scan(
+		&problem.ID, &problem.UserID, &problem.Question, 
+		&problem.Format, &lifeTimeStr, &problem.Status)
+	
+	if err != nil {
+		return problem, err
+	}
+	
+	// Parse lifetime
+	problem.Lifetime, err = time.Parse(time.RFC3339, lifeTimeStr)
+	if err != nil {
+		return problem, err
+	}
+	
+	return problem, nil
 }
 
 // archive inactive problems via cron

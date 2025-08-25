@@ -10,6 +10,7 @@ import (
 type SubStore interface {
 	SaveSubmission(Submission) (int, error)
 	GetSubmissions() ([]Submission, error)
+	GetSubmissionByID(int) (Submission, error)
 	GetUserNameByID(int) (User, error)
 	IsExpired(int) (bool, error)
 	GetOnWatchSnapshots() ([]FlagSubmission, error)
@@ -129,6 +130,47 @@ func (db *Database) GetSubmissions() ([]Submission, error) {
 	}
 
 	return subs, err
+}
+
+func (db *Database) GetSubmissionByID(submissionID int) (Submission, error) {
+	var submission Submission
+	
+	sql := `SELECT submissions.id, message, code, is_snapshot, submissions.user_id, users.name, problem_id, problems.format, submissions.created_at, submissions.updated_at 
+			FROM submissions 
+			INNER JOIN users ON submissions.user_id = users.id 
+			INNER JOIN problems ON submissions.problem_id = problems.id 
+			WHERE submissions.id = $1 AND submissions.status = 0`
+
+	err := db.DB.QueryRow(sql, submissionID).Scan(
+		&submission.ID, &submission.Message, &submission.Code, &submission.Snapshot, 
+		&submission.StudentID, &submission.Name, &submission.ProblemID, &submission.Format, 
+		&submission.CreatedAt, &submission.UpdatedAt)
+
+	if err != nil {
+		return submission, err
+	}
+
+	// Get associated tags
+	tagSQL := `SELECT st.tag_id, t.name FROM submission_tag as st 
+			   INNER JOIN tags as t ON st.tag_id = t.id 
+			   WHERE st.submission_id = $1`
+	
+	rows, err := db.DB.Query(tagSQL, submissionID)
+	if err != nil {
+		return submission, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tag Tag
+		err = rows.Scan(&tag.ID, &tag.Name)
+		if err != nil {
+			return submission, err
+		}
+		submission.Tag = append(submission.Tag, tag)
+	}
+
+	return submission, nil
 }
 
 func (db *Database) GetSnapTags() ([]TagSnapName, error) {

@@ -148,7 +148,7 @@ export default {
     modelOptions: [
       { value: '', text: 'Select a model' },
       { value: 'gpt-4', text: 'GPT-4' },
-      { value: 'gpt-3.5-turbo', text: 'GPT-3.5 Turbo' },
+      { value: 'gpt-4.1-mini', text: 'GPT-4 Mini' },
       { value: 'claude-3-opus', text: 'Claude 3 Opus' },
       { value: 'claude-3-sonnet', text: 'Claude 3 Sonnet' },
       { value: 'claude-3-haiku', text: 'Claude 3 Haiku' }

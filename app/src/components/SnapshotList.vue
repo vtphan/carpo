@@ -90,7 +90,16 @@
                     <div v-else class="second-column-content">
                       <div v-if="feedbackList && feedbackList.length > 0">
                         <div v-for="(feedback, index) in feedbackList" :key="index" class="feedback-box">
-                          <div class="feedback-header">
+                          <div class="feedback-header" style="display: flex; align-items: center; justify-content: flex-start; gap: 10px;">
+                            <b-button
+                              size="sm"
+                              variant="outline-primary"
+                              @click="appendFeedbackToCode(feedback.feedback)"
+                              v-b-tooltip.hover
+                              title="Append to Code"
+                            >
+                            <font-awesome-icon icon="arrow-rotate-left" />
+                            </b-button>
                             <strong>Feedback {{ index + 1 }} ({{feedback.model}})</strong>
                           </div>
                           <div class="feedback-content">
@@ -301,18 +310,37 @@ export default {
       this.secondColumnError = ''
       this.secondColumnData = ''
       this.feedbackList = []
-      this.$http.get('https://mocki.io/v1/b2c9db6b-872b-485e-b9db-c5726de5a2e7')
+      const config = {
+        headers: { Authorization: 'Bearer ' + this.$route.query.token }
+      }
+      this.$http.get(Config.apiUrl + '/submissions/' + this.selectedSub.id + '/agent-feedback', config)
         .then((response) => {
           this.secondColumnData = response.data
-          // Extract feedbacks array from response
-          if (response.data && response.data.feedbacks && Array.isArray(response.data.feedbacks)) {
-            this.feedbackList = response.data.feedbacks
+          // console.log(response.data)
+          // Handle API response structure: {"data": [{"model": "name", "feedbacks": ["feedback": "my feedback"]}]}
+          if (response.data && response.data.data && Array.isArray(response.data.data)) {
+            const agentFeedbacks = response.data.data
+            this.feedbackList = []
+            // Process each agent's feedback
+            agentFeedbacks.forEach(agentData => {
+              if (agentData.feedbacks && Array.isArray(agentData.feedbacks)) {
+                agentData.feedbacks.forEach(feedbackItem => {
+                  this.feedbackList.push({
+                    feedback: feedbackItem.feedback || feedbackItem,
+                    model: agentData.model || 'Unknown Model'
+                  })
+                })
+              }
+            })
+          } else {
+            this.feedbackList = []
+            this.secondColumnError = 'No feedback data available'
           }
           this.isLoadingSecondColumn = false
         })
         .catch((error) => {
-          console.log('Error fetching second column data:', error)
-          this.secondColumnError = 'Failed to load additional information'
+          console.log('Error fetching agent feedback:', error)
+          this.secondColumnError = 'Failed to load agent feedback'
           this.isLoadingSecondColumn = false
         })
     },
@@ -327,6 +355,20 @@ export default {
           this.$refs.cmEditor.codemirror.refresh()
         }
       })
+    },
+    appendFeedbackToCode (feedback) {
+      if (feedback && this.selectedSub) {
+        // Add feedback as a comment to the end of the code
+        const feedbackComment = `\n\n# ${feedback.split('\n').join('\n# ')}`
+        this.selectedSub.code = this.selectedSub.code + feedbackComment
+        // Refresh CodeMirror to show the updated content
+        this.$nextTick(() => {
+          if (this.$refs.cmEditor && this.$refs.cmEditor.codemirror) {
+            this.$refs.cmEditor.codemirror.refresh()
+          }
+        })
+        this.toast('Feedback appended to code')
+      }
     }
   },
   created: function () {

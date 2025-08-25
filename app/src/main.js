@@ -12,9 +12,9 @@ import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faSpinner, faHand, faEye, faStop, faCode, faBroadcastTower, faFileText } from '@fortawesome/free-solid-svg-icons'
+import { faSpinner, faHand, faEye, faStop, faCode, faBroadcastTower, faFileText, faArrowRotateLeft } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-library.add(faSpinner, faHand, faEye, faStop, faCode, faBroadcastTower, faFileText)
+library.add(faSpinner, faHand, faEye, faStop, faCode, faBroadcastTower, faFileText, faArrowRotateLeft)
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 
 // Make BootstrapVue available throughout your project

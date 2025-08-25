@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -15,7 +14,6 @@ type FeedbackAPI struct {
 }
 
 func (fback *FeedbackAPI) GetFeedbackHandler(c *gin.Context) {
-	fmt.Println("HERE: ")
 	user := c.Param("user_id")
 	// string to int
 	user_id, err := strconv.Atoi(user)
