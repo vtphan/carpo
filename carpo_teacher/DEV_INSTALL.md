@@ -65,6 +65,7 @@ The `jlpm` command is JupyterLab's pinned version of
 `yarn` or `npm` in lieu of `jlpm` below.
 
 ```bash
+jlpm install
 # Clone the repo to your local environment
 # Change directory to the carpo_teacher directory
 # Install package in development mode

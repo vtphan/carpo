@@ -183,6 +183,13 @@ func (db *Database) ArchiveProblem(id int) error {
 		return err
 	}
 
+	// Also broadcast solution if solution exists:
+	_, err = db.DB.Exec("UPDATE solutions SET broadcast=1, updated_at=$1  where problem_id=$2", time.Now(), id)
+
+	if err != nil {
+		return err
+	}
+
 	return err
 }
 

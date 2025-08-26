@@ -5,8 +5,6 @@ import {
 
 import { requestAPI } from './handler';
 
-import { CellInfo } from './model'
-
 import {
   NotebookActions,
   NotebookPanel,
@@ -17,11 +15,6 @@ import {
 
 import { Cell } from '@jupyterlab/cells';
 
-import { PanelLayout } from '@lumino/widgets';
-
-import {
-  CellCheckButton, FeedbackButton
-} from './widget'
 
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 
@@ -29,8 +22,6 @@ import {
   IDocumentManager
 } from '@jupyterlab/docmanager';
 
-
-// import { Cell } from '@jupyterlab/cells';
 
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
 import { ToolbarButton, Dialog, showDialog,showErrorMessage } from '@jupyterlab/apputils';
@@ -58,88 +49,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     nbTrack.currentChanged.connect(() => {
 
-      const notebookPanel = nbTrack.currentWidget;
-      const notebook = nbTrack.currentWidget.content;
+      // const notebookPanel = nbTrack.currentWidget;
+      // const notebook = nbTrack.currentWidget.content;
 
       // If current Notebook is not inside Exercises/problem_ directory, disable all functionality.
       if (!nbTrack.currentWidget.context.path.includes("problem_")) {
         return
       }
 
-
-      notebookPanel.context.ready.then(async () => {
-
-        let currentCell: Cell = null;
-        let currentCellCheckButton: CellCheckButton = null;
-
-        nbTrack.activeCellChanged.connect(() => {
-
-          if (currentCell) {
-            notebook.widgets.map((c: Cell) => {
-              if (c.model.type == 'code' || c.model.type == 'markdown') {
-                const currentLayout = c.layout as PanelLayout;
-                currentLayout.widgets.map(w => {
-                  if (w === currentCellCheckButton) {
-                    currentLayout.removeWidget(w)
-                  }
-                })
-              }
-            });
-          }
-
-          const cell: Cell = notebook.activeCell;
-          var sCell: Cell;
-          const activeIndex = notebook.activeCellIndex
-
-          // const heading = cell.model.value.text.split("\n")[0].split(" ")
-          const submission_id = function(text: string) {
-            return Number(text.split("\n")[0].split(" ")[2])
-          }
-
-          const problem_id = function(text: string) {
-            return Number(text.split("\n")[0].split(" ")[1])
-          }
-
-          const student_id = function(text: string) {
-            return Number((text.split("\n")[0].split(" ")[0]).replace("#", ""))
-          }
-
-          var info : CellInfo = {
-            id:  submission_id(cell.model.value.text),
-            problem_id: problem_id(cell.model.value.text),
-            student_id: student_id(cell.model.value.text),
-            code: cell.model.value.text
-          };
-          var header:string;
-
-          // Get the status cell:
-          notebook.widgets.map((c, index ) => {
-            if (index == activeIndex+1) {
-              sCell = c;
-            }
-          })
-
-          header = cell.model.value.text.split("\n")[0]
-          if(header.match(/^#[0-9]+ [0-9]+ [0-9]+$/)) {
-            console.log("Submission Grading block.........")
-            const newCheckButton: CellCheckButton = new CellCheckButton(cell,sCell,info);
-  
-            (cell.layout as PanelLayout).addWidget(newCheckButton);
-            currentCell = cell;
-            currentCellCheckButton = newCheckButton;
-
-          } else {
-            
-            const newFeedbackButton: FeedbackButton = new FeedbackButton(cell,info);
-            (cell.layout as PanelLayout).addWidget(newFeedbackButton);
-            currentCell = cell;
-            currentCellCheckButton = newFeedbackButton;
-
-          }
-
-        });
-
-      });
     });
     
     //  tell the document registry about your widget extension:
@@ -388,7 +305,7 @@ export class PublishProblemButtonExtension
 
       notebook.widgets.map((c:Cell, index:number) => {
         if (index === activeIndex ) {
-          problem = c.model.value.text
+          problem = c.model.sharedModel.getSource()
           format = c.model.type
         }
       });
@@ -422,10 +339,11 @@ export class PublishProblemButtonExtension
 
       })
         .then(data => {
-          console.log(data)
+          // console.log(data)
           notebook.widgets.map((c:Cell,index:number) => {
             if (index === activeIndex ) {
-             c.model.value.text = "#PID:" + data.id + "\n" + problem
+              c.model.sharedModel.setSource("#PID:" + data.id + "\n" + problem)
+              console.log("Add Problem ID to the cell content")
             }
           });
 
@@ -483,7 +401,7 @@ export class ArchiveProblemButtonExtension
 
       notebook.widgets.map((c:Cell,index:number) => {
         if (index === activeIndex ) {
-          problem = c.model.value.text
+          problem = c.model.sharedModel.getSource()
         }
       });
 
@@ -505,7 +423,6 @@ export class ArchiveProblemButtonExtension
       })
         .then(data => {
           console.log(data)
-         
           showDialog({
           title:'Question Unpublished',
           body: 'Problem id ' + problem_id +' is  unpublished.',

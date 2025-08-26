@@ -377,7 +377,7 @@ class ProblemHandler(APIHandler):
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
             return
 
-        self.finish(response)
+        self.finish(json.dumps(response))
 
     @tornado.web.authenticated
     def delete(self):

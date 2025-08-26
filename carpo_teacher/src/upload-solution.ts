@@ -31,10 +31,11 @@ export class GetSolutionButton
         const notebook = panel.content;
         const activeIndex = notebook.activeCellIndex
         var code_block:string
+        var solution: string
 
         notebook.widgets.map((c:Cell,index:number) => {
             if (index === activeIndex ) {
-                code_block = c.model.value.text
+                code_block = c.model.sharedModel.getSource()
             }
         });
 
@@ -45,9 +46,11 @@ export class GetSolutionButton
 
         var problem_id: number = parseInt((code_block.split("\n")[0]).split("#PID:")[1]);
 
+        solution = code_block.split('\n').slice(1).join('\n').trim();
+
         let body = {
             "problem_id": problem_id,
-            "code": code_block
+            "code": solution
         }
         
 
@@ -56,8 +59,6 @@ export class GetSolutionButton
             body: JSON.stringify(body)
           })
             .then(data => {
-              console.log(data);
-    
               showDialog({
                 title:'Solution Uploaded',
                 body: 'Solution uploaded for ProblemID ' + problem_id +'.',

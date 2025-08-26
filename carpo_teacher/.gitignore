@@ -8,6 +8,9 @@ node_modules/
 *.tsbuildinfo
 carpo_teacher/labextension
 
+.yarn/cache/*
+.yarn/*.gz
+
 # Created by https://www.gitignore.io/api/python
 # Edit at https://www.gitignore.io/?templates=python
 

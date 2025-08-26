@@ -96,23 +96,12 @@ const CodeCellButtonComponent = ({
   
     const submitGrade = async (val: Boolean) => {
 
-        if (info.id == NaN) {
-
-            showDialog({
-                title:'Grading Error',
-                body: "Invalid Cell for grading.",
-                buttons: [Dialog.okButton({ label: 'Ok' })]
-              });
-
-            return
-
-        }
         let postBody = {
             "student_id": info.student_id,
             "submission_id": info.id,
             "problem_id": info.problem_id,
             "score": val ? 1 : 2,
-            "code": cell.model.value.text
+            "code": cell.model.sharedModel.getSource()
         }
         
         var status : string = val ? "Correct.": "Incorrect." 
@@ -128,7 +117,7 @@ const CodeCellButtonComponent = ({
                 body: msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
-            statusCell.model.value.text = "### Status: " + status;
+            // statusCell.model.value.text = "### Status: " + status;
             })
             .catch(reason => {
             showErrorMessage('Submission Grade Error', reason);
@@ -142,21 +131,11 @@ const CodeCellButtonComponent = ({
   
     const sendFeedback = async() => {
 
-        if (info.id == NaN) {
-            showDialog({
-                title:'Feedback Error',
-                body: "Invalid Cell for feedback.",
-                buttons: [Dialog.okButton({ label: 'Ok' })]
-              });
-
-            return
-        }
-
         let postBody = {
             "student_id": info.student_id,
             "submission_id": info.id,
-            "problem_id": info.problem_id,
-            "code": cell.model.value.text
+            "problem_id": info.problem_id
+            // "code": cell.model.value.text
         }
 
         requestAPI<any>('submissions/feedbacks',{
@@ -169,7 +148,7 @@ const CodeCellButtonComponent = ({
                 body: data.msg,
                 buttons: [Dialog.okButton({ label: 'Ok' })]
               });
-            statusCell.model.value.text = "### Status: Try Again" ;
+            // statusCell.model.value.text = "### Status: Try Again" ;
             
             })
             .catch(reason => {
@@ -213,8 +192,8 @@ const MarkdownCellButtonComponent = ({
             "submission_id": info.id,
             "problem_id": info.problem_id,
             "code": info.code,
-            "message": info.message,
-            "comment": cell.model.value.text
+            "message": info.message
+            // "comment": cell.model.value.text
         }
 
         // console.log("Feedback: ", postBody)

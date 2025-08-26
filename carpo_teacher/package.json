@@ -1,6 +1,6 @@
 {
   "name": "carpo-teacher",
-  "version": "0.0.9",
+  "version": "0.2.1",
   "description": "JupyterLab extension with backend and frontend part for carpo teacher.",
   "keywords": [
     "jupyter",
@@ -13,8 +13,8 @@
   },
   "license": "BSD-3-Clause",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "test",
+    "email": "test@test.com"
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
@@ -53,15 +53,15 @@
     "watch:labextension": "jupyter labextension watch ."
   },
   "dependencies": {
-    "@jupyterlab/application": "^3.1.0",
-    "@jupyterlab/coreutils": "^5.2.7",
-    "@jupyterlab/apputils": "^3.2.8",
-    "@jupyterlab/services": "^6.2.7",
-    "@jupyterlab/notebook": "^3.0.10",
-    "@jupyterlab/cells": "^3.0.10"
+    "@jupyterlab/application": "^4.0.0",
+    "@jupyterlab/apputils": "^4.0.0",
+    "@jupyterlab/cells": "^4.0.0",
+    "@jupyterlab/coreutils": "^6.0.0",
+    "@jupyterlab/notebook": "^4.0.0",
+    "@jupyterlab/services": "^7.0.0"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^3.1.0",
+    "@jupyterlab/builder": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^4.8.1",
     "@typescript-eslint/parser": "^4.8.1",
     "eslint": "^7.14.0",
@@ -76,7 +76,7 @@
     "stylelint-config-recommended": "^6.0.0",
     "stylelint-config-standard": "~24.0.0",
     "stylelint-prettier": "^2.0.0",
-    "typescript": "~4.1.3"
+    "typescript": "~5.9.2"
   },
   "sideEffects": [
     "style/*.css",
@@ -103,7 +103,7 @@
   "jupyter-releaser": {
     "hooks": {
       "before-build-npm": [
-        "python -m pip install jupyterlab~=3.1",
+        "python -m pip install jupyterlab~=4.0",
         "jlpm"
       ],
       "before-build-python": [
