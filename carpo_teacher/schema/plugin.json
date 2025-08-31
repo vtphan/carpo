@@ -1,0 +1,37 @@
+{
+    "jupyter.lab.shortcuts": [],
+    "title": "@carpo-teacher/cell-toolbar",
+    "description": "@carpo-teacher/cell-toolbar settings.",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false,
+    "jupyter.lab.menus": {
+    "main": [
+      {
+        "id": "jp-mainmenu-carpo",
+        "label": "Carpo",
+        "rank": 501,
+        "items": [
+          {
+            "command": "jlab-carpo:main-register",
+            "args": {
+              "origin": "from the menu"
+            }
+          },
+          {
+            "command": "jlab-carpo:main-goto-app",
+            "args": {
+              "origin": "from the menu"
+            }
+          },
+          {
+            "command": "jlab-carpo:main-about",
+            "args": {
+              "origin": "from the menu"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  }

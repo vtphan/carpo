@@ -1,6 +1,7 @@
 <template>
   <div>
-      <b-table striped hover :items="message.data" :fields="fields" responsive="sm" :tbody-tr-class="rowClass">
+      <b-table striped hover :items="message.data" :fields="fields" responsive="sm" :tbody-tr-class="rowClass" :sort-by.sync="defaultSortColumn"
+        :sort-desc.sync="defaultSortDesc">
         <template #cell(OnWatch)="data" >
           <a href="javascript:;" @click="fetchWatch(data.item.problem_id)">{{ data.item.on_watch }}</a>
         </template>
@@ -129,6 +130,8 @@ export default {
       },
       { key: 'actions', label: 'Actions', sortable: false }
     ],
+    defaultSortColumn: 'problem_id',
+    defaultSortDesc: true,
     available_tags: '',
     select_tag: []
   }),

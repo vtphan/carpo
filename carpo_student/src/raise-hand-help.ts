@@ -14,7 +14,9 @@ import {
 } from '@jupyterlab/apputils';
 
 import { requestAPI } from './handler';
-import { CellInfo } from './model';
+import { Cell } from '@jupyterlab/cells';
+
+// import { CellInfo } from './model';
 
 export class RaiseHandHelpButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
@@ -32,39 +34,26 @@ export class RaiseHandHelpButton
   ): IDisposable {
     const raiseHand = () => {
       const notebook = panel.content;
-      const filename = panel.context.path;
-      const activeIndex = notebook.activeCellIndex;
+      // const filename = panel.context.path;
+      // const activeIndex = notebook.activeCellIndex;
 
-      let codeBlock: string;
-
-      const info: CellInfo = {
-        problem_id: parseInt(
-          filename.split('/').pop().replace('ex', '').replace('.ipynb', '')
-        )
-      };
-
-      notebook.widgets.map((c, index) => {
-        if (index === activeIndex) {
-          codeBlock = c.model.sharedModel.getSource();
-        }
-      });
-
-      if (!codeBlock.startsWith('## PID ')) {
-        showErrorMessage(
-          'Code Share Error',
-          'Invalid cell selected. Use a specific problem cell block.'
-        );
-        return;
+      const cell: Cell = notebook.activeCell;
+      const content = cell.model.sharedModel.getSource()
+      const problem_id = cell.model.sharedModel.getMetadata("problem") || undefined;
+      
+      if (problem_id === undefined ){
+        showErrorMessage('Code Share Error', "Can not share non-exercise code cell.");
+        return
       }
 
       const postBody = {
-        message: info.message,
-        code: codeBlock,
-        problem_id: info.problem_id,
-        snapshot: 1
+        message: '',
+        code: content,
+        problem_id: problem_id,
+        snapshot: 3  // 1 is snapshot, 2 is submission, 3 is ask for help,
       };
 
-      console.log('Req body: ', postBody);
+      // console.log('Req body: ', postBody);
       requestAPI<any>('ask_for_help', {
         method: 'POST',
         body: JSON.stringify(postBody)
@@ -74,7 +63,7 @@ export class RaiseHandHelpButton
               data.msg = 'Code is sent to the instructor.';
           }
           showDialog({
-            title: '',
+            title: 'Help Request Sent',
             body: data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
@@ -93,7 +82,7 @@ export class RaiseHandHelpButton
       tooltip: 'Ask the instructor to help you.'
     });
 
-    panel.toolbar.insertItem(12, 'AskForHelp', button);
+    panel.toolbar.insertItem(11, 'AskForHelp', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

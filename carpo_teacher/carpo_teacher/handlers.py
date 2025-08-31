@@ -39,8 +39,8 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "John Smith"
         config_data['role'] = 1
-        config_data['server'] = "http://delphinus.cs.memphis.edu:XXXX"
-        config_data['carpo_version'] = "0.0.9"
+        config_data['server'] = "http://141.225.10.71:8081"
+        config_data['carpo_version'] = "0.2.2"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -66,7 +66,7 @@ def create_initial_files():
                             "name": "python",
                             "nbconvert_exporter": "python",
                             "pygments_lexer": "ipython3",
-                            "version": "3.8.10"
+                            "version": "3.10"
                             }
                         },
                         "nbformat": 4,
@@ -78,8 +78,8 @@ def create_initial_files():
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
                                 "source": [ "#### To complete carpo installation, do these steps: \n \
-1. Edit *config.json* to add your name, and the server address. \n \
-2. Click the button **Register**, to register your account. \n" ],
+1. Click on Carpo Menu -> Register.  \n \
+2. Enter the name, serverUrl and appUrl. Click Ok. \n" ],
                                 "outputs": []
                                 })
 
@@ -91,12 +91,11 @@ class RegistrationHandler(APIHandler):
     def initialize(self,config_files):
         self.config_files = config_files
     @tornado.web.authenticated
-    def get(self):
+    def post(self):
 
         config_data = read_config_file()
         if config_data == {}:
             create_initial_files()
-            
             self.set_status(500)
             self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
             return
@@ -106,35 +105,40 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
             return
         
-        if config_data['name'] == "John Smith":
-            self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
-            return
-        
-        url = config_data['server'] + "/users"
+        input_data = self.get_json_body()
+        userName = input_data['name']
+        serverUrl = input_data['serverUrl']
+        appUrl = input_data['appUrl']
+
+        url = serverUrl + "/users"
 
         body = {}
-        body['name'] = config_data['name']
+        body['name'] = userName
         body['role'] = 1 # Role 1 is teacher/TA
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-       
+    
         try:
-            response = requests.post(url, data=json.dumps(body),headers=headers,timeout=5).json()
-            # print(response)
+            response = requests.post(url, data=json.dumps(body),headers=headers,timeout=5)
+            if response.status_code == 200:
+                resp = response.json()
+                config_data['id'] = resp['id']
+                config_data['uuid'] = resp['uuid']
+                config_data['role'] = 1
+                config_data['name'] = userName
+                config_data['server'] = serverUrl
+                config_data['app_url'] = appUrl
+                # Write id to the json file.
+                with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
+                    config_file.write(json.dumps(config_data, indent=4))
+                self.finish(response.json())
+            else:
+                self.set_status(500)
+                self.finish(json.dumps({'message': "Carpo Server Error. {}".format(response.json())}))
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': "Carpo Server Error. {}".format(e)}))
-            return
-
-        config_data['id'] = response['id']
-        config_data['uuid'] = response['uuid']
-        config_data['role'] = 1
-        # Write id to the json file.
-        with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
-            config_file.write(json.dumps(config_data, indent=4))
-        print(response)
-        self.finish(response)
+        
         
 class SubmissionHandler(APIHandler):
     # The following decorator should be present on all verb methods (head, get, post,

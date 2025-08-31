@@ -15,7 +15,6 @@ import {
 
 import { Cell } from '@jupyterlab/cells';
 
-
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 
 import {
@@ -24,12 +23,64 @@ import {
 
 
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
-import { ToolbarButton, Dialog, showDialog,showErrorMessage } from '@jupyterlab/apputils';
+import { ToolbarButton, Dialog, showDialog, showErrorMessage } from '@jupyterlab/apputils';
+import { Widget } from '@lumino/widgets';
 
 // , InputDialog
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 import { GetSolutionButton } from './upload-solution'
+
+import { ICommandPalette } from '@jupyterlab/apputils';
+
+
+const CommandIds = {
+  /**
+   * Command to run a code cell.
+   */
+  mainMenuRegister: 'jlab-carpo:main-register',
+  mainMenuGotoApp: 'jlab-carpo:main-goto-app',
+  mainMenuAbout: 'jlab-carpo:main-about',
+
+};
+
+class RegistrationWidget extends Widget {
+  private nameInput: HTMLInputElement;
+  private serverUrlInput: HTMLInputElement;
+  private appUrlInput: HTMLInputElement;
+
+  constructor() {
+    super();
+    this.node.innerHTML = `
+      <div style="padding: 20px; font-family: var(--jp-ui-font-family);">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">Name:</label>
+          <input type="text" id="name-input" style="width: 100%; padding: 8px; border: 1px solid var(--jp-border-color1); border-radius: 3px; font-size: 13px;" placeholder="Enter your name" />
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">Server URL:</label>
+          <input type="url" id="server-url-input" placeholder="http://127.0.0.1:8081" style="width: 100%; padding: 8px; border: 1px solid var(--jp-border-color1); border-radius: 3px; font-size: 13px;" placeholder="Enter server URL" />
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">App URL:</label>
+          <input type="url" id="app-url-input" placeholder="http://127.0.0.1:8080" style="width: 100%; padding: 8px; border: 1px solid var(--jp-border-color1); border-radius: 3px; font-size: 13px;" placeholder="Enter app URL" />
+        </div>
+      </div>
+    `;
+
+    this.nameInput = this.node.querySelector('#name-input') as HTMLInputElement;
+    this.serverUrlInput = this.node.querySelector('#server-url-input') as HTMLInputElement;
+    this.appUrlInput = this.node.querySelector('#app-url-input') as HTMLInputElement;
+  }
+
+  getValue() {
+    return {
+      name: this.nameInput.value,
+      serverUrl: this.serverUrlInput.value,
+      appUrl: this.appUrlInput.value
+    };
+  }
+}
 
 /**
  * Initialization data for the carpo-teacher extension.
@@ -37,31 +88,142 @@ import { GetSolutionButton } from './upload-solution'
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'carpo-teacher:plugin',
   autoStart: true,
-  requires: [INotebookTracker],
+  requires: [INotebookTracker, ICommandPalette],
   optional: [IFileBrowserFactory],
   activate: (
       app: JupyterFrontEnd,
       nbTrack: INotebookTracker,
+      palette: ICommandPalette,
       browserFactory: IFileBrowserFactory | null,
       docManager: IDocumentManager,
       ) => {
     console.log('JupyterLab extension carpo-teacher is activated!');
 
-    nbTrack.currentChanged.connect(() => {
+    const { commands } = app;
 
-      // const notebookPanel = nbTrack.currentWidget;
-      // const notebook = nbTrack.currentWidget.content;
-
-      // If current Notebook is not inside Exercises/problem_ directory, disable all functionality.
-      if (!nbTrack.currentWidget.context.path.includes("problem_")) {
-        return
+    const RegisterMenu = CommandIds.mainMenuRegister
+    commands.addCommand(RegisterMenu, {
+      label: 'Register',
+      caption: 'Register user to server.',
+      execute: async (args: any) => {
+        try {
+          const registrationWidget = new RegistrationWidget();
+          
+          const result = await showDialog({
+            title: 'Registration Information',
+            body: registrationWidget,
+            buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Register' })]
+          });
+          
+          if (!result.button.accept) {
+            return;
+          }
+          
+          const formData = registrationWidget.getValue();
+          
+          // Validate that all fields are filled
+          if (!formData.name || !formData.serverUrl || !formData.appUrl) {
+            showErrorMessage('Registration Error', 'Please fill in all required fields.');
+            return;
+          }
+          
+          // Send POST request with collected information
+          requestAPI<any>('register', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+          })
+          .then(data => {
+            console.log('Registration successful:', data);
+            showDialog({
+              title: 'Registration Successful',
+              body: `User ${formData.name} has been registered successfully.`,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          })
+          .catch(reason => {
+            showErrorMessage('Registration Error', reason);
+            console.error(`Failed to register user.\n${reason}`);
+          });
+          
+        } catch (error) {
+          console.error('Registration dialog error:', error);
+          showErrorMessage('Registration Error', 'Failed to collect registration information.');
+        }
       }
-
     });
-    
+
+    // Add the command to the command palette
+    const category = 'Extension Examples';
+    palette.addItem({
+      command: RegisterMenu,
+      category: category,
+      args: { origin: 'from the palette' }
+    });
+
+    const GotoAppMenu = CommandIds.mainMenuGotoApp
+    commands.addCommand(GotoAppMenu, {
+      label: 'Go to App',
+      caption: 'Open the web app.',
+      execute: (args: any) => {
+        console.log("Args: ", args)
+        requestAPI<any>('view_app',{
+          method: 'GET'
+        })
+          .then(data => {
+            console.log(data);
+            window.open(
+              data.url, "_blank");
+          })
+          .catch(reason => {
+            showErrorMessage('View App Status Error', reason);
+            console.error(
+              `Failed to view app status.\n${reason}`
+            );
+          });
+      }
+    });
+
+    // Add the command to the command palette
+    palette.addItem({
+      command: GotoAppMenu,
+      category: category,
+      args: { origin: 'from the palette' }
+    });
+
+    const AboutMenu = CommandIds.mainMenuAbout
+    commands.addCommand(AboutMenu, {
+      label: 'About Carpo',
+      caption: 'Carpo Information',
+      execute: (args: any) => {
+        const content = new Widget();
+        content.node.innerHTML = `
+          <h3>How to use carpo:</h3>
+          <ol>
+            <li><strong>To Register </strong>: Input name, ServerUrl and AppUrl. </li>
+            <li><strong>Publish</strong>: To publish current cell as an exercise.</li>
+            <li><strong>Unpublish</strong>: To publish an exercise.</li>
+            <li><strong>UploadSolution</strong>: To upload the exercise solution.</li>
+          </ol>
+        `;
+
+        showDialog({
+          title: 'About Carpo',
+          body: content,
+          buttons: [Dialog.okButton({ label: 'Ok' })]
+        });
+      }
+    });
+
+    // Add the command to the command palette
+    palette.addItem({
+      command: AboutMenu,
+      category: category,
+      args: { origin: 'from the palette' }
+    });
+
     //  tell the document registry about your widget extension:
-    app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
-    app.docRegistry.addWidgetExtension('Notebook', new GoToApp());
+    // app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
+    // app.docRegistry.addWidgetExtension('Notebook', new GoToApp());
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
@@ -69,6 +231,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
   }
 };
 
+// deprecated
 export class RegisterButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
@@ -121,6 +284,7 @@ export class RegisterButton
   }
 }
 
+// deprecated
 export class GoToApp implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
   createNew(
@@ -160,124 +324,6 @@ export class GoToApp implements DocumentRegistry.IWidgetExtension<NotebookPanel,
     });
   }
 }
-
-
-export class NewSubmissionButtonExtension
-  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-{
-  /**
-   * Create a new extension for the notebook panel widget.
-   *
-   * @param panel Notebook panel
-   * @param context Notebook context
-   * @returns Disposable on the added button
-   */
-  createNew(
-    panel: NotebookPanel,
-    context: DocumentRegistry.IContext<INotebookModel>
-  ): IDisposable {
-    const getSubmissions = () => {
-      NotebookActions.clearAllOutputs(panel.content);
-
-      requestAPI<any>('submissions',{
-        method: 'GET'
-      })
-        .then(data => {
-
-          if (data.Remaining != 0 ){
-            var msg = "Notebook " + data.sub_file + " is placed in folder Problem_"+ data.question +". There are " + data.remaining + " submissions in the queue."
-          } else {
-            var msg = "You have got 0 submissions. Please check again later.\n"
-          }
-          
-          showDialog({
-            title:'Submission Status',
-            body: msg,
-            buttons: [Dialog.okButton({ label: 'Ok' })]
-          });
-          
-
-          console.log(data)
-    
-        })
-        .catch(reason => {
-          showErrorMessage('Get Student Code Error', reason);
-          console.error(
-            `Failed to get student's code from the server. Please check your connection.\n${reason}`
-          );
-        });
-
-    };
-
-    const button = new ToolbarButton({
-      className: 'sync-code-button',
-      label: 'GetSubs',
-      onClick: getSubmissions,
-      tooltip: 'Download new submissions from students.',
-    });
-
-    panel.toolbar.insertItem(11, 'getStudentsCode', button);
-    return new DisposableDelegate(() => {
-      button.dispose();
-    });
-  }
-}
-
-export class AllSubmissionButtonExtension
-  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-{
-  /**
-   * Create a new extension for the notebook panel widget.
-   *
-   * @param panel Notebook panel
-   * @param context Notebook context
-   * @returns Disposable on the added button
-   */
-  createNew(
-    panel: NotebookPanel,
-    context: DocumentRegistry.IContext<INotebookModel>
-  ): IDisposable {
-    const getGradedSubmissions = () => {
-      NotebookActions.clearAllOutputs(panel.content);
-
-      requestAPI<any>('graded_submissions',{
-        method: 'GET'
-      })
-        .then(data => {
-          
-          showDialog({
-            title:'',
-            body: data.msg,
-            buttons: [Dialog.okButton({ label: 'Ok' })]
-          });
-          
-
-          console.log(data)
-    
-        })
-        .catch(reason => {
-          showErrorMessage('Get Graded Submissions Error', reason);
-          console.error(
-            `Failed to get student's code from the server. Please check your connection.\n${reason}`
-          );
-        });
-
-    };
-
-    const button = new ToolbarButton({
-      className: 'sync-code-button',
-      label: 'Graded',
-      onClick: getGradedSubmissions,
-      tooltip: 'Get all graded submissions.',
-    });
-
-    panel.toolbar.insertItem(12, 'getAllGradedSubmissions', button);
-    return new DisposableDelegate(() => {
-      button.dispose();
-    });
-  }
-}
-
 
 export class PublishProblemButtonExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
@@ -343,7 +389,6 @@ export class PublishProblemButtonExtension
           notebook.widgets.map((c:Cell,index:number) => {
             if (index === activeIndex ) {
               c.model.sharedModel.setSource("#PID:" + data.id + "\n" + problem)
-              console.log("Add Problem ID to the cell content")
             }
           });
 
@@ -371,7 +416,7 @@ export class PublishProblemButtonExtension
       tooltip: 'Publish New Problem.',
     });
 
-    panel.toolbar.insertItem(12, 'publishNewProblem', button);
+    panel.toolbar.insertItem(10, 'publishNewProblem', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -446,7 +491,7 @@ export class ArchiveProblemButtonExtension
       tooltip: 'Unpublish the problem.',
     });
 
-    panel.toolbar.insertItem(13, 'archivesProblem', button);
+    panel.toolbar.insertItem(11, 'archivesProblem', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

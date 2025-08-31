@@ -10,13 +10,16 @@ import {
   INotebookModel
 } from '@jupyterlab/notebook';
 
-import { Cell } from '@jupyterlab/cells';
+import { Cell, ICodeCellModel } from '@jupyterlab/cells';
 
-import { PanelLayout } from '@lumino/widgets';
+// import { PanelLayout } from '@lumino/widgets';
 
-import { CellCheckButton, FloatingFeedbackWidget } from './widget';
+// import { CellCheckButton, FloatingFeedbackWidget } from './widget';
 
-import { CellInfo } from './model';
+import { FloatingFeedbackWidget } from './widget';
+
+
+// import { CellInfo } from './model';
 
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
@@ -28,15 +31,39 @@ import {
   ToolbarButton,
   Dialog,
   showDialog,
-  showErrorMessage
+  InputDialog,
+  showErrorMessage,
+  ICommandPalette
 } from '@jupyterlab/apputils';
+
+import { Widget } from '@lumino/widgets';
+
+
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
-import { ShareCodeButton } from './share-code';
+// import { ShareCodeButton } from './share-code';
 import { RaiseHandHelpButton } from './raise-hand-help';
 // import { GetSolutionButton } from './get-solutions'
 import { initializeNotifications, cleanupNotifications } from './sse-notifications';
+
+import { LabIcon } from '@jupyterlab/ui-components';
+
+
+const CommandIds = {
+  /**
+   * Command for carpo-student.
+   */
+  mainMenuRegister: 'jlab-carpo:main-register',
+  mainMenuAbout: 'jlab-carpo:main-about',
+  shareCodeCell: 'toolbar-button:share-code-cell'
+
+};
+
+export const fooIcon = new LabIcon({
+  name: 'barpkg:foo',
+  svgstr: `<svg fill="#000000" height="200px" width="200px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 488.9 488.9" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M411.448,100.9l-94.7-94.7c-4.2-4.2-9.4-6.2-14.6-6.2h-210.1c-11.4,0-20.8,9.4-20.8,20.8v330.8c0,11.4,9.4,20.8,20.8,20.8 h132.1v95.7c0,11.4,9.4,20.8,20.8,20.8s20.8-9.4,20.8-19.8v-96.6h132.1c11.4,0,19.8-9.4,19.8-19.8V115.5 C417.748,110.3,415.648,105.1,411.448,100.9z M324.048,70.4l39.3,38.9h-39.3V70.4z M378.148,331.9h-112.3v-82.8l17.7,16.3 c10,10,25,3.1,28.1-1c7.3-8.3,7.3-21.8-1-29.1l-52-47.9c-8.3-7.3-20.8-7.3-28.1,0l-52,47.9c-8.3,8.3-8.3,20.8-1,29.1 c8.3,8.3,20.8,8.3,29.1,1l17.7-16.3v82.8h-111.4V41.6h169.6v86.3c0,11.4,9.4,20.8,20.8,20.8h74.9v183.2H378.148z"></path> </g> </g></svg>`
+});
 
 /**
  * Initialization data for the carpo-student extension.
@@ -44,21 +71,21 @@ import { initializeNotifications, cleanupNotifications } from './sse-notificatio
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'carpo-student:plugin',
   autoStart: true,
-  requires: [INotebookTracker],
+  requires: [INotebookTracker, ICommandPalette],
   optional: [ISettingRegistry],
   activate: (
     app: JupyterFrontEnd,
     nbTrack: INotebookTracker,
+    palette: ICommandPalette,
     settingRegistry: ISettingRegistry | null
   ) => {
     console.log('JupyterLab extension carpo-student is activated!');
     
-    // Initialize SSE notifications
-    // initializeNotifications();
-    
+    const { commands } = app;
+
     const cronTracker: Array<string> = [];
     const debounceTimers: Map<string, number> = new Map();
-    const DEBOUNCE_DELAY = 10000; // 10 seconds delay after user stops typing
+    const DEBOUNCE_DELAY = 15000; // 15 seconds delay after user stops typing
 
     // Debounced function to send code snapshot
     const sendDebouncedSnapshot = (cell: Cell, filename: string, problemId: number) => {
@@ -78,7 +105,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           method: 'POST',
           body: JSON.stringify(postBody)
         }).then(data => {
-          console.log('Snapshot sent (debounced).', data);
+          console.log('Snapshot sent.', data);
         }).catch(error => {
           console.error('Failed to send snapshot:', error);
         });
@@ -90,86 +117,225 @@ const plugin: JupyterFrontEndPlugin<void> = {
     };
 
     nbTrack.currentChanged.connect(() => {
-      // console.log("my tracker: ", tracker);
-      const notebookPanel = nbTrack.currentWidget;
-      const notebook = nbTrack.currentWidget.content;
-      const filename = notebookPanel.context.path;
+      const currentNotebook = nbTrack.currentWidget;
+      const notebook = currentNotebook.content;
+      const filename = currentNotebook.context.path;
+      const notebookTitle = notebook.title.label;
 
       // Disable if not inside Exercises directory
       if (!filename.includes('Exercises')) {
         return;
       }
 
-      notebookPanel.context.ready.then(async () => {
-        let currentCell: Cell = null;
-        let currentCellCheckButton: CellCheckButton = null;
+      // Extract problem number from notebook filename for metadata
+      const match = notebookTitle.match(/ex(\d+)\.ipynb/);
+      const problemNumber = match ? parseInt(match[1]) : null;
 
-        nbTrack.activeCellChanged.connect(() => {
-          let question: string;
+      // Override cell creation methods for ex*.ipynb files - only once globally
+      if (problemNumber !== null && !('_carpoOverrideApplied' in NotebookActions.insertBelow)) {
+        
+        // Store original functions
+        const originalInsertBelow = NotebookActions.insertBelow;
+        const originalInsertAbove = NotebookActions.insertAbove;
 
-          if (currentCell) {
-            notebook.widgets.map((c: Cell) => {
-              if (c.model.type === 'code' || c.model.type === 'markdown') {
-                const currentLayout = c.layout as PanelLayout;
-                currentLayout.widgets.map(w => {
-                  if (w === currentCellCheckButton) {
-                    currentLayout.removeWidget(w);
-                  }
-                });
-              }
-            });
+        // Override insertBelow method
+        NotebookActions.insertBelow = (notebook: any) => {
+          if (currentNotebook?.context.path.includes('Exercises') && 
+          notebook.title.label.match(/ex\d+\.ipynb/)) {
+            showErrorMessage('Carpo Error', `Cannot insert cell below on notebook ${notebook.title.label}.`);
+            return;
           }
+          return originalInsertBelow(notebook);
+        };
 
-          const cell: Cell = notebook.activeCell;
-          const activeIndex = notebook.activeCellIndex;
+        // Override insertAbove method
+        NotebookActions.insertAbove = (notebook: any) => {
+          if (currentNotebook?.context.path.includes('Exercises') && 
+          notebook.title.label.match(/ex\d+\.ipynb/)) {
+            showErrorMessage('Carpo Error', `Cannot insert cell above on notebook ${notebook.title.label}.`);
+            return;
+          }
+          return originalInsertAbove(notebook);
+        };
 
-          const info: CellInfo = {
-            problem_id: parseInt(
-              filename.split('/').pop().replace('ex', '').replace('.ipynb', '')
-            )
-          };
+        // Mark that we've applied the override
+        (NotebookActions.insertBelow as any)._carpoOverrideApplied = true;
+        (NotebookActions.insertAbove as any)._carpoOverrideApplied = true;
+      }
 
-          // Get the message block referencing the active cell.
-          notebook.widgets.map((c, index) => {
-            // if (c.model.toJSON().source[0].startsWith('## Message to instructor:')) {
-            //   info.message = c.model.value.text;
-            // }
-            if (index === activeIndex) {
-              question = c.model.sharedModel.getSource()
-              if (question.includes('## PID ')) {
-                const newCheckButton: CellCheckButton = new CellCheckButton(
-                  cell,
-                  info
-                );
-                (cell.layout as PanelLayout).addWidget(newCheckButton);
-                currentCellCheckButton = newCheckButton;
-
-                // Setup debounced snapshot sending when cell content changes
-                if (cronTracker.indexOf(filename) === -1) {
-                  // Listen for changes to cell content
-                  c.model.sharedModel.changed.connect(() => {
-                    sendDebouncedSnapshot(c, filename, info.problem_id);
-                  });
-                  cronTracker.push(filename);
-                }
-              }
-            }
+      // setup cron to capture code changes
+      nbTrack.activeCellChanged.connect(() => {
+        const cell: Cell = notebook.activeCell;
+        const problem_id = cell.model.sharedModel.getMetadata("problem") || undefined;
+        
+        // Setup debounced snapshot sending when cell content changes
+        if (Number.isInteger(problem_id) && cronTracker.indexOf(filename) === -1) {
+          // Listen for changes to cell content
+          cell.model.sharedModel.changed.connect(() => {
+            sendDebouncedSnapshot(cell, filename, Number(problem_id));
           });
+          cronTracker.push(filename);
+        }
+      })
 
-          currentCell = cell;
-        });
+      // kernel execution message
+      NotebookActions.executed.connect(async (_, args) => {
+          const { cell, notebook, success, error } = args;
+          const content = cell.model.sharedModel.getSource()
+          const problem_id = cell.model.sharedModel.getMetadata("problem") || undefined;
+
+          if ( notebook.title.label.includes("ex") && !success) {
+            const codeCellModel = cell.model as ICodeCellModel;
+            const postBody = {
+              message: `${codeCellModel.executionCount}_${error.errorName}_${error.errorValue}`,
+              code: content,
+              problem_id: problem_id,
+              snapshot: 4 // 1 is snapshot, 2 is submission, 3 is ask for help, 4 is code execution
+            };
+            requestAPI<any>('submissions', {
+              method: 'POST',
+              body: JSON.stringify(postBody)
+            })
+              .then(data => {
+                console.log(data)
+              })
+              .catch(reason => {
+                showErrorMessage('Code Run Error', reason);
+                console.error(`Failed to run code.\n${reason}`);
+              });
+            };
       });
+
     });
 
+    // Adds a command enabled only on ex__ notebooks
+    commands.addCommand(CommandIds.shareCodeCell, {
+      icon: fooIcon,
+      caption: 'Share the content of this cell',
+      execute: () => {
+        // commands.execute('notebook:run-cell');
+        const cell: Cell = nbTrack.currentWidget.content.activeCell;
+        const content = cell.model.sharedModel.getSource()
+        const problem_id = cell.model.sharedModel.getMetadata("problem") || undefined;
+
+        if (problem_id === undefined ){
+          showErrorMessage('Code Share Error', "Can not share non-exercise code cell.");
+          return
+        }
+        
+        const postBody = {
+          message: "",
+          code: content,
+          problem_id: problem_id,
+          snapshot: 2
+        };
+        requestAPI<any>('submissions', {
+          method: 'POST',
+          body: JSON.stringify(postBody)
+        })
+          .then(data => {
+            if (data.msg === 'Submission saved successfully.') {
+              data.msg = 'Code is sent to the instructor.';
+            }
+            showDialog({
+              title: '',
+              body: data.msg,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          })
+          .catch(reason => {
+            showErrorMessage('Code Share Error', reason);
+            console.error(`Failed to share code to server.\n${reason}`);
+          });
+        
+        initializeNotifications()
+      },
+      isVisible: () => nbTrack.currentWidget?.context.path.includes('ex')
+    });
+
+    const category = 'Extension Examples';
+    const RegisterMenu = CommandIds.mainMenuRegister
+    commands.addCommand(RegisterMenu, {
+      label: 'Register',
+      caption: 'Register to carpo',
+      execute: (args: any) => {
+        console.log("Args: ", args)
+        InputDialog.getText({
+          title: 'Enter server URL',
+          label: 'Server URL:'
+        }).then(value => {
+          if (value.button.accept) {
+            // console.log(`User entered: ${value.value}`);
+            const reqData = {"serverUrl": `${value.value}`}
+            requestAPI<any>('register', {
+              method: 'POST',
+              body: JSON.stringify(reqData)
+            })
+            .then(data => {
+              console.log('Registration successful:', data);
+              showDialog({
+                title: 'Registration Successful',
+                body: 'Student ' + data.name + ' has been registered.',
+                buttons: [Dialog.okButton({ label: 'Ok' })]
+              });
+            })
+            .catch(reason => {
+              showErrorMessage('Registration Error', reason);
+              console.error(`Failed to register user.\n${reason}`);
+            });
+          }
+        });
+      }
+    });
+
+    // Add the command to the command palette
+    palette.addItem({
+      command: RegisterMenu,
+      category: category,
+      args: { origin: 'from the palette' }
+    });
+
+    const AboutMenu = CommandIds.mainMenuAbout
+    commands.addCommand(AboutMenu, {
+      label: 'About Carpo',
+      caption: 'Carpo Information',
+      execute: (args: any) => {
+        const content = new Widget();
+        content.node.innerHTML = `
+          <h3>Use the following commands:</h3>
+          <ol>
+            <li><strong>Get Problems</strong>: Download active problems from the server.</li>
+            <li><strong>AskForHelp</strong>: Request help with your code.</li>
+            <li><strong>ViewFeedbacks</strong>: View feedbacks available to you.</li>
+            <li><strong>GetSolution</strong>: Download the solution for the problem.</li>
+          </ol>
+          <p>Use the <em>Share</em> icon (1st button) in your cell to share your code.</p>
+        `;
+
+        showDialog({
+          title: 'About Carpo',
+          body: content,
+          buttons: [Dialog.okButton({ label: 'Ok' })]
+        });
+      }
+    });
+
+    // Add the command to the command palette
+    palette.addItem({
+      command: AboutMenu,
+      category: category,
+      args: { origin: 'from the palette' }
+    });
+
+
+
     //  tell the document registry about your widget extension:
-    app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
+    // app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
     app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
     app.docRegistry.addWidgetExtension('Notebook', new RaiseHandHelpButton());
     // app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewFeedbacksButton());
     app.docRegistry.addWidgetExtension('Notebook', new DownloadSolutionButton());
-    app.docRegistry.addWidgetExtension('Notebook', new ShareCodeButton());
-    // app.docRegistry.addWidgetExtension('Notebook', new viewProblemStatusExtension());
     
     // Add cleanup for notifications when the extension is deactivated
     // Note: JupyterFrontEnd doesn't have a disposed signal, so we'll handle cleanup
@@ -179,57 +345,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
     });
   }
 };
-
-export class RegisterButton
-  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-{
-  /**
-   * Create a new extension for the notebook panel widget.
-   *
-   * @param panel Notebook panel
-   * @param context Notebook context
-   * @returns Disposable on the added button
-   */
-  createNew(
-    panel: NotebookPanel,
-    context: DocumentRegistry.IContext<INotebookModel>
-  ): IDisposable {
-    const register = () => {
-      // NotebookActions.clearAllOutputs(panel.content);
-
-      // const notebook = panel.content;
-
-      requestAPI<any>('register', {
-        method: 'GET'
-      })
-        .then(data => {
-          console.log(data);
-
-          showDialog({
-            title: '',
-            body: 'Student ' + data.name + ' has been registered.',
-            buttons: [Dialog.okButton({ label: 'Ok' })]
-          });
-        })
-        .catch(reason => {
-          showErrorMessage('Registration Error', reason);
-          console.error(`Failed to register user as Student.\n${reason}`);
-        });
-    };
-
-    const button = new ToolbarButton({
-      className: 'register-button',
-      label: 'Register',
-      onClick: register,
-      tooltip: 'Register as a Student'
-    });
-
-    panel.toolbar.insertItem(10, 'register', button);
-    return new DisposableDelegate(() => {
-      button.dispose();
-    });
-  }
-}
 
 export class GetQuestionButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
@@ -246,18 +361,14 @@ export class GetQuestionButton
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
     const getQuestion = () => {
-      // NotebookActions.clearAllOutputs(panel.content);
-
-      // const notebook = panel.content;
 
       requestAPI<any>('question', {
         method: 'GET'
       })
         .then(data => {
-          console.log(data);
-
+          // console.log(data);
           showDialog({
-            title: '',
+            title: 'Exercise Download',
             body: data.msg,
             buttons: [Dialog.okButton({ label: 'Ok' })]
           });
@@ -275,7 +386,7 @@ export class GetQuestionButton
       tooltip: 'Get Latest Problem From Server'
     });
 
-    panel.toolbar.insertItem(11, 'getQuestion', button);
+    panel.toolbar.insertItem(10, 'getQuestion', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
@@ -300,7 +411,7 @@ export class ViewSubmissionStatusButton
         method: 'GET'
       })
         .then(data => {
-          console.log(data);
+          // console.log(data);
           window.open(data.url, '_blank');
         })
         .catch(reason => {
@@ -342,14 +453,7 @@ export class ViewFeedbacksButton
   ): IDisposable {
     // Get the notebook filename as unique identifier
     const filename = context.path;
-    const notebookName = filename.split('/').pop() || '';
     
-    // Only show the feedback button for notebooks starting with 'ex'
-    if (!notebookName.startsWith('ex')) {
-      // Return an empty disposable for non-exercise notebooks
-      return new DisposableDelegate(() => {});
-    }
-
     const viewFeedbacks = () => {
       // Check if feedback widget already exists for this filename
       let floatingFeedback = ViewFeedbacksButton.feedbackWidgets.get(filename);
@@ -390,7 +494,7 @@ export class ViewFeedbacksButton
       tooltip: 'View feedback widget'
     });
 
-    panel.toolbar.insertItem(13, 'viewFeedbacks', button);
+    panel.toolbar.insertItem(12, 'viewFeedbacks', button);
     return new DisposableDelegate(() => {
       button.dispose();
       // Clean up feedback widget when button is disposed
@@ -403,48 +507,6 @@ export class ViewFeedbacksButton
     });
   }
 }
-
-// export class viewProblemStatusExtension
-//   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
-// {
-//   /**
-//    * Create a new extension for the notebook panel widget.
-//    *
-//    * @param panel Notebook panel
-//    * @param context Notebook context
-//    * @returns Disposable on the added button
-//    */
-//   createNew(
-//     panel: NotebookPanel,
-//     context: DocumentRegistry.IContext<INotebookModel>
-//   ): IDisposable {
-//     const viewProblemStatus = () => {
-//       requestAPI<any>('view_problem_list', {
-//         method: 'GET'
-//       })
-//         .then(data => {
-//           console.log(data);
-//           window.open(data.url, '_blank');
-//         })
-//         .catch(reason => {
-//           showErrorMessage('View Problem Status Error', reason);
-//           console.error(`Failed to view problem status.\n${reason}`);
-//         });
-//     };
-
-//     const button = new ToolbarButton({
-//       className: 'get-status-button',
-//       label: 'Problems',
-//       onClick: viewProblemStatus,
-//       tooltip: 'View all problem status'
-//     });
-
-//     panel.toolbar.insertItem(15, 'viewProblemStatus', button);
-//     return new DisposableDelegate(() => {
-//       button.dispose();
-//     });
-//   }
-// }
 
 export class DownloadSolutionButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
@@ -491,9 +553,6 @@ export class DownloadSolutionButton
             // Move to the last cell first
             notebook.activeCellIndex = notebook.widgets.length - 1;
             
-            // Insert a new code cell at the end of the notebook
-            NotebookActions.insertBelow(notebook);
-            
             // Get the newly created cell (should be the last cell now)
             const activeCell = notebook.activeCell;
             if (activeCell && activeCell.model.type === 'code') {
@@ -530,7 +589,7 @@ export class DownloadSolutionButton
       tooltip: 'Download solution for this exercise'
     });
 
-    panel.toolbar.insertItem(14, 'downloadSolution', button);
+    panel.toolbar.insertItem(13, 'downloadSolution', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });

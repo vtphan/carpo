@@ -1,6 +1,6 @@
 {
   "name": "carpo-student",
-  "version": "0.2.1",
+  "version": "0.2.5",
   "description": "JupyterLab extension with backend and frontend parts for carpo student.",
   "keywords": [
     "jupyter",
@@ -18,7 +18,8 @@
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
-    "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+    "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
+    "schema/*.json"
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -98,7 +99,8 @@
       }
     },
     "extension": true,
-    "outputDir": "carpo_student/labextension"
+    "outputDir": "carpo_student/labextension",
+    "schemaDir": "schema"
   },
   "jupyter-releaser": {
     "hooks": {

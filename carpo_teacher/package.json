@@ -1,6 +1,6 @@
 {
   "name": "carpo-teacher",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "JupyterLab extension with backend and frontend part for carpo teacher.",
   "keywords": [
     "jupyter",
@@ -18,7 +18,8 @@
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
-    "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+    "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
+    "schema/*.json"
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -98,7 +99,8 @@
       }
     },
     "extension": true,
-    "outputDir": "carpo_teacher/labextension"
+    "outputDir": "carpo_teacher/labextension",
+    "schemaDir": "schema"
   },
   "jupyter-releaser": {
     "hooks": {

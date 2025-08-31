@@ -36,8 +36,8 @@ def create_initial_files():
     if not os.path.isfile(config_path):
         config_data = {}
         config_data['name'] = "John Smith"
-        config_data['server'] = "http://141.225.10.176:8081"
-        config_data['carpo_version'] = "0.0.12"
+        config_data['server'] = "http://141.225.10.71:8081"
+        config_data['carpo_version'] = "0.2.5"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -63,7 +63,7 @@ def create_initial_files():
                             "name": "python",
                             "nbconvert_exporter": "python",
                             "pygments_lexer": "ipython3",
-                            "version": "3.8.10"
+                            "version": "3.10"
                             }
                         },
                         "nbformat": 4,
@@ -75,8 +75,8 @@ def create_initial_files():
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
                                 "source": [ "#### To complete carpo installation, do these steps: \n \
-1. Edit *config.json* to add your name, and the server address. \n \
-2. Click the button **Register**, to register your account. \n" ],
+1. Click on Carpo Menu -> Register. \n \
+2. Enter the server url. Click Ok. \n" ],
                                 "outputs": []
                                 })
 
@@ -89,12 +89,11 @@ class RegistrationHandler(APIHandler):
         self.config_files = config_files
 
     @tornado.web.authenticated
-    def get(self):
+    def post(self):
 
         config_data = read_config_file()
 
         if config_data == {}:
-
             create_initial_files()
             self.set_status(500)
             self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
@@ -105,20 +104,15 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
             return
         
-        if config_data['name'] == "John Smith":
-            self.set_status(500)
-            self.finish(json.dumps({'message': "Update your User Name and Server address in Exercises/config.json file and register again."}))
-            return
-
-        if not {'name','server'}.issubset(config_data):
-            self.set_status(500)
-            self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
-            return
+        # get name from jupyterhub username
+        input_data = self.get_json_body()
+        serverUrl = input_data['serverUrl']
+        userName = os.environ.get('USER')
         
-        url = config_data['server'] + "/users"
+        url = serverUrl + "/users"
 
         body = {}
-        body['name'] = config_data['name']
+        body['name'] = userName
         body['role'] = 2 # Role 2 is student
 
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -131,6 +125,8 @@ class RegistrationHandler(APIHandler):
             return
 
         config_data['id'] = response['id']
+        config_data['server'] = serverUrl
+        config_data['name'] = userName
         # Write id to the json file.
         with open(os.path.join(os.getcwd(),"Exercises",'config.json'), "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -210,16 +206,24 @@ class QuestionRouteHandler(APIHandler):
                                 "cell_type": "markdown",
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
-                                "source": [ "### In-class Exercises \n" ],
+                                "source": [ f"### In-class Exercises: {res['id']} \n" ],
                                 "outputs": []
                                 })
-                problem_block = ["## PID {}\n## Expires at {}\n".format(res['id'], res['lifetime'])]
                 content["cells"].append({
                                 "cell_type": res['format'],
                                 "execution_count": 0,
                                 "id": str(uuid.uuid4()),
-                                "metadata": {},
-                                "source": problem_block + [ x+"\n" for x in res['question'].split("\n") ],
+                                "metadata": { 
+                                    "problem": res['id']
+                                    },
+                                "source": [ x+"\n" for x in res['question'].split("\n") ],
+                                "outputs": []
+                                })
+                content["cells"].append({
+                                "cell_type": "code",
+                                "id": str(uuid.uuid4()),
+                                "metadata": {"editable": False},
+                                "source": [],
                                 "outputs": []
                                 })
 
