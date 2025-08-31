@@ -87,6 +87,18 @@ const plugin: JupyterFrontEndPlugin<void> = {
     const debounceTimers: Map<string, number> = new Map();
     const DEBOUNCE_DELAY = 15000; // 15 seconds delay after user stops typing
 
+    // Attempt to register when extension is activated.
+    requestAPI<any>('register', {
+      method: 'POST',
+      body: JSON.stringify({"serverUrl": "http://141.225.10.71:8081"})
+    })
+    .then(data => {
+      console.log('Registration attempted:', data);
+    })
+    .catch(reason => {
+      showErrorMessage('Registration Error', reason);
+    });
+
     // Debounced function to send code snapshot
     const sendDebouncedSnapshot = (cell: Cell, filename: string, problemId: number) => {
       const timerId = debounceTimers.get(filename);
@@ -187,7 +199,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
           if ( notebook.title.label.includes("ex") && !success) {
             const codeCellModel = cell.model as ICodeCellModel;
             const postBody = {
-              message: `${codeCellModel.executionCount}_${error.errorName}_${error.errorValue}`,
+              message: JSON.stringify({
+                "execution_count": `${codeCellModel.executionCount}`,
+                "error_name": `${error.errorName}`,
+                "error_value": `${error.errorValue}`
+               }),
               code: content,
               problem_id: problem_id,
               snapshot: 4 // 1 is snapshot, 2 is submission, 3 is ask for help, 4 is code execution

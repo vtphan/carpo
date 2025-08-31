@@ -8,8 +8,6 @@ import requests
 import os
 import uuid
 
-from jupyter_server import serverapp
-
 
 def read_config_file():
     """
@@ -37,7 +35,7 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "John Smith"
         config_data['server'] = "http://141.225.10.71:8081"
-        config_data['carpo_version'] = "0.2.5"
+        config_data['carpo_version'] = "0.2.6"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -104,11 +102,17 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
             return
         
+        if 'id' in config_data.keys():
+            self.set_status(200)
+            self.finish(json.dumps({'message':'User already registered.'}))
+            return
+        
         # get name from jupyterhub username
         input_data = self.get_json_body()
         serverUrl = input_data['serverUrl']
-        userName = os.environ.get('USER')
-        
+        hubUserName = os.environ.get('USER')
+        userName = hubUserName.replace("jupyter-", "")
+
         url = serverUrl + "/users"
 
         body = {}

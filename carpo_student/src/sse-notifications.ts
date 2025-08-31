@@ -261,7 +261,7 @@ export class SSENotificationService {
           // Handle different message formats
           let notificationData: NotificationData;
 
-          console.log(data)
+          // console.log(data)
           
           if (data && data.student_id === Number(config.id)) {
             // Derive filename from problem_id if available for Feedbackpanel toggle
@@ -288,13 +288,6 @@ export class SSENotificationService {
           
         } catch (error) {
           console.error('Failed to parse SSE message:', error);
-          // Show raw message if JSON parsing fails
-          // ToastNotification.show({
-          //   message: event.data,
-          //   type: 'info',
-          //   title: 'New Event',
-          //   timestamp: new Date().toISOString()
-          // });
         }
       };
 
