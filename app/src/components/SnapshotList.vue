@@ -44,8 +44,8 @@
                     <b-icon v-if="selectedSub.on_watch" icon="flag-fill" scale="2"></b-icon>
                   </div>
                 </template>
-                <b-row>
-                  <b-col cols="6">
+                <b-row class="resizable-container">
+                  <b-col :style="{flex: `0 0 ${leftColumnWidth}%`}" class="resizable-column">
                     <h5>Code Snapshot</h5>
                     <codemirror ref="cmEditor" v-model="selectedSub.code" :options="cmOptions" />
                     <b-row class="mt-3">
@@ -69,7 +69,8 @@
                       </b-col>
                     </b-row>
                   </b-col>
-                  <b-col cols="6">
+                  <div class="resize-handle" @mousedown="startResize"></div>
+                  <b-col :style="{flex: `0 0 ${rightColumnWidth}%`}" class="resizable-column">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                       <h5>Model Feedbacks</h5>
                       <b-button
@@ -151,6 +152,9 @@ export default {
     feedbackList: {},
     isLoadingSecondColumn: false,
     secondColumnError: '',
+    leftColumnWidth: 48,
+    rightColumnWidth: 48,
+    isResizing: false,
     cmOptions: {
       autoRefresh: true,
       tabSize: 4,
@@ -373,6 +377,40 @@ export default {
         })
         this.toast('Feedback appended to code')
       }
+    },
+    startResize (event) {
+      this.isResizing = true
+      const startX = event.clientX
+      const startLeftWidth = this.leftColumnWidth
+
+      const handleMouseMove = (e) => {
+        if (!this.isResizing) return
+
+        const container = document.querySelector('.resizable-container')
+        const containerRect = container.getBoundingClientRect()
+        const containerWidth = containerRect.width
+
+        const deltaX = e.clientX - startX
+        const deltaPercent = (deltaX / containerWidth) * 100
+
+        let newLeftWidth = startLeftWidth + deltaPercent
+
+        // Constrain between 20% and 80%
+        newLeftWidth = Math.max(20, Math.min(80, newLeftWidth))
+
+        this.leftColumnWidth = newLeftWidth
+        this.rightColumnWidth = 98 - newLeftWidth
+      }
+
+      const handleMouseUp = () => {
+        this.isResizing = false
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      event.preventDefault()
     }
   },
   created: function () {
@@ -561,5 +599,43 @@ input:placeholder-shown {
     color: #6c757d;
     font-style: italic;
     padding: 40px 20px;
+}
+
+.resizable-container {
+    display: flex !important;
+    align-items: stretch;
+    min-height: 600px;
+    width: 100%;
+}
+
+.resizable-column {
+    min-width: 0;
+    padding: 0 15px;
+}
+
+.resize-handle {
+    width: 8px;
+    background-color: #ddd;
+    cursor: col-resize;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease;
+}
+
+.resize-handle:hover {
+    background-color: #007bff;
+}
+
+.resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    width: 4px;
+    height: 20px;
+    background-color: #666;
+    transform: translateY(-48%);
+    border-radius: 2px;
 }
 </style>

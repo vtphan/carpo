@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -56,23 +55,8 @@ func (db *Database) SaveGradeFeedback(g GradeFeedback) (id int, err error) {
 	if err != nil {
 		return id, err
 	}
+	return id, nil
 
-	// Send SSE message for new feedback
-	studentID, problemID, err := db.GetStudentIDFromSubmission(g.SubmissionID)
-	if err == nil {
-		message := FeedbackMessage{
-			EventType:    "feedback",
-			SubmissionID: g.SubmissionID,
-			StudentID:    studentID,
-			ProblemID:    problemID,
-			Timestamp:    g.CreatedAt,
-		}
-		if msgBytes, err := json.Marshal(message); err == nil {
-			sseHub.BroadcastToUser(studentID, string(msgBytes))
-		}
-	}
-
-	return
 }
 
 func (db *Database) UpdateGradeFeedback(g GradeFeedback) (err error) {
@@ -90,23 +74,8 @@ func (db *Database) UpdateGradeFeedback(g GradeFeedback) (err error) {
 	if err != nil {
 		return err
 	}
+	return nil
 
-	// Send SSE message for updated feedback
-	studentID, problemID, err := db.GetStudentIDFromSubmission(g.SubmissionID)
-	if err == nil {
-		message := FeedbackMessage{
-			EventType:    "feedback",
-			SubmissionID: g.SubmissionID,
-			StudentID:    studentID,
-			ProblemID:    problemID,
-			Timestamp:    g.CreatedAt,
-		}
-		if msgBytes, err := json.Marshal(message); err == nil {
-			sseHub.BroadcastToUser(studentID, string(msgBytes))
-		}
-	}
-
-	return
 }
 
 func (db *Database) GetStudentIDFromSubmission(subID int) (studentID int, problemID int, err error) {

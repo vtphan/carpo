@@ -35,7 +35,7 @@ func (db *Database) GetStudentFeedbackFromPID(sID int, pID int) ([]StudentPidFee
 	// Get Submission status
 	feedbackStats := make([]StudentPidFeedback, 0)
 
-	sqlStatement := `select g.id, g.code, COALESCE(g.has_feedback,0), COALESCE(g.rating,0), COALESCE(g.feedback_at, '2025-07-28 13:59:54.538388-05'), g.score,  s.code from grades as g INNER JOIN submissions as s ON g.submission_id = s.id where s.user_id = $1 and s.problem_id = $2 order by g.feedback_at desc; 
+	sqlStatement := `select g.id, g.code, COALESCE(g.has_feedback,0), COALESCE(g.rating,0), COALESCE(g.feedback_at, '2025-07-28 13:59:54.538388-05'), g.score, s.code, g.created_at from grades as g INNER JOIN submissions as s ON g.submission_id = s.id where s.user_id = $1 and s.problem_id = $2 order by g.created_at desc; 
 `
 	rows, err := db.DB.Query(sqlStatement, sID, pID)
 	if err != nil {
@@ -46,14 +46,12 @@ func (db *Database) GetStudentFeedbackFromPID(sID int, pID int) ([]StudentPidFee
 
 	for rows.Next() {
 		stat := StudentPidFeedback{}
-		rows.Scan(&stat.ID, &stat.Code, &stat.HasFeedback, &stat.Rating, &stat.FeedbackAt, &stat.Score, &stat.GCode)
+		rows.Scan(&stat.ID, &stat.Code, &stat.HasFeedback, &stat.Rating, &stat.FeedbackAt, &stat.Score, &stat.GCode, &stat.CreatedAt)
 		// &_hasfeedbac, &_gcode, &_gfeedback)
 		stat.StudentID = sID
 		stat.ProblemID = pID
 
-		if stat.HasFeedback == 1 {
-			feedbackStats = append(feedbackStats, stat)
-		}
+		feedbackStats = append(feedbackStats, stat)
 
 	}
 

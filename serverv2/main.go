@@ -60,6 +60,7 @@ func (h *SSEHub) BroadcastToUser(userID int, message string) {
 
 type FeedbackMessage struct {
 	EventType    string    `json:"event_type"`
+	Grade        int       `json:"grade"`
 	SubmissionID int       `json:"submission_id"`
 	StudentID    int       `json:"student_id"`
 	ProblemID    int       `json:"problem_id"`

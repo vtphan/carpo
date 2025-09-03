@@ -400,7 +400,7 @@ export class FloatingFeedbackWidget {
     messageBubble.style.position = 'relative';
 
     // Feedback content
-    if (feedback.code) {
+    if ((feedback.has_feedback && feedback.code) || feedback.score) {
       const feedbackContent = document.createElement('pre');
       feedbackContent.style.marginBottom = '12px';
       feedbackContent.style.fontSize = '13px';
@@ -409,8 +409,12 @@ export class FloatingFeedbackWidget {
       feedbackContent.style.whiteSpace = "pre-wrap";
       
       feedbackContent.innerHTML = feedback.code;
+      if (feedback.score === 1 || feedback.score === 2) 
+      { 
+        feedbackContent.innerHTML += feedback.score === 1 ? "\n Your submission was graded correct.": "\n Your submission was graded incorrect.";
+      }
       messageBubble.appendChild(feedbackContent);
-    }
+    } 
     
     // Footer with star rating and timestamp
     const footer = document.createElement('div');
@@ -431,9 +435,9 @@ export class FloatingFeedbackWidget {
     timestamp.style.color = '#666';
     timestamp.style.opacity = '0.7';
     
-    if (feedback.feedback_at) {
+    if (feedback.created_at) {
       // Format timestamp nicely
-      const date = new Date(feedback.feedback_at);
+      const date = new Date(feedback.created_at);
       const timeString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       timestamp.textContent = timeString;
     } else {

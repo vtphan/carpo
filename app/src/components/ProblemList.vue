@@ -117,6 +117,7 @@ export default {
     },
     fields: [
       { key: 'problem_id', label: 'Problem', sortable: true },
+      { key: 'participation', label: 'Participation', sortable: true },
       { key: 'ungraded', label: 'Ungraded', sortable: true },
       { key: 'correct', label: 'Correct', sortable: true },
       { key: 'incorrect', label: 'InCorrect', sortable: true },

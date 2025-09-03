@@ -32,6 +32,7 @@ type ProblemGradeStatus struct {
 	Question        string    `json:"question"`
 	SolutionID      int       `json:"solution_id"`
 	Solution        string    `json:"solution_code"`
+	Participation   int       `json:"participation"`
 	Ungraded        int       `json:"ungraded"`
 	Correct         int       `json:"correct"`
 	Incorrect       int       `json:"incorrect"`
@@ -219,7 +220,7 @@ func (db *Database) ListProblemGradeStatus() ([]ProblemGradeStatus, error) {
 
 	}
 
-	rows, err = db.DB.Query("select p.id as problem_id, p.question, p.created_at, p.lifetime, p.status, sum(case when s.status in (0,1) and s.is_snapshot=2 then 1 end) as ungraded, sum(case when g.score = 1 then 1 end) as correct, sum(case when g.score = 2 then 1 end) as incorrect, sol.id as solution_id, sol.code as solution_code from problems as p left join submissions as s on p.id = s.problem_id left join grades as g on s.id = g.submission_id LEFT join solutions as sol on sol.problem_id= p.id group by p.id, sol.id, sol.code order by p.id asc;")
+	rows, err = db.DB.Query("select p.id as problem_id, p.question, p.created_at, p.lifetime, p.status, count(distinct s.user_id) as participation, sum(case when s.status in (0,1) and s.is_snapshot=2 then 1 end) as ungraded, sum(case when g.score = 1 then 1 end) as correct, sum(case when g.score = 2 then 1 end) as incorrect, sol.id as solution_id, sol.code as solution_code from problems as p left join submissions as s on p.id = s.problem_id left join grades as g on s.id = g.submission_id LEFT join solutions as sol on sol.problem_id= p.id group by p.id, sol.id, sol.code order by p.id asc;")
 	if err != nil {
 		log.Printf("Error quering db ListProblemGradeStatus. Err: %v", err)
 		return pGradeStats, err
@@ -239,7 +240,7 @@ func (db *Database) ListProblemGradeStatus() ([]ProblemGradeStatus, error) {
 		stringIDs := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ","), "[]")
 		// Get Tags associated with the submissions.
 		sql := "select pt.tag_id, pt.problem_id, t.name from problem_tag as pt inner join tags as t on pt.tag_id = t.id where pt.problem_id in (" + stringIDs + ")"
-		fmt.Printf("Sql: ", sql)
+		// fmt.Printf("Sql: ", sql)
 
 		rows, err = db.DB.Query(sql)
 		if err != nil {
@@ -268,7 +269,7 @@ func problemStatus(rows *sql.Rows, problemOnWatch map[int]int) (pGradeStat Probl
 		ungraded, correct, incorrect sql.NullInt64
 	)
 
-	rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Question, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &ungraded, &correct, &incorrect, &pGradeStat.SolutionID, &pGradeStat.Solution)
+	rows.Scan(&pGradeStat.ProblemID, &pGradeStat.Question, &pGradeStat.PublishedDate, &pGradeStat.LifeTime, &pGradeStat.ProblemStatus, &pGradeStat.Participation, &ungraded, &correct, &incorrect, &pGradeStat.SolutionID, &pGradeStat.Solution)
 
 	if !ungraded.Valid {
 		ungraded.Int64 = 0

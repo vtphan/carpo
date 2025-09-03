@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -15,6 +16,7 @@ type GradeAPI struct {
 
 func (grade *GradeAPI) GradeHandler(c *gin.Context) {
 	var newGrade GradeFeedback
+	var event_type string
 
 	if err := c.BindJSON(&newGrade); err != nil {
 		log.Infof("Error parsing request body in GradeHandler. Err: %v", err)
@@ -67,6 +69,31 @@ func (grade *GradeAPI) GradeHandler(c *gin.Context) {
 			c.JSON(500, gin.H{"msg": err})
 			return
 		}
+	}
+
+	// Send SSE message for grade/feedback
+	studentID, problemID, err := grade.GradeService.GetStudentIDFromSubmission(newGrade.SubmissionID)
+	if err != nil {
+		log.Infof("Failed to get studentID problemID from grade. %v Err. %v\n", newGrade, err)
+		c.JSON(500, gin.H{"msg": err})
+		return
+	}
+	if newGrade.HasFeedback == 1 {
+		event_type = "feedback"
+	} else {
+		event_type = "grade"
+	}
+
+	message := FeedbackMessage{
+		EventType:    event_type,
+		SubmissionID: newGrade.SubmissionID,
+		Grade:        newGrade.Score,
+		StudentID:    studentID,
+		ProblemID:    problemID,
+		Timestamp:    time.Now(),
+	}
+	if msgBytes, err := json.Marshal(message); err == nil {
+		sseHub.BroadcastToUser(studentID, string(msgBytes))
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"msg": "Submission graded successfully."})
