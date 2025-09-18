@@ -40,9 +40,10 @@ import { Widget } from '@lumino/widgets';
 
 
 
+
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
-// import { ShareCodeButton } from './share-code';
+import { SubmitCodeButton } from './share-code';
 import { RaiseHandHelpButton } from './raise-hand-help';
 // import { GetSolutionButton } from './get-solutions'
 import { initializeNotifications, cleanupNotifications } from './sse-notifications';
@@ -55,6 +56,7 @@ const CommandIds = {
    * Command for carpo-student.
    */
   mainMenuRegister: 'jlab-carpo:main-register',
+  mainMenuGetProblem: 'jlab-carpo:main-getProblem',
   mainMenuAbout: 'jlab-carpo:main-about',
   shareCodeCell: 'toolbar-button:share-code-cell'
 
@@ -344,12 +346,33 @@ const plugin: JupyterFrontEndPlugin<void> = {
     });
 
 
+    const GetProblemMenu = CommandIds.mainMenuGetProblem
+    commands.addCommand(GetProblemMenu, {
+      label: 'GetProblem',
+      caption: 'Download Active Problem',
+      execute: (args: any) => {
+        requestAPI<any>('question', {
+          method: 'GET'
+        })
+          .then(data => {
+            // console.log(data);
+            showDialog({
+              title: 'Exercise Downloaded',
+              body: data.msg,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          })
+          .catch(reason => {
+            showErrorMessage('Get Problem Error', reason);
+            console.error(`Failed to get active questions.\n${reason}`);
+          });
+      }
+    })
 
     //  tell the document registry about your widget extension:
-    // app.docRegistry.addWidgetExtension('Notebook', new RegisterButton());
-    app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
+    // app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
+    app.docRegistry.addWidgetExtension('Notebook', new SubmitCodeButton());
     app.docRegistry.addWidgetExtension('Notebook', new RaiseHandHelpButton());
-    // app.docRegistry.addWidgetExtension('Notebook', new ViewSubmissionStatusButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewFeedbacksButton());
     app.docRegistry.addWidgetExtension('Notebook', new DownloadSolutionButton());
     
@@ -505,7 +528,7 @@ export class ViewFeedbacksButton
 
     const button = new ToolbarButton({
       className: 'view-feedbacks-button',
-      label: 'ViewFeedbacks',
+      label: '💬 ViewFeedback',
       onClick: viewFeedbacks,
       tooltip: 'View feedback widget'
     });
@@ -600,7 +623,7 @@ export class DownloadSolutionButton
 
     const button = new ToolbarButton({
       className: 'download-solution-button',
-      label: 'GetSolution',
+      label: '💡 GetSolution',
       onClick: downloadSolution,
       tooltip: 'Download solution for this exercise'
     });

@@ -19,6 +19,12 @@
             }
           },
           {
+            "command": "jlab-carpo:main-getProblem",
+            "args": {
+              "origin": "from the menu"
+            }
+          },
+          {
             "command": "jlab-carpo:main-about",
             "args": {
               "origin": "from the menu"

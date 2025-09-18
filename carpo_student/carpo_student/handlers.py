@@ -35,13 +35,13 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "John Smith"
         config_data['server'] = "http://141.225.10.71:8081"
-        config_data['carpo_version'] = "0.2.7"
+        config_data['carpo_version'] = "0.2.8"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
     
     # Create blank notebook
-    notebook_path = os.path.join(current_dir,"Exercises","Readme.ipynb")
+    notebook_path = os.path.join(current_dir,"Exercises","Welcome.ipynb")
     if not os.path.isfile(notebook_path):
         content = {
                         "cells": [],
@@ -72,9 +72,14 @@ def create_initial_files():
                                 "cell_type": "markdown",
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
-                                "source": [ "#### To complete carpo installation, do these steps: \n \
+                                "source": [ "\
+#### (Optional) To register on carpo, do these steps: \n \
 1. Click on Carpo Menu -> Register. \n \
-2. Enter the server url. Click Ok. \n" ],
+2. Enter the server URL. Click Ok. \n \
+#### To download exercises: \n \
+1. Click on Carpo Menu -> GetProblem. \n \
+It will download the exercise notebooks inside Exercises Directory. \n \
+                                    "],
                                 "outputs": []
                                 })
 
@@ -106,7 +111,7 @@ class RegistrationHandler(APIHandler):
             self.set_status(200)
             self.finish(json.dumps({'message':'User already registered.'}))
             return
-        
+    
         # get name from jupyterhub username
         input_data = self.get_json_body()
         serverUrl = input_data['serverUrl']

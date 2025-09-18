@@ -40,16 +40,25 @@ export class RaiseHandHelpButton
       const cell: Cell = notebook.activeCell;
       const content = cell.model.sharedModel.getSource()
       const problem_id = cell.model.sharedModel.getMetadata("problem") || undefined;
-      
-      if (problem_id === undefined ){
-        showErrorMessage('Code Share Error', "Can not share non-exercise code cell.");
-        return
-      }
+
+      let codeBlock: string | undefined;
+      let pID: number | undefined
+
+      // Search for problem cell in the notebook.
+      // Allows student to request help independent of activeCell
+      notebook.widgets.map((c) => {
+        const cellMetadata = c.model.sharedModel.getMetadata();
+        if (cellMetadata['problem'] !== undefined) {
+          codeBlock = c.model.sharedModel.getSource()
+          pID = Number(cellMetadata['problem'])
+        }
+      })
+
 
       const postBody = {
         message: '',
-        code: content,
-        problem_id: problem_id,
+        code: codeBlock ?? content,
+        problem_id: pID ?? problem_id,
         snapshot: 3  // 1 is snapshot, 2 is submission, 3 is ask for help,
       };
 
@@ -60,7 +69,7 @@ export class RaiseHandHelpButton
       })
         .then(data => {
           if (data.msg === 'Submission saved successfully.') {
-              data.msg = 'Code is sent to the instructor.';
+              data.msg = 'Code is shared and you will get feedback soon.';
           }
           showDialog({
             title: 'Help Request Sent',
@@ -77,9 +86,9 @@ export class RaiseHandHelpButton
 
     const button = new ToolbarButton({
       className: 'raise-hand-button',
-      label: 'AskForHelp',
+      label: '❓ AskForHelp',
       onClick: raiseHand,
-      tooltip: 'Ask the instructor to help you.'
+      tooltip: 'Request help from instructor'
     });
 
     panel.toolbar.insertItem(11, 'AskForHelp', button);

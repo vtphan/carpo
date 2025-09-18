@@ -14,12 +14,13 @@ import {
 } from '@jupyterlab/apputils';
 
 import { requestAPI } from './handler';
-import { CellInfo } from './model';
+import { Cell } from '@jupyterlab/cells';
+
 
 import { initializeNotifications } from './sse-notifications';
 
 
-export class ShareCodeButton
+export class SubmitCodeButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
   /**
@@ -35,40 +36,28 @@ export class ShareCodeButton
   ): IDisposable {
     const shareCode = () => {
       const notebook = panel.content;
-      const filename = panel.context.path;
-      const activeIndex = notebook.activeCellIndex;
 
-      let codeBlock: string;
+      const cell: Cell = notebook.activeCell;
+      const content = cell.model.sharedModel.getSource()
+      const problem_id = cell.model.sharedModel.getMetadata("problem") || undefined;
 
-      const info: CellInfo = {
-        problem_id: parseInt(
-          filename.split('/').pop().replace('ex', '').replace('.ipynb', '')
-        )
-      };
+      let codeBlock: string | undefined;
+      let pID: number | undefined
 
-      notebook.widgets.map((c, index) => {
-        // if (c.model.toJSON().source[0].text.startsWith('## Message to instructor:')) {
-        //   info.message = c.model.value.text;
-        // }
-        if (index === activeIndex) {
-          // codeBlock = c.model.toJSON().source[0];
+      // Search for problem cell in the notebook.
+      // Allows student to submit code independent of activeCell
+      notebook.widgets.map((c) => {
+        const cellMetadata = c.model.sharedModel.getMetadata();
+        if (cellMetadata['problem'] !== undefined) {
           codeBlock = c.model.sharedModel.getSource()
-          console.log("content: ", codeBlock)
+          pID = Number(cellMetadata['problem'])
         }
-      });
-
-      if (!codeBlock.startsWith('## PID ')) {
-        showErrorMessage(
-          'Code Share Error',
-          'Invalid cell selected. Use a specific problem cell block.'
-        );
-        return;
-      }
+      })
 
       const postBody = {
-        message: info.message,
-        code: codeBlock,
-        problem_id: info.problem_id,
+        message: "",
+        code: codeBlock ?? content,
+        problem_id: pID ?? problem_id,
         snapshot: 2
       };
 
@@ -79,7 +68,7 @@ export class ShareCodeButton
       })
         .then(data => {
           if (data.msg === 'Submission saved successfully.') {
-            data.msg = 'Code is sent to the instructor.';
+            data.msg = 'Code is submitted.';
           }
           showDialog({
             title: '',
@@ -89,21 +78,21 @@ export class ShareCodeButton
           
         })
         .catch(reason => {
-          showErrorMessage('Code Share Error', reason);
-          console.error(`Failed to share code to server.\n${reason}`);
+          showErrorMessage('Code Submit Error', reason);
+          console.error(`Failed to submit code.\n${reason}`);
         });
 
         initializeNotifications()
     };
 
     const button = new ToolbarButton({
-      className: 'share-code-button',
-      label: 'ShareCode',
+      className: 'submit-code-button',
+      label: '➤ Submit',
       onClick: shareCode,
-      tooltip: 'Share your code to the instructor.'
+      tooltip: 'Submit your code'
     });
 
-    panel.toolbar.insertItem(15, 'shareCode', button);
+    panel.toolbar.insertItem(10, 'shareCode', button);
     return new DisposableDelegate(() => {
       button.dispose();
     });
