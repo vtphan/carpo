@@ -7,6 +7,8 @@ import tornado
 import requests
 import os
 import uuid
+import datetime
+from zoneinfo import ZoneInfo
 
 
 def read_config_file():
@@ -165,7 +167,7 @@ class QuestionRouteHandler(APIHandler):
         # Write questions to individual Notebook
         file_paths = self.question_file(resp['data'])
         msg = ""
-        print(file_paths)
+        # print(file_paths)
         if file_paths['new_download']:
             msg = "New Problem downloaded and placed in notebook " + ', '.join(file_paths['new_download']) + '.'
 
@@ -685,7 +687,185 @@ class SolutionDownloadHandler(APIHandler):
             self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
             return
 
- 
+class DownloadNotebooksHandler(APIHandler):
+    """Handler for downloading notebooks - GET /download_notebooks"""
+    
+    @tornado.web.authenticated
+    def get(self):
+        file_paths = {}
+        file_paths['new_download'] = []
+        file_paths['already_downloaded'] = []
+
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        user_id = config_data['id']
+        url = config_data['server'] + f"/notebooks/students/{user_id}/download"
+        msg = ""
+        
+        try:
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code == 200:
+                resp_data = response.json()
+                
+                if 'data' in resp_data and len(resp_data['data']) > 0:
+                    for item in resp_data['data']:
+                        # Create directory if it doesn't exist
+                        directory = "Assignments" if item['mode'] == 1 else "Exams" 
+                        if not os.path.exists(directory):
+                            os.makedirs(directory)
+                        
+                        # Save file with title as filename
+                        file_path = os.path.join(directory, item['title'])
+                        filename = f"{file_path}.ipynb"
+                        if  os.path.exists(filename):
+                            file_paths['already_downloaded'].append(filename)
+                            continue
+
+                        # Download individual notebook file
+                        file_url = config_data['server'] + f"/notebooks/file?file_path={item['path']}"
+                        
+                        try:
+                            file_response = requests.get(file_url, timeout=30)
+                            
+                            if file_response.status_code == 200:
+
+                                #Decode the bytes to a string using UTF-8 encoding
+                                json_string = file_response.content.decode('utf-8')
+
+                                #Parse the JSON string into a Python dictionary
+                                json_object = json.loads(json_string)
+                                json_object['metadata']['notebook_id'] = item['id'] 
+                                json_object['metadata']['notebook_uuid'] = item['notebook_uuid'] 
+
+                                # Serializing json 
+                                json_serial = json.dumps(json_object, indent = 4)
+
+                                # with open(filename, 'wb') as f:
+                                    # f.write(file_response.content)
+                                with open(filename, 'w') as f:
+                                    f.write(json_serial)
+                                
+                                file_paths['new_download'].append(filename)
+                                                                
+                        except requests.exceptions.RequestException as e:
+                            self.set_status(file_response.status_code)
+                            self.finish(json.dumps({'message': f"Server File returned status {file_response.status_code}"}))
+                
+
+                    if file_paths['new_download']:
+                        msg = "New Notebook downloaded to " + ', '.join(file_paths['new_download']) + '.'
+
+                    if file_paths['already_downloaded']:
+                        msg += "\nNotebook already downloaded and placed to " + ', '.join(file_paths['already_downloaded']) + '.'
+
+                    self.finish(json.dumps({
+                        'msg': msg,
+                    }))
+                else:
+                    self.finish(json.dumps({'msg': 'No notebooks to download'}))
+
+            else:
+                self.set_status(response.status_code)
+                self.finish(json.dumps({'message': f"Server returned status {response.status_code}"}))
+                
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
+            return
+
+class SubmitNotebookHandler(APIHandler):
+    """Handler for submitting notebooks - POST /submit_notebook"""
+    
+    @tornado.web.authenticated
+    def post(self):
+        # Get the request data
+        input_data = self.get_json_body()
+        
+        if 'title' not in input_data or 'path' not in input_data or 'notebookID' not in input_data:
+            self.set_status(400)
+            self.finish(json.dumps({'message': "Cannot submit Notebook. Missing required fields."}))
+            return
+        
+        title = input_data['title']
+        path = input_data['path']
+        status = input_data['status']
+        notebook_id = input_data['notebookID']
+        
+        # Get file creation time
+        try:
+            if not os.path.exists(path):
+                self.set_status(404)
+                self.finish(json.dumps({'message': f"File not found at path: {path}"}))
+                return
+                
+            # Get file stats
+            file_stats = os.stat(path)
+            target_timezone = ZoneInfo('America/Chicago')
+
+            creation_time = datetime.datetime.fromtimestamp(file_stats.st_ctime, tz=target_timezone)
+            creation_time_str = creation_time.isoformat()
+            
+        except OSError as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Error accessing file: {e}"}))
+            return
+        
+        config_data = read_config_file()
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+        
+        user_id = config_data['id']
+        
+        # Read notebook file content
+        try:
+            with open(path, 'rb') as notebook_file:
+                notebook_content = notebook_file.read()
+        except IOError as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Error reading notebook file: {e}"}))
+            return
+
+        # Prepare form data and files for multipart upload
+        data = {
+            'title': title,
+            'path': path,
+            'status': status,
+            'notebook_id': notebook_id,
+            'created_at': creation_time_str
+        }
+        
+        files = {
+            'filecontent': (title, notebook_content, 'application/json')
+        }
+
+        url = config_data['server'] +  f"/notebooks/students/{user_id}/submit"
+        
+        try:
+            response = requests.post(url, data=data, files=files, timeout=30)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                self.finish(json.dumps({'msg': response_data['message']}))
+            else:
+                self.set_status(response.status_code)
+                try:
+                    error_data = response.json()
+                    self.finish(json.dumps(error_data))
+                except:
+                    self.finish(json.dumps({'message': f"Server returned status {response.status_code}"}))
+                
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
+            return
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
@@ -732,3 +912,11 @@ def setup_handlers(web_app):
     # Solution download endpoint
     route_pattern_solutions =  url_path_join(web_app.settings['base_url'], "carpo-student", "solutions", "problem", r"(\d+)")
     web_app.add_handlers(host_pattern, [(route_pattern_solutions, SolutionDownloadHandler)])
+
+    # Download notebooks endpoint
+    route_pattern_download_notebooks =  url_path_join(web_app.settings['base_url'], "carpo-student", "download_notebooks")
+    web_app.add_handlers(host_pattern, [(route_pattern_download_notebooks, DownloadNotebooksHandler)])
+
+    # Submit notebook endpoint
+    route_pattern_submit_notebook =  url_path_join(web_app.settings['base_url'], "carpo-student", "submit_notebook")
+    web_app.add_handlers(host_pattern, [(route_pattern_submit_notebook, SubmitNotebookHandler)])

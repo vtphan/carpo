@@ -5,6 +5,7 @@ import SubmissionList from '@/components/SubmissionList.vue'
 import SnapshotList from '@/components/SnapshotList.vue'
 import TagList from '@/components/TagList.vue'
 import AIAgents from '@/components/AIAgents.vue'
+import AssignmentExams from '@/components/AssignmentExams.vue'
 
 Vue.use(Router)
 
@@ -44,6 +45,12 @@ export default new Router({
       path: '/ai-agents',
       name: 'AIAgents',
       component: AIAgents
+
+    },
+    {
+      path: '/notebooks',
+      name: 'Notebooks',
+      component: AssignmentExams
 
     }
   ]

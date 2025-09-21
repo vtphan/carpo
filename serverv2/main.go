@@ -164,6 +164,7 @@ func main() {
 		},
 		BaseURL: os.Getenv("FEEDBACK_AGENT"),
 	}
+	notebookAPI := NotebookAPI{&Database{DB: db}}
 
 	// Register Users
 	r.POST("/users", uAPI.RegisterUser)
@@ -190,6 +191,15 @@ func main() {
 	r.GET("/students/:user_id/problems/:problem_id/feedbacks", feedbackAPI.GetFeedbackHandler)
 	// Student Rate on feedbacks
 	r.PUT("/feedback-ratings", feedbackAgentAPI.UpdateFeedbackRatingHandler)
+
+	// Notebooks
+	r.POST("/notebooks", notebookAPI.UploadNotebook)
+	r.GET("/notebooks", notebookAPI.GetNotebooks)
+	r.GET("/notebooks/:uuid", notebookAPI.GetNotebookByUUID)
+	r.GET("/notebooks/students/:user_id/download", notebookAPI.GetAvailableNotebooks)
+	r.GET("/notebooks/file", notebookAPI.ServeNotebookFile)
+	r.POST("/notebooks/students/:user_id/submit", notebookAPI.SubmitNotebook)
+	r.OPTIONS("/notebooks")
 
 	// Use Middleware for app APIs
 	r.Use(appMiddleware(db))

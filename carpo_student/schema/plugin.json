@@ -25,6 +25,18 @@
             }
           },
           {
+            "command": "jlab-carpo:download-notebook",
+            "args": {
+              "origin": "from the menu"
+            }
+          },
+          {
+            "command": "jlab-carpo:upload-notebook",
+            "args": {
+              "origin": "from the menu"
+            }
+          },
+          {
             "command": "jlab-carpo:main-about",
             "args": {
               "origin": "from the menu"

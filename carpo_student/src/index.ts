@@ -58,7 +58,9 @@ const CommandIds = {
   mainMenuRegister: 'jlab-carpo:main-register',
   mainMenuGetProblem: 'jlab-carpo:main-getProblem',
   mainMenuAbout: 'jlab-carpo:main-about',
-  shareCodeCell: 'toolbar-button:share-code-cell'
+  shareCodeCell: 'toolbar-button:share-code-cell',
+  downloadNotebook: 'jlab-carpo:download-notebook',
+  uploadNotebook: 'jlab-carpo:upload-notebook'
 
 };
 
@@ -135,6 +137,23 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const notebook = currentNotebook.content;
       const filename = currentNotebook.context.path;
       const notebookTitle = notebook.title.label;
+
+
+      // Check if notebook is inside Exams or Assignments directory
+      // Disable copy paste
+      if (filename.includes('Exams') || filename.includes('Assignments')) {
+        // Add global event listener to the notebook widget to disable copy-paste
+        const notebookWidget = currentNotebook;
+        if (notebookWidget && notebookWidget.node) {
+          notebookWidget.node.addEventListener('keydown', (event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'v')) {
+              event.preventDefault();
+              event.stopPropagation();
+              console.log('Copy-Paste keyboard shortcut blocked.');
+            }
+          }, true);
+        }
+      }
 
       // Disable if not inside Exercises directory
       if (!filename.includes('Exercises')) {
@@ -322,7 +341,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         content.node.innerHTML = `
           <h3>Use the following commands:</h3>
           <ol>
-            <li><strong>Get Problems</strong>: Download active problems from the server.</li>
+            <li><strong>Get Exercises</strong>: Download active exercise from the server.</li>
             <li><strong>AskForHelp</strong>: Request help with your code.</li>
             <li><strong>ViewFeedbacks</strong>: View feedbacks available to you.</li>
             <li><strong>GetSolution</strong>: Download the solution for the problem.</li>
@@ -348,8 +367,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     const GetProblemMenu = CommandIds.mainMenuGetProblem
     commands.addCommand(GetProblemMenu, {
-      label: 'GetProblem',
-      caption: 'Download Active Problem',
+      label: 'GetExercise',
+      caption: 'Download Active Exercise',
       execute: (args: any) => {
         requestAPI<any>('question', {
           method: 'GET'
@@ -368,6 +387,87 @@ const plugin: JupyterFrontEndPlugin<void> = {
           });
       }
     })
+
+    // Download Notebook command
+    const DownloadNotebookMenu = CommandIds.downloadNotebook;
+    commands.addCommand(DownloadNotebookMenu, {
+      label: 'Download Notebook',
+      caption: 'Download current notebook',
+      execute: (args: any) => {
+        requestAPI<any>('download_notebooks', {
+          method: 'GET'
+        })
+          .then(data => {
+            console.log(data);
+            showDialog({
+              title: 'Notebook Downloaded',
+              body: data.msg,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          })
+          .catch(reason => {
+            showErrorMessage('Download Notebooks Error', reason);
+            console.error(`Failed to download notebooks.\n${reason}`);
+          });
+      }
+    });
+
+    // Upload Notebook command
+    const UploadNotebookMenu = CommandIds.uploadNotebook;
+    commands.addCommand(UploadNotebookMenu, {
+      label: 'Submit Notebook',
+      caption: 'Submit the current notebook',
+      execute: (args: any) => {
+        const currentNotebook = nbTrack.currentWidget;
+        if (!currentNotebook) {
+          window.alert('No notebook is currently open');
+          return;
+        }
+        
+        // Get notebook title
+        const notebookTitle = currentNotebook.content.title.label;
+        // Get notebook file path
+        const notebookPath = currentNotebook.context.path;
+
+        // Get notebook ID from metadata
+        const notebookID = currentNotebook.content.model.metadata['notebook_id']; 
+
+        // Check if notebook is inside Exams or Assignments directory
+        if (!notebookPath.includes('Exams') && !notebookPath.includes('Assignments')) {
+          window.alert('This notebook is not allowed to submit.');
+          return;
+        }
+
+        const status = 'submitted'; //TODO change into draft when Ctrl + S
+        
+        // Prepare JSON request body
+        const requestBody = {
+          title: notebookTitle,
+          path: notebookPath,
+          notebookID: notebookID,
+          status: status
+        };
+
+        requestAPI<any>('submit_notebook', {
+          method: 'POST',
+          body: JSON.stringify(requestBody)
+        })
+          .then(data => {
+            console.log(data)
+            showDialog({
+              title: 'Notebook Submitted',
+              body: data.msg,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          })
+          .catch(reason => {
+            showErrorMessage('Notebook Submit Error', reason);
+            console.error(`Failed to submit notebook.\n${reason}`);
+          });
+
+       
+      }
+    });
 
     //  tell the document registry about your widget extension:
     // app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());

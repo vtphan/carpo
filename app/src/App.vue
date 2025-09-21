@@ -19,6 +19,9 @@
           </ul>
           <ul class="navbar-nav ml-auto">
             <li class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{name: 'Notebooks' ,query: {token: $route.query.token }}">Notebooks</router-link>
+            </li>
+            <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{name: 'AIAgents' ,query: {token: $route.query.token }}">Agent Settings</router-link>
             </li>
           </ul>
