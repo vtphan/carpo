@@ -11,6 +11,8 @@ type NotebookStore interface {
 	SaveNotebook(title string, mode int, path string, availableTo *time.Time, endTime *time.Time, userID int) (string, error)
 	GetNotebooks() ([]AssignmentNotebook, error)
 	GetNotebookByUUID(notebookUUID string) (AssignmentNotebook, error)
+	UpdateNotebook(int, string, string) error
+	DeleteNotebook(int) error
 	GetAvailableNotebooks() ([]AssignmentNotebook, error)
 	SaveStudentSubmission(notebookID int, title string, path string, submissionStatus int, fileCreatedAt *time.Time, userID int) error
 }
@@ -155,6 +157,30 @@ func (db *Database) SaveStudentSubmission(notebookID int, title string, path str
 
 	if err != nil {
 		return fmt.Errorf("failed to save student submission: %v", err)
+	}
+
+	return nil
+}
+
+func (db *Database) UpdateNotebook(notebookID int, AvailableTill string, EndTime string) error {
+	sqlStatement := `UPDATE assignment_notebooks set available_till=$1, end_time=$2, updated_at=$3 where id=$4;`
+	now := time.Now()
+
+	_, err := db.DB.Exec(sqlStatement, AvailableTill, EndTime, now, notebookID)
+
+	if err != nil {
+		return fmt.Errorf("failed to update Notebook: %v", err)
+	}
+
+	return nil
+}
+
+func (db *Database) DeleteNotebook(notebookID int) error {
+	sqlStatement := `DELETE FROM assignment_notebooks where id=$1;`
+	_, err := db.DB.Exec(sqlStatement, notebookID)
+
+	if err != nil {
+		return fmt.Errorf("failed to delete Notebook: %v", err)
 	}
 
 	return nil

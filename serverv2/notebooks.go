@@ -16,12 +16,23 @@ type NotebookAPI struct {
 	NotebookService NotebookStore
 }
 
+var NotebookStatus = map[string]int{
+	"downloaded": 1,
+	"draft":      2,
+	"submitted":  3,
+}
+
 type UploadNotebookRequest struct {
 	Title         string `form:"title" binding:"required"`
 	Mode          int    `form:"mode" binding:"required"`
 	AvailableTill string `form:"available_till"`
 	EndTime       string `form:"end_time"`
 	UserID        int    `form:"user_id" binding:"required"`
+}
+
+type UpdateNotebookRequest struct {
+	AvailableTill string `json:"available_till"`
+	EndTime       string `json:"end_time"`
 }
 
 func (n *NotebookAPI) UploadNotebook(c *gin.Context) {
@@ -142,9 +153,75 @@ func (n *NotebookAPI) GetNotebookByUUID(c *gin.Context) {
 	c.JSON(200, notebook)
 }
 
+func (n *NotebookAPI) UpdateNotebookByID(c *gin.Context) {
+	notebookID := c.Param("id")
+	notebook_id, err := strconv.Atoi(notebookID)
+	if err != nil || notebook_id == 0 {
+		c.JSON(400, gin.H{"error": "Notebook ID is required"})
+		return
+	}
+
+	var req UpdateNotebookRequest
+	if err := c.BindJSON(&req); err != nil {
+		log.Infof("Error parsing request body in UpdateNotebookByID. Err: %v", err)
+		c.JSON(400, err.Error())
+		return
+	}
+
+	// Validate that endtime should be greater than available_till
+	if req.AvailableTill != "" && req.EndTime != "" {
+		availableTillTime, err1 := time.Parse(time.RFC3339, req.AvailableTill)
+		endTime, err2 := time.Parse(time.RFC3339, req.EndTime)
+
+		if err1 != nil {
+			c.JSON(400, gin.H{"error": "Invalid available_till format. Use RFC3339 format (e.g., 2023-12-25T10:00:00Z)"})
+			return
+		}
+
+		if err2 != nil {
+			c.JSON(400, gin.H{"error": "Invalid end_time format. Use RFC3339 format (e.g., 2023-12-25T15:00:00Z)"})
+			return
+		}
+
+		if !endTime.After(availableTillTime) {
+			c.JSON(400, gin.H{"error": "end_time must be greater than available_till"})
+			return
+		}
+	}
+
+	err = n.NotebookService.UpdateNotebook(notebook_id, req.AvailableTill, req.EndTime)
+	if err != nil {
+		log.Errorf("Failed to update notebook: %v", err)
+		c.JSON(404, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{"msg": "Notebook successfully updated."})
+}
+
+func (n *NotebookAPI) DeleteNotebookByID(c *gin.Context) {
+	notebookID := c.Param("id")
+	notebook_id, err := strconv.Atoi(notebookID)
+	if err != nil || notebook_id == 0 {
+		c.JSON(400, gin.H{"error": "Notebook ID is required"})
+		return
+	}
+
+	err = n.NotebookService.DeleteNotebook(notebook_id)
+	if err != nil {
+		log.Errorf("Failed to delete notebook: %v", err)
+		c.JSON(404, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(204, gin.H{"msg": "Notebook is deleted."})
+}
+
 func (n *NotebookAPI) GetAvailableNotebooks(c *gin.Context) {
-	studentID := c.Param("user_id")
-	if studentID == "" {
+	user := c.Param("user_id")
+	// string to int
+	studentID, err := strconv.Atoi(user)
+	if err != nil || studentID == 0 {
 		c.JSON(400, gin.H{"error": "student ID is required"})
 		return
 	}
@@ -154,6 +231,18 @@ func (n *NotebookAPI) GetAvailableNotebooks(c *gin.Context) {
 		log.Errorf("Failed to get available notebooks: %v", err)
 		c.JSON(500, gin.H{"error": "Failed to retrieve available notebooks"})
 		return
+	}
+
+	// Add to submission status table as status: downloaded
+	status := NotebookStatus["downloaded"]
+	for _, notebook := range notebooks {
+		download_time := time.Now()
+		err = n.NotebookService.SaveStudentSubmission(notebook.ID, notebook.Title, notebook.Path, status, &download_time, studentID)
+		if err != nil {
+			log.Errorf("Failed to update student notebook status: %v", err)
+			c.JSON(500, gin.H{"error": "Failed to update student notebook status"})
+			return
+		}
 	}
 
 	c.JSON(200, gin.H{"data": notebooks})
@@ -289,8 +378,7 @@ func (n *NotebookAPI) SubmitNotebook(c *gin.Context) {
 	}
 
 	// For now, use notebook_id as 1 (we need to find the actual notebook by title later)
-	// Submission status: 1 = submitted
-	submissionStatus := 1
+	submissionStatus := NotebookStatus[req.Status]
 
 	// Save to database
 	err = n.NotebookService.SaveStudentSubmission(req.NotebookID, req.Title, filePath, submissionStatus, fileCreatedAt, user_id)

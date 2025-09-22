@@ -5,7 +5,7 @@ import SubmissionList from '@/components/SubmissionList.vue'
 import SnapshotList from '@/components/SnapshotList.vue'
 import TagList from '@/components/TagList.vue'
 import AIAgents from '@/components/AIAgents.vue'
-import AssignmentExams from '@/components/AssignmentExams.vue'
+import Notebooks from '@/components/Notebooks.vue'
 
 Vue.use(Router)
 
@@ -50,7 +50,7 @@ export default new Router({
     {
       path: '/notebooks',
       name: 'Notebooks',
-      component: AssignmentExams
+      component: Notebooks
 
     }
   ]

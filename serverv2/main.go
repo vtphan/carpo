@@ -195,11 +195,14 @@ func main() {
 	// Notebooks
 	r.POST("/notebooks", notebookAPI.UploadNotebook)
 	r.GET("/notebooks", notebookAPI.GetNotebooks)
-	r.GET("/notebooks/:uuid", notebookAPI.GetNotebookByUUID)
+	// r.GET("/notebooks/:uuid", notebookAPI.GetNotebookByUUID)
+	r.PUT("/notebooks/:id", notebookAPI.UpdateNotebookByID)
+	r.DELETE("/notebooks/:id", notebookAPI.DeleteNotebookByID)
+	r.OPTIONS("/notebooks")
+
 	r.GET("/notebooks/students/:user_id/download", notebookAPI.GetAvailableNotebooks)
 	r.GET("/notebooks/file", notebookAPI.ServeNotebookFile)
 	r.POST("/notebooks/students/:user_id/submit", notebookAPI.SubmitNotebook)
-	r.OPTIONS("/notebooks")
 
 	// Use Middleware for app APIs
 	r.Use(appMiddleware(db))

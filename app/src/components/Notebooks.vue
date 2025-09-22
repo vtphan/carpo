@@ -116,7 +116,7 @@
 import * as Config from '../config'
 
 export default {
-  name: 'Notebooks (Assignments/Exams)',
+  name: 'Notebooks',
   data: () => ({
     notebooks: [],
     selectedNotebook: null,
@@ -234,7 +234,7 @@ export default {
         })
         .catch((error) => {
           console.log('Error deleting Notebook:', error)
-          this.toast('Failed to delete Notebook', 'danger')
+          this.toast(`Failed to delete Notebook: ${error.response.data.error}`, 'danger')
         })
     },
     resetForm () {
@@ -270,19 +270,20 @@ export default {
       }
       this.$http.put(Config.apiUrl + '/notebooks/' + this.selectedNotebook.id, updateData, config)
         .then((response) => {
+          // console.log(response)
           const index = this.notebooks.findIndex(n => n.id === this.selectedNotebook.id)
           if (index !== -1) {
             this.notebooks[index].available_till = updateData.available_till
             this.notebooks[index].end_time = updateData.end_time
           }
-          this.toast('Notebook times updated successfully', 'success')
+          this.toast(response.data.msg, 'success')
           this.$nextTick(() => {
             this.$root.$emit('bv::hide::modal', this.viewModal.id)
           })
         })
         .catch((error) => {
           console.log('Error updating notebook:', error)
-          this.toast('Failed to update notebook times', 'danger')
+          this.toast(`Failed to update notebook times: ${error.response.data.error}`, 'danger')
         })
     },
     resetViewForm () {
