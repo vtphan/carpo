@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +22,8 @@ var NotebookStatus = map[string]int{
 	"draft":      2,
 	"submitted":  3,
 }
+
+const buffer = 30
 
 type UploadNotebookRequest struct {
 	Title         string `form:"title" binding:"required"`
@@ -329,6 +332,30 @@ func (n *NotebookAPI) SubmitNotebook(c *gin.Context) {
 		return
 	}
 
+	if req.NotebookID == 0 {
+		log.Info("Notebook ID cannot be 0.")
+		c.JSON(400, gin.H{"error": "Invalid JSON data", "details": "Notebook id cannot be 0."})
+		return
+	}
+
+	// Check if notebook deadline is missed.
+	notebook, err := n.NotebookService.GetNotebookEndTime(req.NotebookID)
+	if err != nil {
+		log.Infof("Error getting Notebook details. Err: %v", err)
+		c.JSON(500, gin.H{"error": "No Notebook found.", "details": err.Error()})
+		return
+	}
+
+	currentTime := time.Now()
+	// Add buffer to the current time
+	allowedTime := currentTime.Add(time.Minute * buffer)
+
+	if allowedTime.After(*notebook.EndTime) {
+		log.Infof("Error cannot submit notebook after deadline. Student: %v, Notebook: %v ", user_id, notebook.ID)
+		c.JSON(500, gin.H{"error": "Cannot submit notebook after deadline."})
+		return
+	}
+
 	// Get the uploaded file
 	file, err := c.FormFile("filecontent")
 	if err != nil {
@@ -344,7 +371,7 @@ func (n *NotebookAPI) SubmitNotebook(c *gin.Context) {
 	}
 
 	// Create uploads directory if it doesn't exist
-	uploadsDir := "uploads/students/notebooks"
+	uploadsDir := fmt.Sprintf("uploads/submissions/%d/", req.NotebookID)
 	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
 		log.Errorf("Failed to create uploads directory: %v", err)
 		c.JSON(500, gin.H{"error": "Failed to create upload directory"})
@@ -377,7 +404,6 @@ func (n *NotebookAPI) SubmitNotebook(c *gin.Context) {
 		}
 	}
 
-	// For now, use notebook_id as 1 (we need to find the actual notebook by title later)
 	submissionStatus := NotebookStatus[req.Status]
 
 	// Save to database
@@ -397,4 +423,137 @@ func (n *NotebookAPI) SubmitNotebook(c *gin.Context) {
 	}
 
 	c.JSON(200, response)
+}
+
+func (n *NotebookAPI) DownloadNotebooksByID(c *gin.Context) {
+	notebookID := c.Param("id")
+	notebook_id, err := strconv.Atoi(notebookID)
+	if err != nil || notebook_id == 0 {
+		c.JSON(400, gin.H{"error": "Notebook ID is required"})
+		return
+	}
+
+	// Get all submitted notebooks for this assignment
+	submissions, err := n.NotebookService.GetSubmittedNotebooksByID(notebook_id)
+	if err != nil {
+		log.Errorf("Failed to get submitted notebooks: %v", err)
+		c.JSON(500, gin.H{"error": "Failed to get submitted notebooks"})
+		return
+	}
+
+	if len(submissions) == 0 {
+		c.JSON(404, gin.H{"error": "No submissions found for this notebook"})
+		return
+	}
+
+	// Create temporary directory for copying files
+	tmpDir := fmt.Sprintf("/tmp/subs_%d_%d", notebook_id, time.Now().Unix())
+	err = os.MkdirAll(tmpDir, 0755)
+	if err != nil {
+		log.Errorf("Failed to create temporary directory: %v", err)
+		c.JSON(500, gin.H{"error": "Failed to create temporary directory"})
+		return
+	}
+	defer os.RemoveAll(tmpDir) // Clean up after we're done
+
+	// Copy files to temporary directory
+	for _, submission := range submissions {
+		if _, err := os.Stat(submission.Path); os.IsNotExist(err) {
+			log.Warnf("Submission file not found: %s", submission.Path)
+			continue
+		}
+
+		// Create filename with user ID prefix
+		filename := fmt.Sprintf("user_%d_%s", submission.UserID, filepath.Base(submission.Path))
+		destPath := filepath.Join(tmpDir, filename)
+
+		// Copy file
+		err = copyFile(submission.Path, destPath)
+		if err != nil {
+			log.Errorf("Failed to copy file %s: %v", submission.Path, err)
+			continue
+		}
+	}
+
+	// Create ZIP file
+	zipFilename := fmt.Sprintf("submissions_notebook_%d.zip", notebook_id)
+	zipPath := filepath.Join(tmpDir, zipFilename)
+
+	err = createZipFile(tmpDir, zipPath)
+	if err != nil {
+		log.Errorf("Failed to create ZIP file: %v", err)
+		c.JSON(500, gin.H{"error": "Failed to create ZIP file"})
+		return
+	}
+
+	// Send ZIP file as response
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", zipFilename))
+	c.Header("Content-Type", "application/zip")
+
+	c.File(zipPath)
+}
+
+// Helper function to copy a file
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
+// Helper function to create ZIP file
+func createZipFile(sourceDir, zipPath string) error {
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		return err
+	}
+	defer zipFile.Close()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	// Walk through all files in the source directory
+	return filepath.Walk(sourceDir, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip the ZIP file itself and directories
+		if info.IsDir() || filepath.Base(filePath) == filepath.Base(zipPath) {
+			return nil
+		}
+
+		// Create a ZIP entry
+		relPath, err := filepath.Rel(sourceDir, filePath)
+		if err != nil {
+			return err
+		}
+
+		zipEntry, err := zipWriter.Create(relPath)
+		if err != nil {
+			return err
+		}
+
+		// Copy file content to ZIP entry
+		file, err := os.Open(filePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		_, err = io.Copy(zipEntry, file)
+		return err
+	})
 }

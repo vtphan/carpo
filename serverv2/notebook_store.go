@@ -14,7 +14,22 @@ type NotebookStore interface {
 	UpdateNotebook(int, string, string) error
 	DeleteNotebook(int) error
 	GetAvailableNotebooks() ([]AssignmentNotebook, error)
+	GetNotebookEndTime(int) (AssignmentNotebook, error)
 	SaveStudentSubmission(notebookID int, title string, path string, submissionStatus int, fileCreatedAt *time.Time, userID int) error
+	GetSubmittedNotebooksByID(notebookID int) ([]StudentSubmission, error)
+}
+
+type StudentSubmission struct {
+	ID               int        `json:"id"`
+	NotebookID       int        `json:"notebook_id"`
+	Title            string     `json:"title"`
+	Path             string     `json:"path"`
+	SubmissionStatus int        `json:"submission_status"`
+	SubmittedAt      time.Time  `json:"submitted_at"`
+	FileCreatedAt    *time.Time `json:"file_created_at"`
+	UserID           int        `json:"user_id"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
 }
 
 type AssignmentNotebook struct {
@@ -123,7 +138,7 @@ func (db *Database) GetAvailableNotebooks() ([]AssignmentNotebook, error) {
 	}
 	defer rows.Close()
 
-	var notebooks []AssignmentNotebook
+	notebooks := make([]AssignmentNotebook, 0)
 	for rows.Next() {
 		var notebook AssignmentNotebook
 		err := rows.Scan(
@@ -162,6 +177,30 @@ func (db *Database) SaveStudentSubmission(notebookID int, title string, path str
 	return nil
 }
 
+func (db *Database) GetNotebookEndTime(notebookID int) (AssignmentNotebook, error) {
+	sqlStatement := `
+	SELECT id, notebook_uuid, title, mode, path, available_till, end_time, created_at, updated_at
+	FROM assignment_notebooks
+	WHERE id = $1 Limit 1`
+
+	var notebook AssignmentNotebook
+
+	err := db.DB.QueryRow(sqlStatement, notebookID).Scan(&notebook.ID,
+		&notebook.NotebookUUID,
+		&notebook.Title,
+		&notebook.Mode,
+		&notebook.Path,
+		&notebook.AvailableTill,
+		&notebook.EndTime,
+		&notebook.CreatedAt,
+		&notebook.UpdatedAt)
+	if err != nil {
+		return notebook, fmt.Errorf("failed to get available notebooks: %v", err)
+	}
+
+	return notebook, nil
+}
+
 func (db *Database) UpdateNotebook(notebookID int, AvailableTill string, EndTime string) error {
 	sqlStatement := `UPDATE assignment_notebooks set available_till=$1, end_time=$2, updated_at=$3 where id=$4;`
 	now := time.Now()
@@ -184,4 +223,41 @@ func (db *Database) DeleteNotebook(notebookID int) error {
 	}
 
 	return nil
+}
+
+func (db *Database) GetSubmittedNotebooksByID(notebookID int) ([]StudentSubmission, error) {
+	sqlStatement := `
+		SELECT DISTINCT ON (user_id) id, notebook_id, title, path, submission_status, submitted_at, file_created_at, user_id, created_at, updated_at
+		FROM students_notebooks_submissions 
+		WHERE notebook_id = $1 AND submission_status = 3
+		ORDER BY user_id, submitted_at DESC;`
+
+	rows, err := db.DB.Query(sqlStatement, notebookID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get submitted notebooks: %v", err)
+	}
+	defer rows.Close()
+
+	var submissions []StudentSubmission
+	for rows.Next() {
+		var submission StudentSubmission
+		err := rows.Scan(
+			&submission.ID,
+			&submission.NotebookID,
+			&submission.Title,
+			&submission.Path,
+			&submission.SubmissionStatus,
+			&submission.SubmittedAt,
+			&submission.FileCreatedAt,
+			&submission.UserID,
+			&submission.CreatedAt,
+			&submission.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan submission: %v", err)
+		}
+		submissions = append(submissions, submission)
+	}
+
+	return submissions, nil
 }

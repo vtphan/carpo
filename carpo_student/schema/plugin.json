@@ -25,6 +25,9 @@
             }
           },
           {
+            "type": "separator"
+          },
+          {
             "command": "jlab-carpo:download-notebook",
             "args": {
               "origin": "from the menu"
@@ -35,6 +38,9 @@
             "args": {
               "origin": "from the menu"
             }
+          },
+          {
+            "type": "separator"
           },
           {
             "command": "jlab-carpo:main-about",

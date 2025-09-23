@@ -400,7 +400,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           .then(data => {
             console.log(data);
             showDialog({
-              title: 'Notebook Downloaded',
+              title: 'Notebook Download Status',
               body: data.msg,
               buttons: [Dialog.okButton({ label: 'Ok' })]
             });
@@ -456,7 +456,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
             console.log(data)
             showDialog({
               title: 'Notebook Submitted',
-              body: data.msg,
+              body: data.message,
               buttons: [Dialog.okButton({ label: 'Ok' })]
             });
           })

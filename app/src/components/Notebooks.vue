@@ -53,9 +53,9 @@
           ></b-form-select>
         </b-form-group>
 
-        <b-form-group label="Available To" label-for="assignment-available-to">
+        <b-form-group label="Available Till" label-for="assignment-available-till">
           <b-form-input
-            id="assignment-available-to"
+            id="assignment-available-till"
             v-model="form.available_till"
             type="datetime-local"
             required
@@ -91,7 +91,7 @@
         <p>{{ selectedNotebook.title }}</p>
         <h5>Mode:</h5>
         <p>{{ selectedNotebook.mode === 1 ? 'Assignment' : 'Exam' }}</p>
-        <h5>Available To:</h5>
+        <h5>Available Till:</h5>
         <b-form-input
           v-model="viewForm.available_till"
           type="datetime-local"
@@ -253,7 +253,12 @@ export default {
     formatDateForInput (dateString) {
       if (!dateString) return ''
       const date = new Date(dateString)
-      return date.toISOString().slice(0, 16)
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      return `${year}-${month}-${day}T${hours}:${minutes}`
     },
     updateNotebook (event) {
       event.preventDefault()

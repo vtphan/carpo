@@ -204,6 +204,8 @@ func main() {
 	r.GET("/notebooks/file", notebookAPI.ServeNotebookFile)
 	r.POST("/notebooks/students/:user_id/submit", notebookAPI.SubmitNotebook)
 
+	r.GET("/notebooks/:id/downloads", notebookAPI.DownloadNotebooksByID)
+
 	// Use Middleware for app APIs
 	r.Use(appMiddleware(db))
 	r.GET("/submissions/teachers", subAPI.GetSubmissionsHandler)

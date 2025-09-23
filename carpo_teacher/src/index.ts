@@ -40,6 +40,7 @@ const CommandIds = {
    */
   mainMenuRegister: 'jlab-carpo:main-register',
   mainMenuGotoApp: 'jlab-carpo:main-goto-app',
+  mainMenuCollectNotebooks: 'jlab-carpo:main-collect-notebooks',
   mainMenuAbout: 'jlab-carpo:main-about',
 
 };
@@ -190,6 +191,47 @@ const plugin: JupyterFrontEndPlugin<void> = {
       args: { origin: 'from the palette' }
     });
 
+    const CollectNotebooks = CommandIds.mainMenuCollectNotebooks
+    commands.addCommand(CollectNotebooks, {
+      label: 'Collect Notebooks',
+      caption: 'Download student Notebooks.',
+      execute: async (args: any) => {
+        console.log("Args: ", args)
+        const widget = new NotebookSelectWidget();
+
+        const result = await showDialog({
+          title: 'Select Notebook Name',
+          body: widget,
+          buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Download' })]
+        });
+        
+        if (!result.button.accept) {
+          return;
+        }
+
+        const selectedNotebookId = widget.value;
+        const notebookName = widget.name
+        console.log('Selected notebook ID:', selectedNotebookId, notebookName);
+        console.log('selected: ', widget)
+
+        const data = await requestAPI<any>(`notebooks/${selectedNotebookId}/downloads?name=${notebookName}`, {
+          method: 'GET'
+        });
+        showDialog({
+          title: 'Downloads',
+          body: data.message,
+          buttons: [Dialog.okButton({ label: 'Ok' })]
+        });
+      }
+    });
+
+    // Add the command to the command palette
+    palette.addItem({
+      command: CollectNotebooks,
+      category: category,
+      args: { origin: 'from the palette' }
+    });
+
     const AboutMenu = CommandIds.mainMenuAbout
     commands.addCommand(AboutMenu, {
       label: 'About Carpo',
@@ -227,7 +269,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     app.docRegistry.addWidgetExtension('Notebook', new PublishProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new ArchiveProblemButtonExtension());
     app.docRegistry.addWidgetExtension('Notebook', new GetSolutionButton());
-    
+
   }
 };
 
@@ -372,7 +414,6 @@ export class PublishProblemButtonExtension
         time_limit = header.match(/[0-9]+[a-zA-Z]/)[0]
       }
 
-
       let postBody = {
         "question": problem,
         "format": format,
@@ -497,5 +538,56 @@ export class ArchiveProblemButtonExtension
     });
   }
 }
+
+class NotebookSelectWidget extends Widget {
+  private select: HTMLSelectElement;
+
+  constructor() {
+    super();
+    this.node.classList.add('my-dropdown-widget');
+    this.select = document.createElement('select');
+    this.select.innerHTML = `<option value="">Loading...</option>`;
+    
+    this.loadNotebooks();
+
+    this.node.appendChild(this.select);
+  }
+
+  private async loadNotebooks() {
+    try {
+      const data = await requestAPI<any>('notebooks', {
+        method: 'GET'
+      });
+      
+      this.select.innerHTML = '';
+      console.log(data)
+      
+      if (data && data.data && data.data.length > 0) {
+        data.data.forEach((notebook: any) => {
+          const option = document.createElement('option');
+          option.value = notebook.id;
+          option.text = notebook.title || `Notebook ${notebook.id}`;
+          this.select.appendChild(option);
+        });
+      } else {
+        this.select.innerHTML = '<option value="">No notebooks available</option>';
+      }
+      
+    } catch (error) {
+      console.error('Failed to load notebooks:', error);
+      this.select.innerHTML = '<option value="">Error loading notebooks</option>';
+    }
+  }
+
+  get value(): string {
+    return this.select.value;
+  }
+
+  get name(): string {
+    return this.select.options[this.select.selectedIndex]?.text || '';
+  }
+}
+
+
 
 export default plugin;

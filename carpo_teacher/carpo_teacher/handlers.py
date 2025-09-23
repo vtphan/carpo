@@ -527,6 +527,76 @@ class GoWebAppRouteHandler(APIHandler):
 
         self.finish({"url":web_page_url })
 
+class NotebooksHandler(APIHandler):
+    """Handler for list notebooks - GET /notebooks"""
+    
+    @tornado.web.authenticated
+    def get(self):
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+
+        url = config_data['server'] + "/notebooks"
+        
+        try:
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code == 200:
+                resp_data = response.json()
+                self.finish(resp_data)
+            else:
+                self.set_status(response.status_code)
+                self.finish(json.dumps({'message': f"Server returned status {response.status_code}"}))
+                
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
+            return
+        
+class NotebooksDownloadHandler(APIHandler):
+    """Handler for list notebooks - GET /notebooks/:id/downloads"""
+    @tornado.web.authenticated
+    def get(self, notebook_id):
+        config_data = read_config_file()
+
+        if not {'id','server'}.issubset(config_data):
+            self.set_status(500)
+            self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
+            return
+        
+        name = self.get_argument("name") 
+        filename = f'{name}.zip'
+    
+        # Validate notebook_id
+        try:
+            notebook_id = int(notebook_id)
+        except ValueError:
+            self.set_status(400)
+            self.finish(json.dumps({'message': "Invalid notebook_id. Must be a number."}))
+            return
+
+        url = config_data['server'] + f"/notebooks/{notebook_id}/downloads"
+        
+        try:
+            response = requests.get(url, timeout=30)
+            if response.status_code == 200:
+                with open(filename, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192): 
+                        f.write(chunk)
+                self.finish(json.dumps({'message': f'Submission ZIP {filename} downloaded successfully.'}))
+            else:
+                self.set_status(500)
+                self.finish(json.dumps({'message': f"Server returned status {response.status_code}"}))
+                
+        except requests.exceptions.RequestException as e:
+            self.set_status(500)
+            self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
+            return
+
+
 def setup_handlers(web_app):
     host_pattern = ".*$"
 
@@ -559,3 +629,10 @@ def setup_handlers(web_app):
     route_pattern_problems_status =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "view_app")
     web_app.add_handlers(host_pattern, [(route_pattern_problems_status, GoWebAppRouteHandler)])
 
+    # Notebook downloads endpoint
+    route_pattern_notebooks =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "notebooks", r"(\d+)", "downloads")
+    web_app.add_handlers(host_pattern, [(route_pattern_notebooks, NotebooksDownloadHandler)])
+
+    # Notebooks endpoint
+    route_pattern_notebooks =  url_path_join(web_app.settings['base_url'], "carpo-teacher", "notebooks")
+    web_app.add_handlers(host_pattern, [(route_pattern_notebooks, NotebooksHandler)])

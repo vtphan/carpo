@@ -109,9 +109,9 @@ class RegistrationHandler(APIHandler):
             self.finish(json.dumps({'message': "Invalid config.json file. Please check your config file."}))
             return
         
-        if 'id' in config_data.keys():
+        if 'id' in config_data.keys() and 'name' in config_data.keys():
             self.set_status(200)
-            self.finish(json.dumps({'message':'User already registered.'}))
+            self.finish(json.dumps({'message':'User already registered.', 'name': config_data['name']}))
             return
     
         # get name from jupyterhub username
@@ -119,6 +119,7 @@ class RegistrationHandler(APIHandler):
         serverUrl = input_data['serverUrl']
         hubUserName = os.environ.get('USER')
         userName = hubUserName.replace("jupyter-", "")
+        # userName = config_data['name']
 
         url = serverUrl + "/users"
 
@@ -823,6 +824,7 @@ class SubmitNotebookHandler(APIHandler):
             return
         
         user_id = config_data['id']
+        name = config_data['name']
         
         # Read notebook file content
         try:
@@ -835,7 +837,7 @@ class SubmitNotebookHandler(APIHandler):
 
         # Prepare form data and files for multipart upload
         data = {
-            'title': title,
+            'title': f"{name}_{title}",
             'path': path,
             'status': status,
             'notebook_id': notebook_id,
@@ -853,15 +855,11 @@ class SubmitNotebookHandler(APIHandler):
             
             if response.status_code == 200:
                 response_data = response.json()
-                self.finish(json.dumps({'msg': response_data['message']}))
+                self.finish(json.dumps({'message': response_data['message']}))
             else:
-                self.set_status(response.status_code)
-                try:
-                    error_data = response.json()
-                    self.finish(json.dumps(error_data))
-                except:
-                    self.finish(json.dumps({'message': f"Server returned status {response.status_code}"}))
-                
+                self.set_status(500)
+                self.finish(json.dumps({'message': f"Error. {response.json()}"}))
+
         except requests.exceptions.RequestException as e:
             self.set_status(500)
             self.finish(json.dumps({'message': f"Carpo Server Error. {e}"}))
