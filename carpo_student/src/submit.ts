@@ -13,6 +13,7 @@ import {
   showErrorMessage
 } from '@jupyterlab/apputils';
 
+
 import { requestAPI } from './handler';
 import { Cell } from '@jupyterlab/cells';
 
@@ -20,7 +21,7 @@ import { Cell } from '@jupyterlab/cells';
 import { initializeNotifications } from './sse-notifications';
 
 
-export class SubmitCodeButton
+export class SubmitButton
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
   /**
@@ -34,8 +35,60 @@ export class SubmitCodeButton
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
-    const shareCode = () => {
+    const shareCode = async () => {
       const notebook = panel.content;
+
+      // Get notebook title
+      const notebookTitle = notebook.title.label;
+      // Get notebook file path
+      const notebookPath = panel.context.path;
+
+      if (!notebookPath.includes('Exercises') && !notebookPath.includes('Exams') && !notebookPath.includes('Assignments')) {
+        window.alert('Cannot use submit in this notebook.');
+        return;
+      }
+
+      // Get notebook ID from metadata
+      const notebookID = notebook.model.metadata['notebook_id']; 
+
+      // Check if notebook is inside Exams or Assignments directory
+      if (notebookPath.includes('Exams') || notebookPath.includes('Assignments')) {
+
+        // Save the notebook before submitting
+        panel.context.save();
+
+        // Wait 1 second for save to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const status = 'submitted';
+        
+        // Prepare JSON request body
+        const requestBody = {
+          title: notebookTitle,
+          path: notebookPath,
+          notebookID: notebookID,
+          status: status
+        };
+
+        requestAPI<any>('submit_notebook', {
+          method: 'POST',
+          body: JSON.stringify(requestBody)
+        })
+          .then(data => {
+            console.log(data)
+            showDialog({
+              title: 'Notebook Submitted',
+              body: data.message,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          })
+          .catch(reason => {
+            showErrorMessage('Notebook Submit Error', reason);
+            console.error(`Failed to submit notebook.\n${reason}`);
+          });
+
+        return
+      }
 
       const cell: Cell = notebook.activeCell;
       const content = cell.model.sharedModel.getSource()
@@ -53,6 +106,11 @@ export class SubmitCodeButton
           pID = Number(cellMetadata['problem'])
         }
       })
+
+      if (pID === undefined) {
+        window.alert('Cannot submit code from this notebook.');
+        return;
+      }
 
       const postBody = {
         message: "",
@@ -89,7 +147,7 @@ export class SubmitCodeButton
       className: 'submit-code-button',
       label: '➤ Submit',
       onClick: shareCode,
-      tooltip: 'Submit your code'
+      tooltip: 'Submit your code or notebook.'
     });
 
     panel.toolbar.insertItem(10, 'shareCode', button);

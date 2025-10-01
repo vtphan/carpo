@@ -40,7 +40,7 @@ const CommandIds = {
    */
   mainMenuRegister: 'jlab-carpo:main-register',
   mainMenuGotoApp: 'jlab-carpo:main-goto-app',
-  mainMenuCollectNotebooks: 'jlab-carpo:main-collect-notebooks',
+  mainMenuCollectNotebooks: 'jlab-carpo:main-download-notebooks',
   mainMenuAbout: 'jlab-carpo:main-about',
 
 };
@@ -191,10 +191,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
       args: { origin: 'from the palette' }
     });
 
-    const CollectNotebooks = CommandIds.mainMenuCollectNotebooks
-    commands.addCommand(CollectNotebooks, {
-      label: 'Collect Notebooks',
-      caption: 'Download student Notebooks.',
+    const DownloadNotebooks = CommandIds.mainMenuCollectNotebooks
+    commands.addCommand(DownloadNotebooks, {
+      label: 'Download Notebooks',
+      caption: 'Download all students Notebooks.',
       execute: async (args: any) => {
         console.log("Args: ", args)
         const widget = new NotebookSelectWidget();
@@ -227,7 +227,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     // Add the command to the command palette
     palette.addItem({
-      command: CollectNotebooks,
+      command: DownloadNotebooks,
       category: category,
       args: { origin: 'from the palette' }
     });

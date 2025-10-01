@@ -40,7 +40,7 @@ def create_initial_files():
         config_data['name'] = "John Smith"
         config_data['role'] = 1
         config_data['server'] = "http://141.225.10.71:8081"
-        config_data['carpo_version'] = "0.2.2"
+        config_data['carpo_version'] = "0.2.3"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -78,7 +78,7 @@ def create_initial_files():
                                 "id": str(uuid.uuid4()),
                                 "metadata": {},
                                 "source": [ "#### To complete carpo installation, do these steps: \n \
-1. Click on Carpo Menu -> Register.  \n \
+1. Click on Active Learning Menu -> Register.  \n \
 2. Enter the name, serverUrl and appUrl. Click Ok. \n" ],
                                 "outputs": []
                                 })

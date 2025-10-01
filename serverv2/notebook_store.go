@@ -8,12 +8,12 @@ import (
 )
 
 type NotebookStore interface {
-	SaveNotebook(title string, mode int, path string, availableTo *time.Time, endTime *time.Time, userID int) (string, error)
+	SaveNotebook(title string, mode int, path string, startTime *time.Time, endTime *time.Time, userID int) (string, error)
 	GetNotebooks() ([]AssignmentNotebook, error)
 	GetNotebookByUUID(notebookUUID string) (AssignmentNotebook, error)
 	UpdateNotebook(int, string, string) error
 	DeleteNotebook(int) error
-	GetAvailableNotebooks() ([]AssignmentNotebook, error)
+	GetAvailableNotebooks(int) ([]AssignmentNotebook, error)
 	GetNotebookEndTime(int) (AssignmentNotebook, error)
 	SaveStudentSubmission(notebookID int, title string, path string, submissionStatus int, fileCreatedAt *time.Time, userID int) error
 	GetSubmittedNotebooksByID(notebookID int) ([]StudentSubmission, error)
@@ -33,29 +33,29 @@ type StudentSubmission struct {
 }
 
 type AssignmentNotebook struct {
-	ID            int        `json:"id"`
-	NotebookUUID  string     `json:"notebook_uuid"`
-	Title         string     `json:"title"`
-	Mode          int        `json:"mode"`
-	Path          string     `json:"path"`
-	AvailableTill *time.Time `json:"available_till"`
-	EndTime       *time.Time `json:"end_time"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID           int        `json:"id"`
+	NotebookUUID string     `json:"notebook_uuid"`
+	Title        string     `json:"title"`
+	Mode         int        `json:"mode"`
+	Path         string     `json:"path"`
+	StartTime    *time.Time `json:"start_time"`
+	EndTime      *time.Time `json:"end_time"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
-func (db *Database) SaveNotebook(title string, mode int, path string, availableTo *time.Time, endTime *time.Time, userID int) (string, error) {
+func (db *Database) SaveNotebook(title string, mode int, path string, startTime *time.Time, endTime *time.Time, userID int) (string, error) {
 	notebookUUID := uuid.New().String()
 
 	sqlStatement := `
-		INSERT INTO assignment_notebooks (notebook_uuid, title, mode, path, available_till, end_time, user_id, created_at, updated_at) 
+		INSERT INTO assignment_notebooks (notebook_uuid, title, mode, path, start_time, end_time, user_id, created_at, updated_at) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
 		RETURNING notebook_uuid;`
 
 	now := time.Now()
 	var returnedUUID string
 
-	err := db.DB.QueryRow(sqlStatement, notebookUUID, title, mode, path, availableTo, endTime, userID, now, now).Scan(&returnedUUID)
+	err := db.DB.QueryRow(sqlStatement, notebookUUID, title, mode, path, startTime, endTime, userID, now, now).Scan(&returnedUUID)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to save notebook: %v", err)
@@ -66,7 +66,7 @@ func (db *Database) SaveNotebook(title string, mode int, path string, availableT
 
 func (db *Database) GetNotebooks() ([]AssignmentNotebook, error) {
 	sqlStatement := `
-		SELECT id, notebook_uuid, title, mode, path, available_till, end_time, created_at, updated_at
+		SELECT id, notebook_uuid, title, mode, path, start_time, end_time, created_at, updated_at
 		FROM assignment_notebooks
 		ORDER BY created_at DESC;`
 
@@ -85,7 +85,7 @@ func (db *Database) GetNotebooks() ([]AssignmentNotebook, error) {
 			&notebook.Title,
 			&notebook.Mode,
 			&notebook.Path,
-			&notebook.AvailableTill,
+			&notebook.StartTime,
 			&notebook.EndTime,
 			&notebook.CreatedAt,
 			&notebook.UpdatedAt,
@@ -101,7 +101,7 @@ func (db *Database) GetNotebooks() ([]AssignmentNotebook, error) {
 
 func (db *Database) GetNotebookByUUID(notebookUUID string) (AssignmentNotebook, error) {
 	sqlStatement := `
-		SELECT id, notebook_uuid, title, mode, path, available_to, end_time, created_at, updated_at
+		SELECT id, notebook_uuid, title, mode, path, start_time, end_time, created_at, updated_at
 		FROM assignment_notebooks 
 		WHERE notebook_uuid = $1;`
 
@@ -112,7 +112,7 @@ func (db *Database) GetNotebookByUUID(notebookUUID string) (AssignmentNotebook, 
 		&notebook.Title,
 		&notebook.Mode,
 		&notebook.Path,
-		&notebook.AvailableTill,
+		&notebook.StartTime,
 		&notebook.EndTime,
 		&notebook.CreatedAt,
 		&notebook.UpdatedAt,
@@ -125,14 +125,14 @@ func (db *Database) GetNotebookByUUID(notebookUUID string) (AssignmentNotebook, 
 	return notebook, nil
 }
 
-func (db *Database) GetAvailableNotebooks() ([]AssignmentNotebook, error) {
+func (db *Database) GetAvailableNotebooks(mode int) ([]AssignmentNotebook, error) {
 	sqlStatement := `
-		SELECT id, notebook_uuid, title, mode, path, available_till, end_time, created_at, updated_at
+		SELECT id, notebook_uuid, title, mode, path, start_time, end_time, created_at, updated_at
 		FROM assignment_notebooks
-		WHERE available_till >= NOW()
+		WHERE start_time <= NOW() AND end_time >= NOW() AND mode = $1
 		ORDER BY created_at DESC;`
 
-	rows, err := db.DB.Query(sqlStatement)
+	rows, err := db.DB.Query(sqlStatement, mode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get available notebooks: %v", err)
 	}
@@ -147,7 +147,7 @@ func (db *Database) GetAvailableNotebooks() ([]AssignmentNotebook, error) {
 			&notebook.Title,
 			&notebook.Mode,
 			&notebook.Path,
-			&notebook.AvailableTill,
+			&notebook.StartTime,
 			&notebook.EndTime,
 			&notebook.CreatedAt,
 			&notebook.UpdatedAt,
@@ -179,7 +179,7 @@ func (db *Database) SaveStudentSubmission(notebookID int, title string, path str
 
 func (db *Database) GetNotebookEndTime(notebookID int) (AssignmentNotebook, error) {
 	sqlStatement := `
-	SELECT id, notebook_uuid, title, mode, path, available_till, end_time, created_at, updated_at
+	SELECT id, notebook_uuid, title, mode, path, start_time, end_time, created_at, updated_at
 	FROM assignment_notebooks
 	WHERE id = $1 Limit 1`
 
@@ -190,7 +190,7 @@ func (db *Database) GetNotebookEndTime(notebookID int) (AssignmentNotebook, erro
 		&notebook.Title,
 		&notebook.Mode,
 		&notebook.Path,
-		&notebook.AvailableTill,
+		&notebook.StartTime,
 		&notebook.EndTime,
 		&notebook.CreatedAt,
 		&notebook.UpdatedAt)
@@ -201,11 +201,11 @@ func (db *Database) GetNotebookEndTime(notebookID int) (AssignmentNotebook, erro
 	return notebook, nil
 }
 
-func (db *Database) UpdateNotebook(notebookID int, AvailableTill string, EndTime string) error {
-	sqlStatement := `UPDATE assignment_notebooks set available_till=$1, end_time=$2, updated_at=$3 where id=$4;`
+func (db *Database) UpdateNotebook(notebookID int, StartTime string, EndTime string) error {
+	sqlStatement := `UPDATE assignment_notebooks set start_time=$1, end_time=$2, updated_at=$3 where id=$4;`
 	now := time.Now()
 
-	_, err := db.DB.Exec(sqlStatement, AvailableTill, EndTime, now, notebookID)
+	_, err := db.DB.Exec(sqlStatement, StartTime, EndTime, now, notebookID)
 
 	if err != nil {
 		return fmt.Errorf("failed to update Notebook: %v", err)

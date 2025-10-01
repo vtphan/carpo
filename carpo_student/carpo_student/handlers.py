@@ -37,7 +37,7 @@ def create_initial_files():
         config_data = {}
         config_data['name'] = "John Smith"
         config_data['server'] = "http://141.225.10.71:8081"
-        config_data['carpo_version'] = "0.2.8"
+        config_data['carpo_version'] = "0.2.9"
         # Write default config
         with open(config_path, "w") as config_file:
             config_file.write(json.dumps(config_data, indent=4))
@@ -79,7 +79,7 @@ def create_initial_files():
 1. Click on Carpo Menu -> Register. \n \
 2. Enter the server URL. Click Ok. \n \
 #### To download exercises: \n \
-1. Click on Carpo Menu -> GetProblem. \n \
+1. Click on Active Learning Menu -> Download Exercise. \n \
 It will download the exercise notebooks inside Exercises Directory. \n \
                                     "],
                                 "outputs": []
@@ -119,7 +119,9 @@ class RegistrationHandler(APIHandler):
         serverUrl = input_data['serverUrl']
         hubUserName = os.environ.get('USER')
         userName = hubUserName.replace("jupyter-", "")
-        # userName = config_data['name']
+
+        # To register user based on the config file. Uncomment the following.
+        # userName = config_data['name'] 
 
         url = serverUrl + "/users"
 
@@ -703,10 +705,17 @@ class DownloadNotebooksHandler(APIHandler):
             self.set_status(500)
             self.finish(json.dumps({'message': "User is not registered. Please Register User."}))
             return
+        
+        mode = self.get_argument("type", None, True)
+        if mode not in ('assignment', 'exam'):
+            self.set_status(500)
+            self.finish(json.dumps({'message': 'Notebook type not found.'}))
+            return
 
         user_id = config_data['id']
-        url = config_data['server'] + f"/notebooks/students/{user_id}/download"
-        msg = ""
+        url = config_data['server'] + f"/notebooks/students/{user_id}/download?type={mode}"
+        # msg = ''
+        msg_2 = []
         
         try:
             response = requests.get(url, timeout=30)
@@ -721,11 +730,13 @@ class DownloadNotebooksHandler(APIHandler):
                         if not os.path.exists(directory):
                             os.makedirs(directory)
                         
-                        # Save file with title as filename
-                        file_path = os.path.join(directory, item['title'])
-                        filename = f"{file_path}.ipynb"
+                        # filename = f"{file_path}.ipynb"
+                        # Save file with as the path
+                        name = os.path.basename(item['path'])
+                        filename = os.path.join(directory, name)
                         if  os.path.exists(filename):
                             file_paths['already_downloaded'].append(filename)
+                            msg_2.append(f'Notebook already downloaded and placed to {filename}.')
                             continue
 
                         # Download individual notebook file
@@ -753,23 +764,16 @@ class DownloadNotebooksHandler(APIHandler):
                                     f.write(json_serial)
                                 
                                 file_paths['new_download'].append(filename)
+                                msg_2.append(f'New Notebook downloaded to {filename}.')
                                                                 
                         except requests.exceptions.RequestException as e:
                             self.set_status(file_response.status_code)
                             self.finish(json.dumps({'message': f"Server File returned status {file_response.status_code}"}))
-                
-
-                    if file_paths['new_download']:
-                        msg = "New Notebook downloaded to " + ', '.join(file_paths['new_download']) + '.'
-
-                    if file_paths['already_downloaded']:
-                        msg += "\nNotebook already downloaded and placed to " + ', '.join(file_paths['already_downloaded']) + '.'
-
                     self.finish(json.dumps({
-                        'msg': msg,
+                        'message': msg_2,
                     }))
                 else:
-                    self.finish(json.dumps({'msg': 'No notebooks to download'}))
+                    self.finish(json.dumps({'message': ['No notebooks to download.']}))
 
             else:
                 self.set_status(response.status_code)

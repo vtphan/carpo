@@ -78,8 +78,8 @@
                       <b-col cols="6">
                         <div style="text-align: right">
                           <b-button-group>
-                            <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); ">Correct</b-button>
-                            <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); ">Incorrect</b-button>
+                            <b-button class="btn-success" @click="sendGrade(selectedSub, selectedSub.id, 1); ">Good Job</b-button>
+                            <b-button class="btn-danger" @click="sendGrade(selectedSub, selectedSub.id, 2); ">Try Again</b-button>
                             <b-button class="btn-secondary" @click="sendFeedback(selectedSub, selectedSub.id);">Send Feedback</b-button>
                             <b-button class="btn-secondary" @click="watchSubmission(selectedSub);">Watch</b-button>
                           </b-button-group>

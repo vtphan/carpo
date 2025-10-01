@@ -43,7 +43,7 @@ import { Widget } from '@lumino/widgets';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
-import { SubmitCodeButton } from './share-code';
+import { SubmitButton } from './submit';
 import { RaiseHandHelpButton } from './raise-hand-help';
 // import { GetSolutionButton } from './get-solutions'
 import { initializeNotifications, cleanupNotifications } from './sse-notifications';
@@ -59,7 +59,8 @@ const CommandIds = {
   mainMenuGetProblem: 'jlab-carpo:main-getProblem',
   mainMenuAbout: 'jlab-carpo:main-about',
   shareCodeCell: 'toolbar-button:share-code-cell',
-  downloadNotebook: 'jlab-carpo:download-notebook',
+  mainMenuGetAssignment: 'jlab-carpo:main-getAssignment',
+  mainMenuGetTest: 'jlab-carpo:main-getTest',
   uploadNotebook: 'jlab-carpo:upload-notebook'
 
 };
@@ -334,23 +335,23 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     const AboutMenu = CommandIds.mainMenuAbout
     commands.addCommand(AboutMenu, {
-      label: 'About Carpo',
-      caption: 'Carpo Information',
+      label: 'About',
+      caption: 'Active Learning Tool',
       execute: (args: any) => {
         const content = new Widget();
         content.node.innerHTML = `
           <h3>Use the following commands:</h3>
           <ol>
-            <li><strong>Get Exercises</strong>: Download active exercise from the server.</li>
+            <li><strong>Submit</strong>: Submit your code or notebook. </li>
             <li><strong>AskForHelp</strong>: Request help with your code.</li>
-            <li><strong>ViewFeedbacks</strong>: View feedbacks available to you.</li>
+            <li><strong>ViewFeedback</strong>: View feedbacks available to you.</li>
             <li><strong>GetSolution</strong>: Download the solution for the problem.</li>
           </ol>
           <p>Use the <em>Share</em> icon (1st button) in your cell to share your code.</p>
         `;
 
         showDialog({
-          title: 'About Carpo',
+          title: 'About Active Learning Tool',
           body: content,
           buttons: [Dialog.okButton({ label: 'Ok' })]
         });
@@ -367,8 +368,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     const GetProblemMenu = CommandIds.mainMenuGetProblem
     commands.addCommand(GetProblemMenu, {
-      label: 'GetExercise',
-      caption: 'Download Active Exercise',
+      label: 'Download Exercise',
+      caption: 'Download Active Exercises',
       execute: (args: any) => {
         requestAPI<any>('question', {
           method: 'GET'
@@ -376,7 +377,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
           .then(data => {
             // console.log(data);
             showDialog({
-              title: 'Exercise Downloaded',
+              title: 'Exercise Notebooks',
               body: data.msg,
               buttons: [Dialog.okButton({ label: 'Ok' })]
             });
@@ -388,20 +389,59 @@ const plugin: JupyterFrontEndPlugin<void> = {
       }
     })
 
-    // Download Notebook command
-    const DownloadNotebookMenu = CommandIds.downloadNotebook;
-    commands.addCommand(DownloadNotebookMenu, {
-      label: 'Download Notebook',
-      caption: 'Download current notebook',
+    // Download Assignment command
+    const GetAssignmentMenu = CommandIds.mainMenuGetAssignment;
+    commands.addCommand(GetAssignmentMenu, {
+      label: 'Download Assignment',
+      caption: 'Download Active Assignment Notebooks',
       execute: (args: any) => {
-        requestAPI<any>('download_notebooks', {
+        requestAPI<any>('download_notebooks?type=assignment', {
+          method: 'GET'
+        })
+          .then(data => {
+            // console.log(data);
+            let bodyContent = data.message;
+            if (Array.isArray(data.message) && data.message.length >= 1) {
+              console.log("Array Itemize: ", bodyContent)
+              bodyContent = '<ul>' + data.message.map((item: any) => `<li>${item}</li>`).join('') + '</ul>';
+            }
+            const dialogBody = new Widget();
+            dialogBody.node.innerHTML = bodyContent;
+
+            showDialog({
+              title: 'Assignment Notebooks',
+              body: dialogBody,
+              buttons: [Dialog.okButton({ label: 'Ok' })]
+            });
+          })
+          .catch(reason => {
+            showErrorMessage('Download Notebooks Error', reason);
+            console.error(`Failed to download notebooks.\n${reason}`);
+          });
+      }
+    });
+
+    // Download Assignment command
+    const GetExamMenu = CommandIds.mainMenuGetTest;
+    commands.addCommand(GetExamMenu, {
+      label: 'Download Exam',
+      caption: 'Download Active Exam Notebooks',
+      execute: (args: any) => {
+        requestAPI<any>('download_notebooks?type=exam', {
           method: 'GET'
         })
           .then(data => {
             console.log(data);
+            let bodyContent = data.message;
+            if (Array.isArray(data.message) && data.message.length >= 1) {
+              console.log("Array Itemize: ", bodyContent)
+              bodyContent = '<ul>' + data.message.map((item: any) => `<li>${item}</li>`).join('') + '</ul>';
+            }
+            const dialogBody = new Widget();
+            dialogBody.node.innerHTML = bodyContent;
             showDialog({
-              title: 'Notebook Download Status',
-              body: data.msg,
+              title: 'Exam Notebooks',
+              body: dialogBody,
               buttons: [Dialog.okButton({ label: 'Ok' })]
             });
           })
@@ -471,7 +511,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     //  tell the document registry about your widget extension:
     // app.docRegistry.addWidgetExtension('Notebook', new GetQuestionButton());
-    app.docRegistry.addWidgetExtension('Notebook', new SubmitCodeButton());
+    app.docRegistry.addWidgetExtension('Notebook', new SubmitButton());
     app.docRegistry.addWidgetExtension('Notebook', new RaiseHandHelpButton());
     app.docRegistry.addWidgetExtension('Notebook', new ViewFeedbacksButton());
     app.docRegistry.addWidgetExtension('Notebook', new DownloadSolutionButton());

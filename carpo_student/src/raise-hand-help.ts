@@ -34,6 +34,14 @@ export class RaiseHandHelpButton
   ): IDisposable {
     const raiseHand = () => {
       const notebook = panel.content;
+
+      // Get notebook file path
+      const notebookPath = panel.context.path;
+
+      if (!notebookPath.includes('Exercises')) {
+        window.alert('Cannot use this function in this notebook.');
+        return;
+      }
       // const filename = panel.context.path;
       // const activeIndex = notebook.activeCellIndex;
 

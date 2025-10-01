@@ -9,15 +9,9 @@
     "main": [
       {
         "id": "jp-mainmenu-carpo",
-        "label": "Carpo",
+        "label": "Active Learning",
         "rank": 501,
         "items": [
-          {
-            "command": "jlab-carpo:main-register",
-            "args": {
-              "origin": "from the menu"
-            }
-          },
           {
             "command": "jlab-carpo:main-getProblem",
             "args": {
@@ -28,19 +22,28 @@
             "type": "separator"
           },
           {
-            "command": "jlab-carpo:download-notebook",
-            "args": {
-              "origin": "from the menu"
-            }
-          },
-          {
-            "command": "jlab-carpo:upload-notebook",
+            "command": "jlab-carpo:main-getAssignment",
             "args": {
               "origin": "from the menu"
             }
           },
           {
             "type": "separator"
+          },
+          {
+            "command": "jlab-carpo:main-getTest",
+            "args": {
+              "origin": "from the menu"
+            }
+          },
+          {
+            "type": "separator"
+          },
+          {
+            "command": "jlab-carpo:main-register",
+            "args": {
+              "origin": "from the menu"
+            }
           },
           {
             "command": "jlab-carpo:main-about",

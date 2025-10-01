@@ -11,8 +11,8 @@
           {{ data.item.mode === 1 ? 'Assignment' : 'Exam' }}
         </b-badge>
       </template>
-      <template #cell(available_till)="data">
-        {{ formatDate(data.item.available_till) }}
+      <template #cell(start_time)="data">
+        {{ formatDate(data.item.start_time) }}
       </template>
       <template #cell(end_time)="data">
         {{ formatDate(data.item.end_time) }}
@@ -53,10 +53,10 @@
           ></b-form-select>
         </b-form-group>
 
-        <b-form-group label="Available Till" label-for="assignment-available-till">
+        <b-form-group label="Start Time" label-for="assignment-start_time">
           <b-form-input
-            id="assignment-available-till"
-            v-model="form.available_till"
+            id="assignment-start-time"
+            v-model="form.start_time"
             type="datetime-local"
             required
           ></b-form-input>
@@ -91,9 +91,9 @@
         <p>{{ selectedNotebook.title }}</p>
         <h5>Mode:</h5>
         <p>{{ selectedNotebook.mode === 1 ? 'Assignment' : 'Exam' }}</p>
-        <h5>Available Till:</h5>
+        <h5>Start Time:</h5>
         <b-form-input
-          v-model="viewForm.available_till"
+          v-model="viewForm.start_time"
           type="datetime-local"
           class="mb-3"
         ></b-form-input>
@@ -103,6 +103,8 @@
           type="datetime-local"
           class="mb-3"
         ></b-form-input>
+        <h5>FileName:</h5>
+        <p>{{ selectedNotebook.path }}</p>
       </div>
       <template #modal-footer="{ ok, cancel }">
         <b-button variant="secondary" @click="cancel()">Cancel</b-button>
@@ -123,12 +125,12 @@ export default {
     form: {
       title: '',
       mode: 1,
-      available_till: '',
+      start_time: '',
       end_time: '',
       file: null
     },
     viewForm: {
-      available_till: '',
+      start_time: '',
       end_time: ''
     },
     notebookModal: {
@@ -142,7 +144,7 @@ export default {
     fields: [
       { key: 'title', label: 'Title', sortable: true },
       { key: 'mode', label: 'Mode', sortable: true },
-      { key: 'available_till', label: 'Available To', sortable: true },
+      { key: 'start_time', label: 'Start Time', sortable: true },
       { key: 'end_time', label: 'End Time', sortable: true },
       { key: 'actions', label: 'Actions', sortable: false }
     ],
@@ -160,13 +162,13 @@ export default {
     viewNotebook (notebook) {
       this.selectedNotebook = notebook
       this.viewModal.title = notebook.title
-      this.viewForm.available_till = this.formatDateForInput(notebook.available_till)
+      this.viewForm.start_time = this.formatDateForInput(notebook.start_time)
       this.viewForm.end_time = this.formatDateForInput(notebook.end_time)
       this.$root.$emit('bv::show::modal', this.viewModal.id)
     },
     saveAssignment (event) {
       event.preventDefault()
-      if (!this.form.title || this.form.mode === null || !this.form.available_till ||
+      if (!this.form.title || this.form.mode === null || !this.form.start_time ||
           !this.form.end_time || !this.form.file) {
         this.toast('Please fill in all fields and select a file', 'danger')
         return
@@ -179,7 +181,7 @@ export default {
         const formData = new FormData()
         formData.append('title', this.form.title)
         formData.append('mode', this.form.mode)
-        formData.append('available_till', new Date(this.form.available_till).toISOString())
+        formData.append('start_time', new Date(this.form.start_time).toISOString())
         formData.append('end_time', new Date(this.form.end_time).toISOString())
         formData.append('user_id', 2)
         formData.append('filecontent', this.form.file)
@@ -241,7 +243,7 @@ export default {
       this.form = {
         title: '',
         mode: 1,
-        available_till: '',
+        start_time: '',
         end_time: '',
         file: null
       }
@@ -262,7 +264,7 @@ export default {
     },
     updateNotebook (event) {
       event.preventDefault()
-      if (!this.viewForm.available_till || !this.viewForm.end_time) {
+      if (!this.viewForm.start_time || !this.viewForm.end_time) {
         this.toast('Please fill in both timestamp fields', 'danger')
         return
       }
@@ -270,7 +272,7 @@ export default {
         headers: { Authorization: 'Bearer ' + this.$route.query.token }
       }
       const updateData = {
-        available_till: new Date(this.viewForm.available_till).toISOString(),
+        start_time: new Date(this.viewForm.start_time).toISOString(),
         end_time: new Date(this.viewForm.end_time).toISOString()
       }
       this.$http.put(Config.apiUrl + '/notebooks/' + this.selectedNotebook.id, updateData, config)
@@ -278,7 +280,7 @@ export default {
           // console.log(response)
           const index = this.notebooks.findIndex(n => n.id === this.selectedNotebook.id)
           if (index !== -1) {
-            this.notebooks[index].available_till = updateData.available_till
+            this.notebooks[index].start_time = updateData.start_time
             this.notebooks[index].end_time = updateData.end_time
           }
           this.toast(response.data.msg, 'success')
@@ -293,7 +295,7 @@ export default {
     },
     resetViewForm () {
       this.viewForm = {
-        available_till: '',
+        start_time: '',
         end_time: ''
       }
     },

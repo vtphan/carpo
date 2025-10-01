@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,19 +24,24 @@ var NotebookStatus = map[string]int{
 	"submitted":  3,
 }
 
-const buffer = 30
+var NotebookMode = map[string]int{
+	"assignment": 1,
+	"exam":       2,
+}
+
+const buffer = 10
 
 type UploadNotebookRequest struct {
-	Title         string `form:"title" binding:"required"`
-	Mode          int    `form:"mode" binding:"required"`
-	AvailableTill string `form:"available_till"`
-	EndTime       string `form:"end_time"`
-	UserID        int    `form:"user_id" binding:"required"`
+	Title     string `form:"title" binding:"required"`
+	Mode      int    `form:"mode" binding:"required"`
+	StartTime string `form:"start_time"`
+	EndTime   string `form:"end_time"`
+	UserID    int    `form:"user_id" binding:"required"`
 }
 
 type UpdateNotebookRequest struct {
-	AvailableTill string `json:"available_till"`
-	EndTime       string `json:"end_time"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
 }
 
 func (n *NotebookAPI) UploadNotebook(c *gin.Context) {
@@ -61,11 +67,13 @@ func (n *NotebookAPI) UploadNotebook(c *gin.Context) {
 		return
 	}
 
+	fileName := strings.TrimSuffix(file.Filename, filepath.Ext(file.Filename))
+
 	// Parse timestamp strings
-	var availableTill, endTime *time.Time
-	if req.AvailableTill != "" {
-		if parsed, err := time.Parse(time.RFC3339, req.AvailableTill); err == nil {
-			availableTill = &parsed
+	var startTime, endTime *time.Time
+	if req.StartTime != "" {
+		if parsed, err := time.Parse(time.RFC3339, req.StartTime); err == nil {
+			startTime = &parsed
 		}
 	}
 	if req.EndTime != "" {
@@ -84,7 +92,7 @@ func (n *NotebookAPI) UploadNotebook(c *gin.Context) {
 
 	// Generate filename based on title and timestamp
 	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("%s_%s.ipynb", req.Title, timestamp)
+	filename := fmt.Sprintf("%s_%s.ipynb", fileName, timestamp)
 	// Sanitize filename
 	filename = filepath.Base(filename)
 	filePath := filepath.Join(uploadsDir, filename)
@@ -101,7 +109,7 @@ func (n *NotebookAPI) UploadNotebook(c *gin.Context) {
 		req.Title,
 		req.Mode,
 		filePath,
-		availableTill,
+		startTime,
 		endTime,
 		req.UserID,
 	)
@@ -114,14 +122,14 @@ func (n *NotebookAPI) UploadNotebook(c *gin.Context) {
 	}
 
 	response := gin.H{
-		"notebook_uuid":  notebookUUID,
-		"title":          req.Title,
-		"mode":           req.Mode,
-		"path":           filePath,
-		"available_till": availableTill,
-		"end_time":       endTime,
-		"user_id":        req.UserID,
-		"message":        "Notebook uploaded successfully",
+		"notebook_uuid": notebookUUID,
+		"title":         req.Title,
+		"mode":          req.Mode,
+		"path":          filePath,
+		"start_time":    startTime,
+		"end_time":      endTime,
+		"user_id":       req.UserID,
+		"message":       "Notebook uploaded successfully",
 	}
 
 	c.JSON(200, response)
@@ -171,13 +179,13 @@ func (n *NotebookAPI) UpdateNotebookByID(c *gin.Context) {
 		return
 	}
 
-	// Validate that endtime should be greater than available_till
-	if req.AvailableTill != "" && req.EndTime != "" {
-		availableTillTime, err1 := time.Parse(time.RFC3339, req.AvailableTill)
+	// Validate that endtime should be greater than start_time
+	if req.StartTime != "" && req.EndTime != "" {
+		startTime, err1 := time.Parse(time.RFC3339, req.StartTime)
 		endTime, err2 := time.Parse(time.RFC3339, req.EndTime)
 
 		if err1 != nil {
-			c.JSON(400, gin.H{"error": "Invalid available_till format. Use RFC3339 format (e.g., 2023-12-25T10:00:00Z)"})
+			c.JSON(400, gin.H{"error": "Invalid start_time format. Use RFC3339 format (e.g., 2023-12-25T10:00:00Z)"})
 			return
 		}
 
@@ -186,13 +194,13 @@ func (n *NotebookAPI) UpdateNotebookByID(c *gin.Context) {
 			return
 		}
 
-		if !endTime.After(availableTillTime) {
-			c.JSON(400, gin.H{"error": "end_time must be greater than available_till"})
+		if !endTime.After(startTime) {
+			c.JSON(400, gin.H{"error": "end_time must be greater than start_time"})
 			return
 		}
 	}
 
-	err = n.NotebookService.UpdateNotebook(notebook_id, req.AvailableTill, req.EndTime)
+	err = n.NotebookService.UpdateNotebook(notebook_id, req.StartTime, req.EndTime)
 	if err != nil {
 		log.Errorf("Failed to update notebook: %v", err)
 		c.JSON(404, gin.H{"error": err.Error()})
@@ -229,7 +237,16 @@ func (n *NotebookAPI) GetAvailableNotebooks(c *gin.Context) {
 		return
 	}
 
-	notebooks, err := n.NotebookService.GetAvailableNotebooks()
+	mode := c.Query("type") // Get "query" parameter
+	var notebookMode int
+	var ok bool
+
+	if notebookMode, ok = NotebookMode[mode]; !ok {
+		c.JSON(400, gin.H{"error": "invalid notebook mode"})
+		return
+	}
+
+	notebooks, err := n.NotebookService.GetAvailableNotebooks(notebookMode)
 	if err != nil {
 		log.Errorf("Failed to get available notebooks: %v", err)
 		c.JSON(500, gin.H{"error": "Failed to retrieve available notebooks"})
@@ -379,10 +396,11 @@ func (n *NotebookAPI) SubmitNotebook(c *gin.Context) {
 	}
 
 	// Generate filename based on title and timestamp
-	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("%s_%s.ipynb", req.Title, timestamp)
+	// timestamp := time.Now().Format("20060102_150405")
+	// filename := fmt.Sprintf("%s_%s.ipynb", req.Title, timestamp)
+
 	// Sanitize filename
-	filename = filepath.Base(filename)
+	filename := filepath.Base(req.Title)
 	filePath := filepath.Join(uploadsDir, filename)
 
 	// Save the uploaded file
@@ -414,8 +432,10 @@ func (n *NotebookAPI) SubmitNotebook(c *gin.Context) {
 		return
 	}
 
+	formattedTime := currentTime.Format("01/02/2006 03:04 PM")
+
 	response := gin.H{
-		"message":    "Notebook submission received and saved successfully.",
+		"message":    fmt.Sprintf("Notebook received at %s.", formattedTime),
 		"title":      req.Title,
 		"path":       filePath,
 		"status":     req.Status,
@@ -464,7 +484,7 @@ func (n *NotebookAPI) DownloadNotebooksByID(c *gin.Context) {
 		}
 
 		// Create filename with user ID prefix
-		filename := fmt.Sprintf("user_%d_%s", submission.UserID, filepath.Base(submission.Path))
+		filename := fmt.Sprintf("%d_%s", submission.UserID, filepath.Base(submission.Path))
 		destPath := filepath.Join(tmpDir, filename)
 
 		// Copy file

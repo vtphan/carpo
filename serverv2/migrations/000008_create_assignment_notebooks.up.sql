@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS assignment_notebooks (
     "title" VARCHAR (128) NOT NULL,
     "mode" integer NOT NULL,
     "path" text NOT NULL,
-    "available_till" timestamptz,
+    "start_time" timestamptz,
     "end_time" timestamptz,
     "user_id" bigint NOT NULL,
     "created_at" timestamptz,
